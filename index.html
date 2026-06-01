@@ -62,7 +62,7 @@ tbody td { padding:10px 12px; vertical-align:middle; }
 
 /* CHIPS */
 .chip { display:inline-block; border-radius:20px; padding:2px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
-.chip-ora{background:var(--oral);color:var(--ora);} .chip-grn{background:var(--gp);color:var(--gd);} .chip-red{background:var(--redl);color:var(--red);} .chip-blu{background:var(--blul);color:var(--blu);} .chip-gry{background:var(--g100);color:var(--g600);} .chip-gld{background:var(--goldl);color:#6b4f00;}
+.chip-ora{background:var(--oral);color:var(--ora);} .chip-grn{background:var(--gp);color:var(--gd);} .chip-red{background:var(--redl);color:var(--red);} .chip-blu{background:var(--blul);color:var(--blu);} .chip-gry{background:var(--gm);color:var(--g600);} .chip-gld{background:var(--goldl);color:#6b4f00;}
 
 /* BUTTONS */
 .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:var(--rs); font-family:'Sarabun',sans-serif; font-size:14px; font-weight:600; cursor:pointer; border:none; transition:all .15s; }
@@ -1024,7 +1024,7 @@ document.addEventListener('click', function(e){
     return;
   }
   // ปุ่มต่างๆ
-  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view');
+  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn');
   if(!btn) return;
   var pn = decodeURIComponent(btn.dataset.pn||'');
   var en = decodeURIComponent(btn.dataset.en||'');
@@ -1034,6 +1034,12 @@ document.addEventListener('click', function(e){
       else toast('ยังไม่มีรูปอะไหล่ชิ้นนี้ค่ะ','info');
     });
   } else if(btn.classList.contains('btn-img-peek') || btn.classList.contains('btn-img-upload')){
+    uploadPartImg(pn, en);
+  }
+  if(btn.classList.contains('stk-loc-btn')){
+    editLoc(decodeURIComponent(btn.dataset.reqid||''), pn, decodeURIComponent(btn.dataset.loc||''));
+  }
+  if(btn.classList.contains('stk-img-btn')){
     uploadPartImg(pn, en);
   }
 });
@@ -1376,8 +1382,8 @@ function loadStock(){
             +'<td style="padding:4px 8px;border-bottom:1px solid #eef2ef">'
             +'<div style="display:flex;align-items:center;gap:6px">'
             +'<span id="'+lid+'" style="font-size:12px;font-weight:700;color:var(--gm);min-width:60px">'+(loc||'—')+'</span>'
-            +'<button class="btn bo bsm stk-loc-btn" style="padding:2px 8px;font-size:11px" data-reqid="'+r.ReqID+'" data-pn="'+pn+'" data-loc="'+(loc||'')+'">✏️</button>'
-            +'<button class="btn bo bsm stk-img-btn" style="padding:2px 8px;font-size:11px" data-pn="'+pn+'" title="อัปโหลดรูปอะไหล่">📷</button>'
+            +'<button class="btn bo bsm stk-loc-btn" style="padding:2px 8px;font-size:11px" data-reqid="'+encodeURIComponent(r.ReqID)+'" data-pn="'+encodeURIComponent(pn)+'" data-loc="'+encodeURIComponent(loc||'')+'">✏️</button>'
+            +'<button class="btn bo bsm stk-img-btn" style="padding:2px 8px;font-size:11px" data-pn="'+encodeURIComponent(pn)+'" data-en="'+encodeURIComponent(it.NameEN||it.NameTH||'')+'" title="อัปโหลดรูปอะไหล่">📷</button>'
             +'</div></td>';
           tr.querySelector('.stk-loc-btn').addEventListener('click', function(){
             editLoc(this.dataset.reqid, this.dataset.pn, this.dataset.loc);
@@ -1392,8 +1398,8 @@ function loadStock(){
           tbl='<div style="margin-top:10px;border:1px solid var(--g200);border-radius:6px;overflow:hidden">'
             +'<div style="background:var(--g50);padding:6px 10px;font-size:12px;font-weight:700;color:var(--gd);border-bottom:1px solid var(--g200)">📦 รายการอะไหล่ + ตำแหน่งจัดเก็บ</div>'
             +'<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--g100)">'
-            +'<th style="padding:5px 8px;font-size:11px;text-align:left">อะไหล่</th>'
-            +'<th style="padding:5px 8px;font-size:11px;text-align:center">จำนวน</th>'
+            +'<th style="padding:6px 8px;font-size:12px;text-align:left;color:#fff;font-weight:700">อะไหล่</th>'
+            +'<th style="padding:6px 8px;font-size:12px;text-align:center;color:#fff;font-weight:700">จำนวน</th>'
             +'<th style="padding:5px 8px;font-size:11px;text-align:left">📍 ตำแหน่งจัดเก็บ</th>'
             +'</tr></thead><tbody>'+itRows+'</tbody></table></div>';
         }
