@@ -658,29 +658,25 @@ function canEditPartImg(){
 
 function partImgHtml(partNo, size, nameEN){
   if(!partNo) return '';
-  var pnSafe = (partNo||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
-  var enSafe = (nameEN||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
   var url = getPartImgUrl(partNo);
   var canEdit = canEditPartImg();
+  var cls = size==='lg' ? 'pimg-lg' : 'pimg';
+  var pEnc = encodeURIComponent(partNo);
+  var eEnc = encodeURIComponent(nameEN||'');
 
   if(url){
-    // มีรูปแล้ว — ทุกคนดูได้ + คนมีสิทธิ์เปลี่ยนได้
-    var cls = size==='lg' ? 'pimg-lg' : 'pimg';
     var editBtn = canEdit
-      ? '<button class="btn-img-upload" data-pn="'+pnSafe+'" data-en="'+enSafe+'" title="เปลี่ยนรูป" style="font-size:11px;padding:1px 5px;margin-left:3px">📷</button>'
+      ? '<button class="btn-img-upload" data-pn="'+pEnc+'" data-en="'+eEnc+'" title="เปลี่ยนรูป" style="font-size:11px;padding:1px 5px;margin-left:3px">📷</button>'
       : '';
     return '<span style="display:inline-flex;align-items:center;gap:3px">'
-      + '<img class="'+cls+'" src="'+url+'" data-pn="'+pnSafe+'" title="'+partNo+'">'
-      + editBtn
-      + '</span>';
+      + '<img class="'+cls+'" src="'+url+'" data-pn="'+pEnc+'" title="'+partNo+'" style="cursor:zoom-in">'
+      + editBtn + '</span>';
   }
 
-  // ไม่มีรูป — ทุกคนเห็นปุ่ม 🖼 (กดแล้วถ้าไม่มีรูปจะบอกว่าไม่มี)
-  // คนมีสิทธิ์ → กดแล้วอัปโหลดได้
   if(canEdit){
-    return '<button class="btn-img-peek" data-pn="'+pnSafe+'" data-en="'+enSafe+'" title="กดเพื่ออัปโหลดรูป '+partNo+'">📷 เพิ่มรูป</button>';
+    return '<button class="btn-img-peek" data-pn="'+pEnc+'" data-en="'+eEnc+'" title="กดเพื่ออัปโหลดรูป">📷 เพิ่มรูป</button>';
   }
-  return '<button class="btn-img-peek btn-img-view-only" data-pn="'+pnSafe+'" data-en="'+enSafe+'" title="ดูรูป '+partNo+'">🖼 ดูรูป</button>';
+  return '<button class="btn-img-view" data-pn="'+pEnc+'" data-en="'+eEnc+'" title="ดูรูป">🖼 ดูรูป</button>';
 }
 
 // alias เพื่อ backward compat
@@ -1018,27 +1014,27 @@ function mockAPI(action, data){
 }
 
 // ── INIT APP ─────────────────────────────────────────────────
-// ── Image button event delegation (ใช้แทน onclick inline) ──
+// ── Image button event delegation ──────────────────────────
 document.addEventListener('click', function(e){
-  var btn = e.target.closest('.btn-img-peek, .btn-img-upload');
+  // รูป — คลิกขยาย
+  var img = e.target.closest('.pimg,.pimg-lg');
+  if(img && img.src){
+    var pn = decodeURIComponent(img.dataset.pn||'');
+    showImgLightbox(img.src, pn);
+    return;
+  }
+  // ปุ่มต่างๆ
+  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view');
   if(!btn) return;
-  var pn = btn.dataset.pn || '';
-  var en = btn.dataset.en || '';
-  if(btn.classList.contains('btn-img-view-only')){
-    // ช่าง — ดูรูปอย่างเดียว
+  var pn = decodeURIComponent(btn.dataset.pn||'');
+  var en = decodeURIComponent(btn.dataset.en||'');
+  if(btn.classList.contains('btn-img-view')){
     fetchOnePartImg(pn, en, function(url){
       if(url) showImgLightbox(url, pn);
       else toast('ยังไม่มีรูปอะไหล่ชิ้นนี้ค่ะ','info');
     });
-  } else if(btn.classList.contains('btn-img-peek')){
-    peekPartImg(pn, en, btn);
-  } else if(btn.classList.contains('btn-img-upload')){
+  } else if(btn.classList.contains('btn-img-peek') || btn.classList.contains('btn-img-upload')){
     uploadPartImg(pn, en);
-  }
-  // img click — lightbox
-  var img = e.target.closest('.pimg,.pimg-lg');
-  if(img && img.src){
-    showImgLightbox(img.src, img.dataset.pn||'');
   }
 });
 
