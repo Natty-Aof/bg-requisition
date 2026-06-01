@@ -1312,8 +1312,8 @@ function loadStock(){
           var pnSafe=pn.replace(/'/g,"\'");
           var locSafe=loc.replace(/'/g,"\'");
           var pImgH = partImgHtml(pn,'sm',it.NameEN||it.NameTH||'');
-          itRows+='<tr>'
-            +'<td style="padding:4px 8px;border-bottom:1px solid #eef2ef;vertical-align:middle">'
+          var tr = document.createElement('tr');
+          tr.innerHTML = '<td style="padding:4px 8px;border-bottom:1px solid #eef2ef;vertical-align:middle">'
             +'<div style="display:flex;align-items:center;gap:8px">'
             +pImgH
             +'<div><div style="font-size:12px;font-weight:700;color:#1a4a2e">'+pn+'</div>'
@@ -1323,9 +1323,16 @@ function loadStock(){
             +'<td style="padding:4px 8px;border-bottom:1px solid #eef2ef">'
             +'<div style="display:flex;align-items:center;gap:6px">'
             +'<span id="'+lid+'" style="font-size:12px;font-weight:700;color:var(--gm);min-width:60px">'+(loc||'—')+'</span>'
-            +'<button class="btn bo bsm" style="padding:2px 8px;font-size:11px" onclick="editLoc(\''+r.ReqID+'\',\''+pnSafe+'\',\''+locSafe+'\')">✏️</button>'
-            +'<button class="btn bo bsm" style="padding:2px 8px;font-size:11px" onclick="uploadPartImg(\''+pnSafe+'\')" title="อัปโหลดรูปอะไหล่">📷</button>'
-            +'</div></td></tr>';
+            +'<button class="btn bo bsm stk-loc-btn" style="padding:2px 8px;font-size:11px" data-reqid="'+r.ReqID+'" data-pn="'+pn+'" data-loc="'+(loc||'')+'">✏️</button>'
+            +'<button class="btn bo bsm stk-img-btn" style="padding:2px 8px;font-size:11px" data-pn="'+pn+'" title="อัปโหลดรูปอะไหล่">📷</button>'
+            +'</div></td>';
+          tr.querySelector('.stk-loc-btn').addEventListener('click', function(){
+            editLoc(this.dataset.reqid, this.dataset.pn, this.dataset.loc);
+          });
+          tr.querySelector('.stk-img-btn').addEventListener('click', function(){
+            uploadPartImg(this.dataset.pn);
+          });
+          itRows += tr.outerHTML;
         });
         var tbl='';
         if(items.length){
