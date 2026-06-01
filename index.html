@@ -159,6 +159,18 @@ textarea.fc{min-height:70px;resize:vertical;}
 .mov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:290;}
 .mov.open{display:block;}
 
+
+/* ── Part Image Styles ── */
+.pimg{width:52px;height:52px;border-radius:6px;object-fit:cover;border:1px solid var(--g200);background:#f8faf9;flex-shrink:0;cursor:zoom-in;}
+.pimg-placeholder{width:52px;height:52px;border-radius:6px;border:1px solid var(--g200);background:#f8faf9;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:var(--g300);}
+.pimg-lg{width:80px;height:80px;border-radius:8px;object-fit:cover;border:1px solid var(--g200);cursor:zoom-in;}
+.pimg-lg-ph{width:80px;height:80px;border-radius:8px;border:1.5px dashed var(--g200);background:#f8faf9;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;color:var(--g300);flex-shrink:0;}
+.pimg-lg-ph:hover{border-color:var(--gm);background:var(--gp);}
+.pimg-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:zoom-out;}
+.pimg-lightbox img{max-width:88vw;max-height:80vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.btn-img-peek{background:none;border:1px solid var(--g200);border-radius:5px;padding:1px 6px;font-size:14px;cursor:pointer;color:var(--g500);line-height:1.4;transition:background .15s;}
+.btn-img-peek:hover{background:var(--gp);border-color:var(--gm);}
+
 /* SIG */
 .sigrow{display:flex;gap:2mm;margin-bottom:2.5mm;align-items:flex-end;}
 .sigrl{width:26mm;font-weight:600;font-size:8pt;flex-shrink:0;}
@@ -602,8 +614,168 @@ textarea.fc{min-height:70px;resize:vertical;}
 <script src="parts_data.js"></script>
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
+
+// ── Part Images — On-Demand Cache ─────────────────────────────
+// รูปไม่โหลดอัตโนมัติ — โหลดเฉพาะเมื่อผู้ใช้กด "ดูรูป"
+var _partImages = {};  // { partNo: url | 'NONE' }
+
+function getPartImgUrl(partNo){
+  return (_partImages[partNo] && _partImages[partNo] !== 'NONE')
+    ? _partImages[partNo] : '';
+}
+
+// โหลดรูปของ partNo เดียว แล้ว callback(url)
+function fetchOnePartImg(partNo, nameEN, callback){
+  if(_partImages[partNo] !== undefined){
+    return callback(getPartImgUrl(partNo));
+  }
+  callAPI('getPartImages',{partNos:[partNo]}).then(function(res){
+    var url = (res && res.data && res.data[partNo]) || '';
+    _partImages[partNo] = url || 'NONE';
+    callback(url);
+  }).catch(function(){ _partImages[partNo]='NONE'; callback(''); });
+}
+
+// สร้างปุ่ม "ดูรูป" on-demand — ไม่โหลดรูปจนกว่าจะกด
+function partImgHtml(partNo, size, nameEN){
+  if(!partNo) return '';
+  var enSafe = (nameEN||'').replace(/'/g,"\\'");
+  var pnSafe = partNo.replace(/'/g,"\\'");
+  // ถ้ามีรูป cache แล้ว แสดงทันที
+  var url = getPartImgUrl(partNo);
+  if(url){
+    return '<img class="'+(size==='lg'?'pimg-lg':'pimg')+'" src="'+url
+      +'" onclick="showImgLightbox(this.src)" title="'+partNo+'">';
+  }
+  // ยังไม่มีรูป → แสดงปุ่ม "🖼 ดูรูป"
+  return '<button class="btn-img-peek" onclick="peekPartImg(\''+pnSafe+'\',\''+enSafe+'\',this)"'
+    +' title="ดูรูป '+partNo+'">🖼</button>';
+}
+
+// alias เพื่อ backward compat
+function partImgHtmlWithData(partNo, nameEN, size){
+  return partImgHtml(partNo, size, nameEN);
+}
+
+// กดปุ่ม → โหลดรูป 1 ชิ้น → แสดงใน popup
+function peekPartImg(partNo, nameEN, btn){
+  if(btn) { btn.textContent='⏳'; btn.disabled=true; }
+  fetchOnePartImg(partNo, nameEN, function(url){
+    if(btn) { btn.textContent='🖼'; btn.disabled=false; }
+    if(url){
+      showImgLightbox(url, partNo);
+    } else {
+      // ไม่มีรูปใน DB — ถามว่าจะเพิ่มไหม
+      uploadPartImg(partNo, nameEN);
+    }
+  });
+}
+
+function showImgLightbox(src, partNo){
+  var lb = document.createElement('div');
+  lb.className = 'pimg-lightbox';
+  var footer = partNo
+    ? '<div style="margin-top:10px;text-align:center">'
+      + '<span style="color:rgba(255,255,255,.7);font-size:13px;margin-right:12px">'+partNo+'</span>'
+      + '<button onclick="event.stopPropagation();document.body.removeChild(this.closest(\'.pimg-lightbox\'));uploadPartImg(\''+partNo.replace(/'/g,"\\'")+'\')" '
+      + 'style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer">📷 เปลี่ยนรูป</button>'
+      + '</div>'
+    : '';
+  lb.innerHTML = '<div style="text-align:center" onclick="event.stopPropagation()"><img src="'+src+'">'+footer+'</div>';
+  lb.onclick = function(){ document.body.removeChild(lb); };
+  document.body.appendChild(lb);
+}
+
+// อัปโหลดรูปสำหรับอะไหล่ชิ้นนั้น
+function uploadPartImg(partNo, nameEN){
+  // Show mini popup: เลือกอัปโหลดเอง หรือ ค้นหาอัตโนมัติ
+  var mo = document.createElement('div');
+  mo.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:9000;display:flex;align-items:center;justify-content:center';
+  mo.innerHTML = '<div style="background:#fff;border-radius:16px;padding:24px;max-width:320px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2)">'
+    + '<div style="font-weight:700;font-size:15px;color:#1a4a2e;margin-bottom:4px">📷 รูปอะไหล่</div>'
+    + '<div style="font-size:13px;color:#8fa898;margin-bottom:16px">'+partNo+'</div>'
+    + '<button id="imgAutoBtn" class="btn bgd" style="width:100%;margin-bottom:10px;justify-content:center">🔍 ค้นหารูปอัตโนมัติ</button>'
+    + '<button id="imgUploadBtn" class="btn bo" style="width:100%;margin-bottom:10px;justify-content:center">📁 อัปโหลดรูปเอง</button>'
+    + '<button id="imgCancelBtn" class="btn bd" style="width:100%;justify-content:center">ยกเลิก</button>'
+    + '</div>';
+  document.body.appendChild(mo);
+
+  mo.querySelector('#imgCancelBtn').onclick = function(){ document.body.removeChild(mo); };
+  mo.onclick = function(e){ if(e.target===mo) document.body.removeChild(mo); };
+
+  // ── ค้นหาอัตโนมัติ ──
+  mo.querySelector('#imgAutoBtn').onclick = function(){
+    document.body.removeChild(mo);
+    toast('กำลังค้นหารูป '+partNo+'...','info');
+    callAPI('fetchPartImageAuto',{partNo:partNo, nameEN:nameEN||''}).then(function(res){
+      if(res && res.success && res.imageUrl){
+        _partImages[partNo] = res.imageUrl;
+          toast('พบรูปแล้วค่ะ '+partNo,'success');
+        refreshPartImgUI(partNo);
+      } else {
+        toast((res&&res.message)||'ไม่พบรูป — ลองอัปโหลดเองค่ะ','error');
+      }
+    });
+  };
+
+  // ── อัปโหลดเอง ──
+  mo.querySelector('#imgUploadBtn').onclick = function(){
+    document.body.removeChild(mo);
+    var inp = document.createElement('input');
+    inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = function(){
+      var file = inp.files[0]; if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var b64 = e.target.result;
+        var fn = 'part_'+partNo.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now()+'.jpg';
+        toast('กำลังอัปโหลดรูป...','info');
+        callAPI('uploadPhoto',{fileName:fn, base64:b64, folder:'parts'}).then(function(res){
+          if(res && res.success && res.directUrl){
+            callAPI('savePartImage',{partNo:partNo, imageUrl:res.directUrl}).then(function(){
+              _partImages[partNo] = res.directUrl;
+                      toast('บันทึกรูป '+partNo+' แล้วค่ะ','success');
+              refreshPartImgUI(partNo);
+            });
+          } else { toast('อัปโหลดไม่สำเร็จ: '+(res&&res.message||'error'),'error'); }
+        });
+      };
+      reader.readAsDataURL(file);
+    };
+    inp.click();
+  };
+}
+
+function refreshPartImgUI(partNo){
+  var url = getPartImgUrl(partNo);
+  if(!url) return;
+  // แทนที่ปุ่ม peek และ placeholder ทุกจุด
+  document.querySelectorAll('.btn-img-peek, .pimg-placeholder, .pimg-lg-ph').forEach(function(el){
+    var title = el.getAttribute('title') || el.textContent || '';
+    if(title.indexOf(partNo) < 0) return;
+    var isLg = el.className.indexOf('lg') >= 0;
+    var newImg = document.createElement('img');
+    newImg.src = url;
+    newImg.className = isLg ? 'pimg-lg' : 'pimg';
+    newImg.onclick = function(){ showImgLightbox(url, partNo); };
+    newImg.title = partNo;
+    el.parentNode.replaceChild(newImg, el);
+  });
+}
+
 var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7UGDdi5sJ4pM_sX1CkUvD39R7BQp3ES0LFP2eSWVnJBPyW19h6RmZ1BKuC_vow8TSbQ/exec';
 var GOOGLE_CLIENT_ID = '869824889081-n11nu7d53fso299hpr58ch4n6tmfal4t.apps.googleusercontent.com';
+
+// ── BEYOND GREEN EMAIL → ROLE MAP ────────────────────────────
+// พนักงานที่มีอีเมล @beyond-green.co.th จะเข้าระบบได้อัตโนมัติตาม role ด้านล่าง
+var BG_EMAIL_ROLES = {
+  'artitry@beyond-green.co.th':      { role:'SUPERVISOR', name:'หัวหน้าช่าง' },
+  'natthareeya@beyond-green.co.th':  { role:'MANAGER',    name:'ณัฐรีญา' },
+  'Hathaichanok@beyond-green.co.th': { role:'STOCK',      name:'หทัยชนก' },
+  'anuwit@beyond-green.co.th':       { role:'STOCK',      name:'อนุวิท' },
+  'sittinan@beyond-green.co.th':     { role:'STOCK',      name:'สิทธิณัน' },
+};
+// อีเมล @beyond-green.co.th ที่ไม่ได้ระบุ role ข้างบน → TECHNICIAN อัตโนมัติ
 
 // ── STATE ────────────────────────────────────────────────────
 var CU = null; // currentUser
@@ -619,6 +791,24 @@ var DEMO_JOBS = [
   {JobNo:'2569030606',CustomerName:'คัมปัส ยีส',SerialNos:'FO-02, FO-05',Location:'ภูเก็ต',OpenDate:'01/03/2569',Status:'OPEN'},
   {JobNo:'2569030707',CustomerName:'บลูทรี ภูเก็ต',SerialNos:'FO-13',Location:'ภูเก็ต',OpenDate:'07/03/2569',Status:'OPEN'},
 ];
+// Demo part images (public domain for preview)
+var _DEMO_PART_IMGS = {
+  '05-16U291':      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Deep_groove_ball_bearing.jpg/200px-Deep_groove_ball_bearing.jpg',
+  '07-16290250':    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Oil_seal.jpg/200px-Oil_seal.jpg',
+  '02-23U700014':   'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/O-ring.jpg/200px-O-ring.jpg',
+  '01BPB000010396': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Rechargeable-battery.jpg/200px-Rechargeable-battery.jpg',
+};
+(function(){ Object.assign(_partImages, _DEMO_PART_IMGS); })();
+
+// Demo part images (public domain for preview)
+var _DEMO_PART_IMGS = {
+  '05-16U291':      'https://upload.wikimedia.org/wikipedia/commons/thumb/7/72/Deep_groove_ball_bearing.jpg/200px-Deep_groove_ball_bearing.jpg',
+  '07-16290250':    'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Oil_seal.jpg/200px-Oil_seal.jpg',
+  '02-23U700014':   'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/O-ring.jpg/200px-O-ring.jpg',
+  '01BPB000010396': 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/77/Rechargeable-battery.jpg/200px-Rechargeable-battery.jpg',
+};
+(function(){ Object.assign(_partImages, _DEMO_PART_IMGS); })();
+
 var DEMO_ITEMS = [
   {PartNo:'05-16U291',NameTH:'ลูกปืน',NameEN:'BEARING 6205',Qty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
   {PartNo:'07-16290250',NameTH:'ซีลเพลาล่าง',NameEN:'SEAL LOWER SHAFT',Qty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
@@ -668,6 +858,27 @@ function initGSI(){
 
 function onGSI(resp){
   var p = parseJWT(resp.credential);
+  var emailLower = (p.email||'').toLowerCase();
+
+  // ── พนักงาน Beyond Green: ตรวจ domain + assign role อัตโนมัติ ──
+  if(emailLower.endsWith('@beyond-green.co.th')){
+    // ค้นหาใน BG_EMAIL_ROLES (case-insensitive)
+    var matchKey = Object.keys(BG_EMAIL_ROLES).find(function(k){
+      return k.toLowerCase() === emailLower;
+    });
+    if(matchKey){
+      var profile = BG_EMAIL_ROLES[matchKey];
+      CU = { email:p.email, name:profile.name, role:profile.role };
+      initApp();
+      return;
+    }
+    // พนักงาน beyond-green ที่ยังไม่ได้ map role → TECHNICIAN อัตโนมัติ
+    CU = { email:p.email, name:p.name||p.email.split('@')[0], role:'TECHNICIAN' };
+    initApp();
+    return;
+  }
+
+  // ── บุคคลภายนอก / Google Account อื่น: ดึง role จาก Server ──
   callAPI('getUserRole', {}, p.email).then(function(res){
     CU = {email:p.email, name:res.name||p.name||p.email.split('@')[0], role:res.role};
     initApp();
@@ -742,12 +953,14 @@ function mockAPI(action, data){
     return {success:true,data:Object.assign({},r,{items:DEMO_ITEMS})};
   }
   if(action==='getPartLocations') return {success:true,data:partLocs};
+  if(action==='getPartImages') return {success:true,data:Object.assign({},_partImages)};
+  if(action==='savePartImage'){if(data.partNo&&data.imageUrl)_partImages[data.partNo]=data.imageUrl;return {success:true,message:'บันทึกรูปแล้ว'};}
   if(action==='savePartLocation'){partLocs[data.partNo]=data.location;return {success:true,message:'บันทึกตำแหน่งแล้ว'};}
   if(action==='getSignature') return {success:true,signatureBase64:''};
   if(action==='saveSignature') return {success:true,message:'บันทึกลายเซ็นแล้ว'};
   if(action==='getUserRole'){var u=Object.values(DEMO_USERS).find(function(x){return x.email===data.email;});return {success:true,role:u?u.role:'TECHNICIAN',name:u?u.name:''};}
   if(action==='addJob') return {success:true,message:'[Demo] บันทึก Job แล้ว'};
-  if(action==='createRequisition') return {success:true,reqId:'PKT-BR-2569-DEMO',message:'ส่งใบเบิกแล้ว รอหัวหน้าช่างอนุมัติ'};
+  if(action==='createRequisition') return {success:true,reqId:'PKT-BR-2569-DEMO',message:'สร้างใบเบิกแล้ว\n✅ แจ้ง Stock เตรียมของแล้ว\n⏳ รอหัวหน้าช่างอนุมัติ'};
   if(action==='approveSupervisor') return {success:true,message:'อนุมัติโดยหัวหน้าช่างแล้ว'};
   if(action==='approveManager') return {success:true,message:'อนุมัติโดยผจก.แล้ว'};
   if(action==='rejectRequisition') return {success:true,message:'ปฏิเสธใบเบิกแล้ว'};
@@ -813,10 +1026,10 @@ function go(page){
   var t=document.getElementById('pgTitle');
   if(t) t.textContent=pgTitles[page]||page;
   if(page==='dashboard') loadDashboard();
-  if(page==='create') initCreate();
+  if(page==='create'){initCreate();}
   if(page==='list') {} // wait for search
   if(page==='approval') loadApproval();
-  if(page==='stock') loadStock();
+  if(page==='stock'){loadStock();}
   if(page==='pickup') loadPickupPage();
   if(page==='close') loadCloseSel();
   if(page==='print') loadPrintSel();
@@ -972,11 +1185,15 @@ function onAC(input, rid){
   dd.innerHTML=res.map(function(p,i){
     var pj=JSON.stringify(p).split("'").join("&#39;");
     var nth=p.nameTH?'<div class="an">'+hl(p.nameTH,q)+'</div>':'';
-    return '<div class="aci" data-i="'+i+'" onmousedown="selPart(\''+rid+'\',\''+pj+'\')">'
+    var imgH=partImgHtmlWithData(p.partNo,p.nameEN||'','sm');
+    return '<div class="aci" data-i="'+i+'" onmousedown="selPart(\''+rid+'\',\''+pj+'\')" style="display:flex;align-items:center;gap:8px;padding:6px 10px">'
+      +imgH
+      +'<div style="min-width:0;flex:1">'
       +'<div class="apn">'+hl(p.partNo,q)+'</div>'
       +'<div class="an">'+hl(p.nameEN,q)+'</div>'
       +nth
-      +'<div class="ag">'+p.group+'</div></div>';
+      +'<div class="ag">'+p.group+'</div>'
+      +'</div></div>';
   }).join('');
   _acIdx=-1;
   dd.classList.add('open');
@@ -1068,13 +1285,21 @@ function loadApproval(){
 function loadStock(){
   callAPI('getPartLocations',{}).then(function(lr){
     partLocs=lr.data||{};
-    return callAPI('getRequisitions',{status:'APPROVED'});
-  }).then(function(res){
+    // ดึงทั้ง APPROVED และ STOCK_NOTIFIED เพื่อให้ Stock เห็นทันทีที่ช่างส่งใบเบิก
+    return Promise.all([
+      callAPI('getRequisitions',{status:'APPROVED'}),
+      callAPI('getRequisitions',{status:'STOCK_NOTIFIED'})
+    ]);
+  }).then(function(results){
+    var approvedList=(results[0].data||[]);
+    var notifiedList=(results[1].data||[]);
+    var combined=approvedList.concat(notifiedList.filter(function(n){
+      return !approvedList.find(function(a){return a.ReqID===n.ReqID;});
+    }));
     var sl=document.getElementById('stList');
     if(!sl) return;
-    var pending=(res.data||[]).filter(function(r){return r.StatusStock!=='CLEARED';});
+    var pending=combined.filter(function(r){return r.StatusStock!=='CLEARED';});
     if(!pending.length){sl.innerHTML='<div class="card tc tm" style="padding:32px">ไม่มีรายการรอจัดของ 🎉</div>';return;}
-    var html='';
     var proms=pending.map(function(r){
       return callAPI('getRequisitionDetail',{id:r.ReqID}).then(function(dr){
         var items=dr.success?(dr.data.items||[]):[];
@@ -1083,16 +1308,22 @@ function loadStock(){
           var pn=it.PartNo||'';
           var loc=partLocs[pn]||'';
           var lid='loc_'+r.ReqID+'_'+pn.replace(/[^a-z0-9]/gi,'_');
-          var pnSafe=pn.replace(/'/g,"\\'");
-          var locSafe=loc.replace(/'/g,"\\'");
+          var pnSafe=pn.replace(/'/g,"\'");
+          var locSafe=loc.replace(/'/g,"\'");
+          var pImgH = partImgHtml(pn,'sm',it.NameEN||it.NameTH||'');
           itRows+='<tr>'
-            +'<td style="padding:4px 8px;font-size:12px;border-bottom:1px solid #eef2ef">'+pn+'</td>'
-            +'<td style="padding:4px 8px;font-size:12px;border-bottom:1px solid #eef2ef">'+(it.NameEN||it.NameTH||'-')+'</td>'
+            +'<td style="padding:4px 8px;border-bottom:1px solid #eef2ef;vertical-align:middle">'
+            +'<div style="display:flex;align-items:center;gap:8px">'
+            +pImgH
+            +'<div><div style="font-size:12px;font-weight:700;color:#1a4a2e">'+pn+'</div>'
+            +'<div style="font-size:11px;color:var(--g400)">'+(it.NameEN||it.NameTH||'-')+'</div></div>'
+            +'</div></td>'
             +'<td style="padding:4px 8px;font-size:12px;border-bottom:1px solid #eef2ef;text-align:center">'+(it.Qty||'')+' '+(it.Unit||'')+'</td>'
             +'<td style="padding:4px 8px;border-bottom:1px solid #eef2ef">'
             +'<div style="display:flex;align-items:center;gap:6px">'
             +'<span id="'+lid+'" style="font-size:12px;font-weight:700;color:var(--gm);min-width:60px">'+(loc||'—')+'</span>'
             +'<button class="btn bo bsm" style="padding:2px 8px;font-size:11px" onclick="editLoc(\''+r.ReqID+'\',\''+pnSafe+'\',\''+locSafe+'\')">✏️</button>'
+            +'<button class="btn bo bsm" style="padding:2px 8px;font-size:11px" onclick="uploadPartImg(\''+pnSafe+'\',\''+((it.NameEN||it.NameTH||'').replace(/\'/g,\'\')).replace(/\"/g,\'\')+'\')" title="อัปโหลดรูปอะไหล่">📷</button>'
             +'</div></td></tr>';
         });
         var tbl='';
@@ -1100,25 +1331,31 @@ function loadStock(){
           tbl='<div style="margin-top:10px;border:1px solid var(--g200);border-radius:6px;overflow:hidden">'
             +'<div style="background:var(--g50);padding:6px 10px;font-size:12px;font-weight:700;color:var(--gd);border-bottom:1px solid var(--g200)">📦 รายการอะไหล่ + ตำแหน่งจัดเก็บ</div>'
             +'<table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--g100)">'
-            +'<th style="padding:5px 8px;font-size:11px;text-align:left">Part No.</th>'
-            +'<th style="padding:5px 8px;font-size:11px;text-align:left">ชื่ออะไหล่</th>'
+            +'<th style="padding:5px 8px;font-size:11px;text-align:left">อะไหล่</th>'
             +'<th style="padding:5px 8px;font-size:11px;text-align:center">จำนวน</th>'
             +'<th style="padding:5px 8px;font-size:11px;text-align:left">📍 ตำแหน่งจัดเก็บ</th>'
             +'</tr></thead><tbody>'+itRows+'</tbody></table></div>';
         }
-        var stkBtn=r.StatusStock==='PENDING'
+        var pendingNote=r.StatusApproval==='PENDING_SUPERVISOR'
+          ?'<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:6px 10px;font-size:12px;color:#795548;margin-bottom:8px">⏳ ยังรอหัวหน้าช่างอนุมัติ — เตรียมของไว้ล่วงหน้าได้เลยค่ะ</div>'
+          :r.StatusApproval==='PENDING_MANAGER'
+          ?'<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:6px;padding:6px 10px;font-size:12px;color:#1565c0;margin-bottom:8px">⏳ รอผู้จัดการอนุมัติ — เตรียมของไว้ล่วงหน้าได้เลยค่ะ</div>'
+          :'';
+        var canAck=r.StatusStock==='PENDING'||r.StatusStock==='STOCK_NOTIFIED';
+        var stkBtn=canAck
           ?'<button class="btn bgd bsm" onclick="doStockAck(\''+r.ReqID+'\')">📦 รับจัดของ</button>'
           :'<span class="chip chip-grn">จัดของแล้ว โดย '+(r.StockHandlerEmail||'')+'</span>';
-        return '<div class="qc '+(r.StatusStock==='PENDING'?'urg':'')+'">'+
-          '<div class="fb2"><div><strong>'+r.ReqID+'</strong> '+stChip(r.StatusStock)+'</div><span class="tm" style="font-size:13px">'+r.OpenDate+'</span></div>'+
-          '<div class="dg" style="grid-template-columns:repeat(3,1fr);gap:8px 16px;margin-top:8px">'+
-          '<div class="di"><div class="dl">ผู้เบิก</div><div class="dv">'+r.RequesterName+'</div></div>'+
-          '<div class="di"><div class="dl">Job</div><div class="dv">'+r.JobNo+'</div></div>'+
-          '<div class="di"><div class="dl">ลูกค้า</div><div class="dv">'+r.CustomerName+'</div></div></div>'+
-          tbl+
-          '<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">'+
-          '<button class="btn bo bsm" onclick="openDetail(\''+r.ReqID+'\')">ดูรายละเอียด</button>'+
-          stkBtn+'</div></div>';
+        return '<div class="qc '+(canAck?'urg':'')+'">'
+          +'<div class="fb2"><div><strong>'+r.ReqID+'</strong> '+stChip(r.StatusStock)+'</div><span class="tm" style="font-size:13px">'+r.OpenDate+'</span></div>'
+          +pendingNote
+          +'<div class="dg" style="grid-template-columns:repeat(3,1fr);gap:8px 16px;margin-top:8px">'
+          +'<div class="di"><div class="dl">ผู้เบิก</div><div class="dv">'+r.RequesterName+'</div></div>'
+          +'<div class="di"><div class="dl">Job</div><div class="dv">'+r.JobNo+'</div></div>'
+          +'<div class="di"><div class="dl">ลูกค้า</div><div class="dv">'+r.CustomerName+'</div></div></div>'
+          +tbl
+          +'<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">'
+          +'<button class="btn bo bsm" onclick="openDetail(\''+r.ReqID+'\')">ดูรายละเอียด</button>'
+          +stkBtn+'</div></div>';
       });
     });
     Promise.all(proms).then(function(cards){
@@ -1300,7 +1537,8 @@ function openDetail(reqId){
     var t=document.getElementById('moTitle');
     if(t) t.textContent='ใบเบิก '+d.ReqID;
     var itRows=(d.items||[]).map(function(i){
-      return '<tr><td>'+(i.PartNo||'-')+'</td><td>'+(i.NameTH||'-')+'</td><td>'+(i.NameEN||'-')+'</td><td style="text-align:center">'+i.Qty+' '+(i.Unit||'')+'</td><td>'+(i.SerialNo||'-')+'</td><td>'+(i.Note||'-')+'</td></tr>';
+      var pImgD = partImgHtml(i.PartNo||'','sm',i.NameEN||i.NameTH||'');
+      return '<tr><td style="vertical-align:middle"><div style="display:flex;align-items:center;gap:6px">'+pImgD+'<span>'+(i.PartNo||'-')+'</span></div></td><td>'+(i.NameTH||'-')+'</td><td>'+(i.NameEN||'-')+'</td><td style="text-align:center">'+i.Qty+' '+(i.Unit||'')+'</td><td>'+(i.SerialNo||'-')+'</td><td>'+(i.Note||'-')+'</td></tr>';
     }).join('');
     function tl(icon,state,label,sub){
       var colors={done:'var(--gp)',wait:'var(--g100)',act:'var(--oral)'};
@@ -1337,7 +1575,7 @@ function openDetail(reqId){
     var isSup=CU.role==='SUPERVISOR'&&d.StatusApproval==='PENDING_SUPERVISOR';
     var isMgr=CU.role==='MANAGER'&&d.StatusApproval==='PENDING_MANAGER';
     if(isSup||isMgr) foot='<button class="btn bd" onclick="openNoteMo(\'reject\',\''+d.ReqID+'\');closeMo()">✕ ปฏิเสธ</button><button class="btn bp" onclick="openNoteMo(\'approve\',\''+d.ReqID+'\');closeMo()">✓ อนุมัติ</button>';
-    if(CU.role==='STOCK'&&d.StatusApproval==='APPROVED'&&d.StatusStock==='PENDING') foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
+    if(CU.role==='STOCK'&&(d.StatusStock==='PENDING'||d.StatusStock==='STOCK_NOTIFIED')) foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
     if(mf) mf.innerHTML=foot;
     var mo=document.getElementById('detailMo');
     if(mo) mo.classList.add('open');
@@ -1603,7 +1841,7 @@ function renderNew(d){
 
 // ── CHIPS ─────────────────────────────────────────────────────
 function apChip(s){var m={PENDING_SUPERVISOR:['chip-ora','⏳ รอหัวหน้า'],PENDING_MANAGER:['chip-blu','⏳ รอผจก.'],APPROVED:['chip-grn','✓ อนุมัติแล้ว'],REJECTED:['chip-red','✕ ปฏิเสธ']};var v=m[s]||['chip-gry',s];return '<span class="chip '+v[0]+'">'+v[1]+'</span>';}
-function stChip(s){var m={PENDING:['chip-gry','รอจัดของ'],ACKNOWLEDGED:['chip-gld','📦 จัดของแล้ว'],CLEARED:['chip-grn','✓ ปิดงานแล้ว']};var v=m[s]||['chip-gry',s];return '<span class="chip '+v[0]+'">'+v[1]+'</span>';}
+function stChip(s){var m={PENDING:['chip-gry','รอจัดของ'],STOCK_NOTIFIED:['chip-blu','📨 แจ้ง Stock แล้ว'],ACKNOWLEDGED:['chip-gld','📦 จัดของแล้ว'],CLEARED:['chip-grn','✓ ปิดงานแล้ว']};var v=m[s]||['chip-gry',s];return '<span class="chip '+v[0]+'">'+v[1]+'</span>';}
 
 // ── TOAST ─────────────────────────────────────────────────────
 function toast(msg, type){
@@ -1695,11 +1933,27 @@ function showAddPart(){
     +'<div class="fg"><label class="fl">Part No.<span class="rq">*</span></label><input class="fc" id="np_partNo" placeholder="เช่น 05-16U291"></div>'
     +'<div class="fg"><label class="fl">ชื่อภาษาไทย</label><input class="fc" id="np_nameTH" placeholder="เช่น ลูกปืน 6205"></div>'
     +'<div class="fg"><label class="fl">ชื่ออังกฤษ (EN)<span class="rq">*</span></label><input class="fc" id="np_nameEN" placeholder="เช่น BEARING 6205"></div>'
+    +'<div class="fg"><label class="fl">รูปอะไหล่ (ถ้ามี)</label>'
+    +'<div id="np_imgPreviewWrap" style="margin-bottom:6px;display:none"><img id="np_imgPreview" style="max-height:80px;border-radius:6px;border:1px solid var(--g200)"></div>'
+    +'<input type="file" id="np_imgFile" accept="image/*" class="fc" onchange="previewNewPartImg(this)" style="padding:4px">'
+    +'</div>'
     +'<div class="fg"><label class="fl">หมวดหมู่</label><input class="fc" id="np_group" placeholder="เช่น Electrical Components"></div>'
     +'<div class="fg"><label class="fl">หน่วย</label><input class="fc" id="np_unit" value="ชิ้น"></div>';
   if(moF) moF.innerHTML='<button class="btn bo" onclick="closeMo()">ยกเลิก</button>'
     +'<button class="btn bp" onclick="saveNewPart()">💾 บันทึกอะไหล่ใหม่</button>';
   mo.classList.add('open');
+}
+
+function previewNewPartImg(inp){
+  if(!inp.files||!inp.files[0]) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var w=document.getElementById('np_imgPreviewWrap');
+    var i=document.getElementById('np_imgPreview');
+    if(w) w.style.display='block';
+    if(i) i.src=e.target.result;
+  };
+  reader.readAsDataURL(inp.files[0]);
 }
 
 function saveNewPart(){
@@ -1711,11 +1965,34 @@ function saveNewPart(){
   var ut=document.getElementById('np_unit').value.trim()||'ชิ้น';
   var np={partNo:pn,nameTH:th,nameEN:en,group:gr,unit:ut,_search:(pn+' '+en+' '+th).toLowerCase()};
   if(typeof PARTS_DB !== 'undefined') PARTS_DB.unshift(np);
-  callAPI('savePartToDB',{partNo:pn,nameTH:th,nameEN:en,group:gr,unit:ut}).then(function(res){
-    toast(res.success?'บันทึกอะไหล่ใหม่แล้วค่ะ':'บันทึก local แล้ว',res.success?'success':'info');
-  });
-  closeMo();
-  addRow({partNo:pn,nameTH:th,nameEN:en,unit:ut});
+
+  var doSave = function(imgUrl){
+    if(imgUrl){
+      np.imageUrl = imgUrl;
+      _partImages[pn] = imgUrl;
+      callAPI('savePartImage',{partNo:pn,imageUrl:imgUrl});
+    }
+    callAPI('savePartToDB',{partNo:pn,nameTH:th,nameEN:en,group:gr,unit:ut}).then(function(res){
+      toast(res.success?'บันทึกอะไหล่ใหม่แล้วค่ะ':'บันทึก local แล้ว',res.success?'success':'info');
+    });
+    closeMo();
+    addRow({partNo:pn,nameTH:th,nameEN:en,unit:ut});
+  };
+
+  var imgFile=document.getElementById('np_imgFile');
+  if(imgFile && imgFile.files && imgFile.files[0]){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var fn='part_'+pn.replace(/[^a-zA-Z0-9]/g,'_')+'_'+Date.now()+'.jpg';
+      toast('กำลังอัปโหลดรูป...','info');
+      callAPI('uploadPhoto',{fileName:fn, base64:e.target.result, folder:'parts'}).then(function(r){
+        doSave(r&&r.success?r.directUrl:'');
+      });
+    };
+    reader.readAsDataURL(imgFile.files[0]);
+  } else {
+    doSave('');
+  }
 }
 
 // ── OVERRIDE initCreate: fix date + load job history ─────────
@@ -1753,9 +2030,11 @@ function searchParts(){
   var rows = res.map(function(p){
     var pjObj = {partNo:p.partNo, nameTH:p.nameTH||'', nameEN:p.nameEN||'', group:p.group||'', unit:'ชิ้น'};
     var pj = encodeURIComponent(JSON.stringify(pjObj));
-    var html = '<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #eef2ef;display:flex;justify-content:space-between;align-items:center;gap:8px" onclick="addPartFromEnc(decodeURIComponent(this.dataset.p))" ';
+    var imgH = partImgHtmlWithData(p.partNo, p.nameEN||'', 'sm');
+    var html = '<div style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #eef2ef;display:flex;align-items:center;gap:10px" onclick="addPartFromEnc(decodeURIComponent(this.dataset.p))" ';
     html += 'data-p="' + pj + '">';
-    html += '<div style="min-width:0">';
+    html += imgH;
+    html += '<div style="min-width:0;flex:1">';
     html += '<div style="font-weight:700;font-size:13px;color:#1a4a2e">' + p.partNo + '</div>';
     html += '<div style="font-size:12px;color:#4a5e51">' + p.nameEN + '</div>';
     if(p.nameTH) html += '<div style="font-size:12px;color:#8fa898">' + p.nameTH + '</div>';
