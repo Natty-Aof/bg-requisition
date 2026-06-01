@@ -1046,7 +1046,7 @@ function initApp(){
     if(na) na.classList.remove('hidden');
     if(ba) ba.classList.remove('hidden');
   }
-  if(['STOCK','ADMIN'].indexOf(CU.role)>=0){
+  if(['STOCK','ADMIN','MANAGER','SUPERVISOR'].indexOf(CU.role)>=0){
     var ns=document.getElementById('nStock'),bs=document.getElementById('bnSt');
     if(ns) ns.classList.remove('hidden');
     if(bs) bs.classList.remove('hidden');
@@ -1629,7 +1629,8 @@ function openDetail(reqId){
     var isSup=CU.role==='SUPERVISOR'&&d.StatusApproval==='PENDING_SUPERVISOR';
     var isMgr=CU.role==='MANAGER'&&d.StatusApproval==='PENDING_MANAGER';
     if(isSup||isMgr) foot='<button class="btn bd" onclick="openNoteMo(\'reject\',\''+d.ReqID+'\');closeMo()">✕ ปฏิเสธ</button><button class="btn bp" onclick="openNoteMo(\'approve\',\''+d.ReqID+'\');closeMo()">✓ อนุมัติ</button>';
-    if(CU.role==='STOCK'&&(d.StatusStock==='PENDING'||d.StatusStock==='STOCK_NOTIFIED')) foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
+    var canAckRole = CU.role==='STOCK'||CU.role==='MANAGER'||CU.role==='ADMIN';
+    if(canAckRole&&(d.StatusStock==='PENDING'||d.StatusStock==='STOCK_NOTIFIED')) foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
     if(mf) mf.innerHTML=foot;
     var mo=document.getElementById('detailMo');
     if(mo) mo.classList.add('open');
@@ -2121,13 +2122,11 @@ var pickupPhotoB64 = null;
 function loadPickupPage(){
   callAPI('getRequisitions',{}).then(function(res){
     var items = (res.data||[]).filter(function(r){
-      // แสดงใบเบิกที่ APPROVED แล้ว และ Stock จัดของแล้ว/กำลังจัดอยู่ และยังไม่ได้รับของ
+      // ขึ้นทันทีที่ Stock กด "รับจัดของ" (ACKNOWLEDGED) — ไม่ต้องรอ Manager อนุมัติ
       var stockReady = r.StatusStock === 'ACKNOWLEDGED'
-                    || r.StatusStock === 'STOCK_NOTIFIED'
                     || r.StatusStock === 'DISPATCHED';
-      var approved = r.StatusApproval === 'APPROVED';
-      var notPickedUp = r.StatusStock !== 'PICKED_UP' && r.StatusStock !== 'CLEARED';
-      return approved && notPickedUp;
+      var notDone = r.StatusStock !== 'PICKED_UP' && r.StatusStock !== 'CLEARED';
+      return stockReady && notDone;
     });
     // ช่างเห็นเฉพาะของตัวเอง / role อื่นเห็นทั้งหมด
     if(CU.role === 'TECHNICIAN' && !window._demo){
