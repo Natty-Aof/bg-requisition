@@ -168,8 +168,12 @@ textarea.fc{min-height:70px;resize:vertical;}
 .pimg-lg-ph:hover{border-color:var(--gm);background:var(--gp);}
 .pimg-lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:zoom-out;}
 .pimg-lightbox img{max-width:88vw;max-height:80vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);}
-.btn-img-peek{background:none;border:1px solid var(--g200);border-radius:5px;padding:1px 6px;font-size:14px;cursor:pointer;color:var(--g500);line-height:1.4;transition:background .15s;}
+.btn-img-peek{background:none;border:1px solid var(--g200);border-radius:5px;padding:2px 8px;font-size:12px;cursor:pointer;color:var(--g500);line-height:1.4;transition:background .15s;white-space:nowrap;}
 .btn-img-peek:hover{background:var(--gp);border-color:var(--gm);}
+.btn-img-view-only{color:var(--gm);border-color:var(--gm);}
+.btn-img-view-only:hover{background:var(--gp);}
+.btn-img-upload{background:none;border:1px solid var(--g200);border-radius:4px;cursor:pointer;color:var(--g400);transition:background .15s;}
+.btn-img-upload:hover{background:var(--gp);border-color:var(--gm);}
 
 /* SIG */
 .sigrow{display:flex;gap:2mm;margin-bottom:2.5mm;align-items:flex-end;}
@@ -643,30 +647,29 @@ function canEditPartImg(){
 
 function partImgHtml(partNo, size, nameEN){
   if(!partNo) return '';
-  var enSafe = (nameEN||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
   var pnSafe = (partNo||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+  var enSafe = (nameEN||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
   var url = getPartImgUrl(partNo);
   var canEdit = canEditPartImg();
+
   if(url){
+    // มีรูปแล้ว — ทุกคนดูได้ + คนมีสิทธิ์เปลี่ยนได้
     var cls = size==='lg' ? 'pimg-lg' : 'pimg';
-    var btn = document.createElement('img');
-    btn.className = cls;
-    btn.src = url;
-    btn.title = partNo;
-    btn.onclick = function(){ showImgLightbox(url, partNo); };
-    return btn.outerHTML;
+    var editBtn = canEdit
+      ? '<button class="btn-img-upload" data-pn="'+pnSafe+'" data-en="'+enSafe+'" title="เปลี่ยนรูป" style="font-size:11px;padding:1px 5px;margin-left:3px">📷</button>'
+      : '';
+    return '<span style="display:inline-flex;align-items:center;gap:3px">'
+      + '<img class="'+cls+'" src="'+url+'" data-pn="'+pnSafe+'" title="'+partNo+'">'
+      + editBtn
+      + '</span>';
   }
+
+  // ไม่มีรูป — ทุกคนเห็นปุ่ม 🖼 (กดแล้วถ้าไม่มีรูปจะบอกว่าไม่มี)
+  // คนมีสิทธิ์ → กดแล้วอัปโหลดได้
   if(canEdit){
-    var b = document.createElement('button');
-    b.className = 'btn-img-peek';
-    b.title = 'กดเพื่ออัปโหลดรูป ' + partNo;
-    b.textContent = '📷';
-    b.setAttribute('data-pn', partNo);
-    b.setAttribute('data-en', nameEN||'');
-    b.onclick = function(){ peekPartImg(this.dataset.pn, this.dataset.en, this); };
-    return b.outerHTML;
+    return '<button class="btn-img-peek" data-pn="'+pnSafe+'" data-en="'+enSafe+'" title="กดเพื่ออัปโหลดรูป '+partNo+'">📷 เพิ่มรูป</button>';
   }
-  return '<span style="color:var(--g200);font-size:14px">—</span>';
+  return '<button class="btn-img-peek btn-img-view-only" data-pn="'+pnSafe+'" data-en="'+enSafe+'" title="ดูรูป '+partNo+'">🖼 ดูรูป</button>';
 }
 
 // alias เพื่อ backward compat
@@ -1004,6 +1007,30 @@ function mockAPI(action, data){
 }
 
 // ── INIT APP ─────────────────────────────────────────────────
+// ── Image button event delegation (ใช้แทน onclick inline) ──
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.btn-img-peek, .btn-img-upload');
+  if(!btn) return;
+  var pn = btn.dataset.pn || '';
+  var en = btn.dataset.en || '';
+  if(btn.classList.contains('btn-img-view-only')){
+    // ช่าง — ดูรูปอย่างเดียว
+    fetchOnePartImg(pn, en, function(url){
+      if(url) showImgLightbox(url, pn);
+      else toast('ยังไม่มีรูปอะไหล่ชิ้นนี้ค่ะ','info');
+    });
+  } else if(btn.classList.contains('btn-img-peek')){
+    peekPartImg(pn, en, btn);
+  } else if(btn.classList.contains('btn-img-upload')){
+    uploadPartImg(pn, en);
+  }
+  // img click — lightbox
+  var img = e.target.closest('.pimg,.pimg-lg');
+  if(img && img.src){
+    showImgLightbox(img.src, img.dataset.pn||'');
+  }
+});
+
 function initApp(){
   var ls = document.getElementById('ls');
   var ap = document.getElementById('app');
@@ -2094,11 +2121,13 @@ var pickupPhotoB64 = null;
 function loadPickupPage(){
   callAPI('getRequisitions',{}).then(function(res){
     var items = (res.data||[]).filter(function(r){
-      // แสดงใบเบิกที่ Stock จัดเสร็จแล้ว (ACKNOWLEDGED) และยังไม่ได้รับของ
-      var stockReady = r.StatusStock === 'ACKNOWLEDGED' || r.StatusStock === 'DISPATCHED';
+      // แสดงใบเบิกที่ APPROVED แล้ว และ Stock จัดของแล้ว/กำลังจัดอยู่ และยังไม่ได้รับของ
+      var stockReady = r.StatusStock === 'ACKNOWLEDGED'
+                    || r.StatusStock === 'STOCK_NOTIFIED'
+                    || r.StatusStock === 'DISPATCHED';
       var approved = r.StatusApproval === 'APPROVED';
-      var notPickedUp = !r.PickedUpAt;
-      return stockReady && approved && notPickedUp;
+      var notPickedUp = r.StatusStock !== 'PICKED_UP' && r.StatusStock !== 'CLEARED';
+      return approved && notPickedUp;
     });
     // ช่างเห็นเฉพาะของตัวเอง / role อื่นเห็นทั้งหมด
     if(CU.role === 'TECHNICIAN' && !window._demo){
