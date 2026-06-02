@@ -653,7 +653,7 @@ function fetchOnePartImg(partNo, nameEN, callback){
 
 // สร้างปุ่ม "ดูรูป" on-demand — ไม่โหลดรูปจนกว่าจะกด
 function canEditPartImg(){
-  return CU && (CU.role==='MANAGER'||CU.role==='SUPERVISOR'||CU.role==='STOCK'||CU.role==='ADMIN');
+  return CU && ['MANAGER','SUPERVISOR','STOCK','ADMIN'].indexOf(CU.role)>=0;
 }
 
 function partImgHtml(partNo, size, nameEN){
@@ -888,28 +888,31 @@ function onGSI(resp){
   var p = parseJWT(resp.credential);
   var emailLower = (p.email||'').toLowerCase();
 
-  // ── พนักงาน Beyond Green: ตรวจ domain + assign role อัตโนมัติ ──
-  if(emailLower.endsWith('@beyond-green.co.th')){
-    // ค้นหาใน BG_EMAIL_ROLES (case-insensitive)
-    var matchKey = Object.keys(BG_EMAIL_ROLES).find(function(k){
-      return k.toLowerCase() === emailLower;
-    });
-    if(matchKey){
-      var profile = BG_EMAIL_ROLES[matchKey];
-      CU = { email:p.email, name:profile.name, role:profile.role };
-      initApp();
-      return;
-    }
-    // พนักงาน beyond-green ที่ยังไม่ได้ map role → TECHNICIAN อัตโนมัติ
-    CU = { email:p.email, name:p.name||p.email.split('@')[0], role:'TECHNICIAN' };
+  // ── ตรวจ BG_EMAIL_ROLES ก่อน (hardcode สำหรับคนสำคัญ) ──
+  var matchKey = Object.keys(BG_EMAIL_ROLES).find(function(k){
+    return k.toLowerCase() === emailLower;
+  });
+  if(matchKey){
+    var profile = BG_EMAIL_ROLES[matchKey];
+    CU = { email:p.email, name:profile.name, role:profile.role };
     initApp();
     return;
   }
 
-  // ── บุคคลภายนอก / Google Account อื่น: ดึง role จาก Server ──
+  // ── ทุก email (รวม @beyond-green.co.th) ดึง role จาก Sheet Users ──
   callAPI('getUserRole', {}, p.email).then(function(res){
-    CU = {email:p.email, name:res.name||p.name||p.email.split('@')[0], role:res.role};
-    initApp();
+    if(res && res.role && res.role !== 'UNKNOWN'){
+      CU = {email:p.email, name:res.name||p.name||p.email.split('@')[0], role:res.role};
+      initApp();
+      return;
+    }
+    // ถ้าไม่มีใน Sheet → @beyond-green.co.th ได้ TECHNICIAN, อื่นๆ denied
+    if(emailLower.endsWith('@beyond-green.co.th')){
+      CU = { email:p.email, name:p.name||p.email.split('@')[0], role:'TECHNICIAN' };
+      initApp();
+    } else {
+      toast('ไม่มีสิทธิ์เข้าใช้งานระบบค่ะ','error');
+    }
   });
 }
 
@@ -1054,12 +1057,12 @@ function initApp(){
   if(un) un.textContent=CU.name;
   if(ur) ur.textContent=roleLabel(CU.role);
   if(ue) ue.textContent=CU.email;
-  if(['SUPERVISOR','MANAGER','ADMIN'].indexOf(CU.role)>=0){
+  if(['SUPERVISOR','MANAGER'].indexOf(CU.role)>=0){
     var na=document.getElementById('nApproval'),ba=document.getElementById('bnAp');
     if(na) na.classList.remove('hidden');
     if(ba) ba.classList.remove('hidden');
   }
-  if(['STOCK','ADMIN','MANAGER','SUPERVISOR'].indexOf(CU.role)>=0){
+  if(['STOCK','MANAGER'].indexOf(CU.role)>=0){
     var ns=document.getElementById('nStock'),bs=document.getElementById('bnSt');
     if(ns) ns.classList.remove('hidden');
     if(bs) bs.classList.remove('hidden');
@@ -1068,7 +1071,7 @@ function initApp(){
 }
 
 function roleLabel(r){
-  var m={TECHNICIAN:'ช่าง / ผู้เบิก',SUPERVISOR:'หัวหน้าช่าง',MANAGER:'ผู้จัดการ',STOCK:'แอดมิน Stock',ADMIN:'Admin'};
+  var m={TECHNICIAN:'ช่าง / ผู้เบิก',SUPERVISOR:'หัวหน้าช่าง',MANAGER:'ผู้จัดการ',STOCK:'แอดมิน Stock',ADMIN:'แอดมิน'};
   return m[r]||r;
 }
 
@@ -1312,7 +1315,7 @@ function loadApproval(){
   // SUPERVISOR เห็นเฉพาะ PENDING_SUPERVISOR
   // MANAGER/ADMIN เห็นทั้ง PENDING_SUPERVISOR และ PENDING_MANAGER
   var isSup = CU.role === 'SUPERVISOR';
-  var isMgr = ['MANAGER','ADMIN'].indexOf(CU.role) >= 0;
+  var isMgr = ['MANAGER','ADMIN','STOCK','SUPERVISOR'].indexOf(CU.role) >= 0;
   var status = isSup ? 'PENDING_SUPERVISOR' : '';
   callAPI('getRequisitions', {status: status}).then(function(res){
     // กรองเฉพาะที่รออนุมัติ
@@ -1640,9 +1643,9 @@ function openDetail(reqId){
       +tl(d.ClosedAt?'✓':'…',d.ClosedAt?'done':'wait','ปิดงาน'+(d.IMNumber?' (RL: '+d.IMNumber+')':''),d.ClosedAt?'เรียบร้อย':'รอดำเนินการ');
     var mf=document.getElementById('moFoot'), foot='';
     var isSup=CU.role==='SUPERVISOR'&&d.StatusApproval==='PENDING_SUPERVISOR';
-    var isMgr=CU.role==='MANAGER'&&d.StatusApproval==='PENDING_MANAGER';
+    var isMgr=['MANAGER','SUPERVISOR','STOCK','ADMIN'].indexOf(CU.role)>=0&&d.StatusApproval==='PENDING_MANAGER';
     if(isSup||isMgr) foot='<button class="btn bd" onclick="openNoteMo(\'reject\',\''+d.ReqID+'\');closeMo()">✕ ปฏิเสธ</button><button class="btn bp" onclick="openNoteMo(\'approve\',\''+d.ReqID+'\');closeMo()">✓ อนุมัติ</button>';
-    var canAckRole = CU.role==='STOCK'||CU.role==='MANAGER'||CU.role==='ADMIN';
+    var canAckRole = ['STOCK','MANAGER'].indexOf(CU.role)>=0;
     if(canAckRole&&(d.StatusStock==='PENDING'||d.StatusStock==='STOCK_NOTIFIED')) foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
     if(mf) mf.innerHTML=foot;
     var mo=document.getElementById('detailMo');
