@@ -19,7 +19,7 @@
   --r: 10px; --rs: 6px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Sarabun', sans-serif; background: var(--g50); color: var(--g800); min-height: 100vh; font-size: 15px; }
+body { font-family: 'Sarabun', sans-serif; background: var(--g50); color: var(--g800); min-height: 100vh; font-size: 15px; overflow-x:hidden; }
 #app { display: flex; min-height: 100vh; }
 
 /* SIDEBAR */
@@ -38,11 +38,11 @@ nav { flex:1; padding:8px 0; }
 .ni .ic { font-size:16px; width:20px; text-align:center; }
 .badge { margin-left:auto; background:var(--gold); color:var(--gd); font-size:11px; font-weight:700; border-radius:10px; padding:1px 7px; }
 
-.main { margin-left:230px; flex:1; display:flex; flex-direction:column; background:var(--bg); min-height:100vh; }
+.main { margin-left:230px; flex:1; display:flex; flex-direction:column; background:var(--bg); min-height:100vh; overflow-x:hidden; }
 .topbar { background:#fff; border-bottom:1px solid var(--g200); padding:12px 28px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:90; box-shadow:var(--sh); }
 .topbar h1 { font-family:'Prompt',sans-serif; font-size:18px; font-weight:600; color:var(--gd); }
 .topbar .sub { color:var(--g400); font-size:13px; margin-left:auto; }
-.content { padding:24px 32px; flex:1; max-width:1400px; width:100%; }
+.content { padding:24px 32px; flex:1; width:100%; min-width:0; overflow-x:hidden; }
 
 /* CARDS */
 .card { background:#fff; border-radius:var(--r); box-shadow:var(--sh); border:1px solid var(--g200); padding:20px; margin-bottom:16px; }
@@ -1755,53 +1755,69 @@ function openStockAckModal(reqId){
   _stockAckReqId = reqId;
   var modal = document.getElementById('stockAckModal');
   var body  = document.getElementById('stockAckBody');
-  if(!modal || !body) return;
+  if(!modal||!body) return;
   body.innerHTML = '<div style="text-align:center;padding:20px">⏳ กำลังโหลด...</div>';
   modal.classList.remove('hidden');
-
   callAPI('getRequisitionDetail',{id:reqId}).then(function(res){
-    _stockAckItems = res.data ? res.data.items || [] : [];
-    var html = '<p style="font-size:14px;color:var(--g500);margin-bottom:12px">ใบเบิก <strong>'+reqId+'</strong> — กรอกจำนวนที่จ่ายได้จริงค่ะ</p>';
-    html += '<table style="width:100%;border-collapse:collapse">';
-    html += '<thead><tr style="background:var(--gm);color:#fff">'
-      + '<th style="padding:6px 8px;font-size:12px;text-align:left">Part No.</th>'
-      + '<th style="padding:6px 8px;font-size:12px;text-align:left">ชื่ออะไหล่</th>'
-      + '<th style="padding:6px 8px;font-size:12px;text-align:center">เบิก</th>'
-      + '<th style="padding:6px 8px;font-size:12px;text-align:center">จ่ายจริง</th>'
-      + '<th style="padding:6px 8px;font-size:12px;text-align:center">ขาด</th>'
-      + '<th style="padding:6px 8px;font-size:12px;text-align:left">Serial No.<span style="font-size:10px;opacity:.8"> (ถ้ามี)</span></th>'
-      + '</tr></thead><tbody>';
-
-    _stockAckItems.forEach(function(it, i){
-      var req = parseFloat(it.Qty) || 0;
-      // ตรวจว่าต้องระบุ Serial No. หรือไม่ (ไฟฟ้า/แบต/อุปกรณ์ที่มี SerialNo ใน DB)
-      var needSerial = it.SerialNo || (it.NameEN && (
-        it.NameEN.toUpperCase().indexOf('BATTERY')>=0 ||
-        it.NameEN.toUpperCase().indexOf('CONTROLLER')>=0 ||
-        it.NameEN.toUpperCase().indexOf('MOTOR')>=0 ||
+    _stockAckItems = res.data ? res.data.items||[] : [];
+    var el = document.getElementById('stockAckBody');
+    if(!el) return;
+    el.innerHTML = '';
+    var title = document.createElement('p');
+    title.style.cssText = 'font-size:14px;margin-bottom:12px';
+    title.innerHTML = 'ใบเบิก <strong>'+reqId+'</strong> — กรอกจำนวนที่จ่ายได้จริงค่ะ';
+    el.appendChild(title);
+    _stockAckItems.forEach(function(it,i){
+      var req = parseFloat(it.Qty)||0;
+      var needSN = !!(it.SerialNo||(it.NameEN&&(
+        it.NameEN.toUpperCase().indexOf('BATTERY')>=0||
+        it.NameEN.toUpperCase().indexOf('CONTROLLER')>=0||
+        it.NameEN.toUpperCase().indexOf('MOTOR')>=0||
         it.NameEN.toUpperCase().indexOf('CHARGER')>=0
-      ));
-      html += '<tr style="border-bottom:1px solid #eef2ef">'
-        + '<td style="padding:6px 8px;font-size:12px">'+it.PartNo+'</td>'
-        + '<td style="padding:6px 8px;font-size:12px">'+(it.NameEN||it.NameTH||'-')+'</td>'
-        + '<td style="padding:6px 8px;font-size:12px;text-align:center">'+req+' '+(it.Unit||'ชิ้น')+'</td>'
-        + '<td style="padding:6px 8px;text-align:center">'
-        + '<input type="number" id="sack_actual_'+i+'" value="'+req+'" min="0" max="'+req+'" '
-        + 'style="width:60px;text-align:center;border:1px solid var(--g200);border-radius:4px;padding:3px" '
-        + 'oninput="updateShortage('+i+','+req+')">'
-        + '</td>'
-        + '<td style="padding:6px 8px;font-size:13px;font-weight:700;text-align:center;color:var(--red)" id="sack_short_'+i+'">0</td>'
-        + '<td style="padding:6px 8px">'
-        + '<input type="text" id="sack_serial_'+i+'" placeholder="'+(needSerial?'บังคับระบุ ⚠️':'ระบุถ้ามี')+'" '
-        + 'style="width:120px;border:1px solid '+(needSerial?'var(--red)':'var(--g200)')+';border-radius:4px;padding:3px;font-size:12px">'
-        + '</td>'
-        + '</tr>';
+      )));
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#f8faf9;border:1px solid #d4ddd7;border-radius:8px;padding:10px;margin-bottom:8px';
+      var nameDiv = document.createElement('div');
+      nameDiv.style.cssText = 'font-size:13px;font-weight:700;color:#1a4a2e';
+      nameDiv.textContent = it.NameEN||it.NameTH||'-';
+      card.appendChild(nameDiv);
+      var pnDiv = document.createElement('div');
+      pnDiv.style.cssText = 'font-size:11px;color:#8fa898;margin-bottom:8px';
+      pnDiv.textContent = it.PartNo;
+      card.appendChild(pnDiv);
+      var grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px';
+      // เบิก
+      var c1 = document.createElement('div');
+      c1.innerHTML = '<div style="font-size:11px;color:#8fa898">เบิก</div><div style="font-size:15px;font-weight:700">'+req+' '+(it.Unit||'ชิ้น')+'</div>';
+      // จ่ายจริง
+      var c2 = document.createElement('div');
+      var inp = document.createElement('input');
+      inp.type='number'; inp.id='sack_actual_'+i; inp.value=req; inp.min=0; inp.max=req;
+      inp.style.cssText='width:100%;text-align:center;border:1.5px solid #2d6a4f;border-radius:6px;padding:4px;font-size:15px;font-weight:700';
+      inp.oninput = (function(idx,r){ return function(){ updateShortage(idx,r); }; })(i,req);
+      c2.innerHTML = '<div style="font-size:11px;color:#8fa898">จ่ายจริง</div>';
+      c2.appendChild(inp);
+      // ขาด
+      var c3 = document.createElement('div');
+      c3.innerHTML = '<div style="font-size:11px;color:#8fa898">ขาด</div><div id="sack_short_'+i+'" style="font-size:15px;font-weight:700;color:#c62828">0</div>';
+      grid.appendChild(c1); grid.appendChild(c2); grid.appendChild(c3);
+      card.appendChild(grid);
+      // Serial No.
+      var snLabel = document.createElement('div');
+      snLabel.style.cssText='font-size:11px;color:#8fa898;margin-bottom:4px';
+      snLabel.innerHTML='Serial No. '+(needSN?'<span style="color:#c62828">*บังคับ</span>':'(ถ้ามี)');
+      var snInp = document.createElement('input');
+      snInp.type='text'; snInp.id='sack_serial_'+i;
+      snInp.placeholder=needSN?'บังคับระบุ':'ระบุถ้ามี';
+      snInp.style.cssText='width:100%;border:1.5px solid '+(needSN?'#c62828':'#d4ddd7')+';border-radius:6px;padding:5px;font-size:13px;box-sizing:border-box';
+      card.appendChild(snLabel); card.appendChild(snInp);
+      el.appendChild(card);
     });
-
-    html += '</tbody></table>';
-    html += '<div style="margin-top:12px;padding:10px;background:#fff8e1;border-radius:6px;font-size:13px;color:#795548">'
-      + '⚠️ ถ้าจ่ายไม่ครบ ระบบจะบันทึกของขาดไว้เพื่อดึงรายงานค่ะ</div>';
-    body.innerHTML = html;
+    var warn = document.createElement('div');
+    warn.style.cssText='margin-top:12px;padding:10px;background:#fff8e1;border-radius:6px;font-size:13px;color:#795548';
+    warn.textContent='⚠️ ถ้าจ่ายไม่ครบ ระบบจะบันทึกของขาดไว้เพื่อดึงรายงานค่ะ';
+    el.appendChild(warn);
   });
 }
 
