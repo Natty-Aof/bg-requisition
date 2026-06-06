@@ -1821,6 +1821,35 @@ function openStockAckModal(reqId){
   });
 }
 
+
+// ── DELETE FUNCTIONS (MANAGER only) ─────────────────────────
+function deleteReq(reqId){
+  if(CU.role !== 'MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
+  if(!confirm('ยืนยันลบใบเบิก '+reqId+' ? (ไม่สามารถกู้คืนได้)')) return;
+  callAPI('deleteRequisition',{id:reqId}).then(function(res){
+    toast(res.message, res.success?'success':'error');
+    if(res.success){ loadDashboard(); loadList(); }
+  });
+}
+
+function deleteStockEntry(entryId){
+  if(CU.role !== 'MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
+  if(!confirm('ยืนยันลบรายการ Stock Card '+entryId+' ?')) return;
+  callAPI('deleteStockCardEntry',{id:entryId}).then(function(res){
+    toast(res.message, res.success?'success':'error');
+    if(res.success){ loadStockCard(); loadInventory(); }
+  });
+}
+
+function deleteSalesOrder(soNo){
+  if(CU.role !== 'MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
+  if(!confirm('ยืนยันลบใบขาย '+soNo+' ?')) return;
+  callAPI('deleteSalesOrder',{soNo:soNo}).then(function(res){
+    toast(res.message, res.success?'success':'error');
+    if(res.success) initSales();
+  });
+}
+
 function updateShortage(idx, reqQty){
   var actualEl = document.getElementById('sack_actual_'+idx);
   var shortEl  = document.getElementById('sack_short_'+idx);
@@ -2932,6 +2961,13 @@ mockAPI = function(action, data) {
       ],
     };
   }
+  if(action==='deleteRequisition'){
+    var idx2=DEMO_REQS.findIndex(function(r){return r.ReqID===data.id;});
+    if(idx2>=0){DEMO_REQS.splice(idx2,1);return{success:true,message:'ลบใบเบิก '+data.id+' แล้วค่ะ'};}
+    return{success:false,message:'ไม่พบใบเบิก'};
+  }
+  if(action==='deleteStockCardEntry') return{success:true,message:'ลบรายการ Stock Card แล้วค่ะ'};
+  if(action==='deleteSalesOrder') return{success:true,message:'ลบใบขาย '+data.soNo+' แล้วค่ะ'};
   if (action === 'exportExcel') {
     return { success:false, message:'[Demo] Export ใช้ได้เฉพาะตอน Deploy จริงค่ะ (ต้องใช้ Google Drive)' };
   }
@@ -2987,9 +3023,10 @@ function loadStockCard(){
       OUT_CONTRACT:'🚌 รถสัมปทาน', OUT_WARRANTY:'🔧 Warranty',
       OUT_BRANCH:'🏢 ส่งสาขา', ADJUST:'⚖️ ปรับยอด'
     };
+    var delCol = (CU&&CU.role==='MANAGER') ? '<th style="width:40px"></th>' : '<th style="width:0"></th>';
     var html = '<div class="card" style="padding:0;overflow:hidden"><div class="tw"><table class="it"><thead><tr>'
       +'<th>วันที่</th><th>ประเภท</th><th>Part No.</th><th>ชื่ออะไหล่</th>'
-      +'<th style="text-align:center">จำนวน</th><th>Serial No.</th><th>อ้างอิง</th><th>หมายเหตุ</th>'
+      +'<th style="text-align:center">จำนวน</th><th>Serial No.</th><th>อ้างอิง</th><th>หมายเหตุ</th>'+delCol
       +'</tr></thead><tbody>';
     entries.forEach(function(e){
       var typeClass = e.Type==='IN'||e.Type==='ADJUST' ? 'chip-grn' : 'chip-red';
@@ -3003,6 +3040,7 @@ function loadStockCard(){
         +'<td style="font-size:12px">'+(e.SerialNo||'-')+'</td>'
         +'<td style="font-size:12px">'+(e.RefNo||'-')+'</td>'
         +'<td style="font-size:12px">'+(e.Note||'-')+'</td>'
+        +(CU&&CU.role==='MANAGER'?'<td><button class="btn bd bsm" style="padding:2px 6px" onclick="deleteStockEntry(this.dataset.id)" data-id="'+e.EntryID+'">🗑️</button></td>':'<td></td>')
         +'</tr>';
     });
     html += '</tbody></table></div></div>';
