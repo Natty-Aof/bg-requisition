@@ -106,7 +106,14 @@ textarea.fc{min-height:70px;resize:vertical;}
 
 /* MODAL */
 .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;}
-.mo.open{display:flex;}
+.mo.open,.mo:not(.hidden){display:flex;}
+.mow{background:#fff;border-radius:var(--r);width:90%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--shl);}
+.moh{padding:14px 18px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.mot{font-family:'Prompt',sans-serif;font-size:16px;font-weight:600;color:var(--gd);}
+.mob{padding:18px;}
+.mof{padding:12px 18px;border-top:1px solid var(--g200);display:flex;gap:10px;justify-content:flex-end;}
+.mcl{background:none;border:none;cursor:pointer;font-size:20px;color:var(--g400);line-height:1;padding:0;}
+.mcl:hover{color:var(--red);}
 .md{background:#fff;border-radius:var(--r);width:90%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--shl);}
 .mh{padding:16px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
 .mh h2{font-family:'Prompt',sans-serif;font-size:16px;font-weight:600;color:var(--gd);}
@@ -1290,6 +1297,9 @@ document.addEventListener('click', function(e){
     var rid2 = btn.dataset.rid||'';
     if(rid2) openDetail(rid2);
   }
+  if(btn.classList.contains('del-req-btn')){
+    deleteReq(btn.dataset.rid||'');
+  }
 });
 
 function initApp(){
@@ -1368,7 +1378,8 @@ function loadDashboard(){
     if(ab){ ab.textContent = apCount; ab.style.display = apCount > 0 ? 'inline' : 'none'; }
     if(sb){ sb.textContent = s.stockPending||0; }
     var rows=(res.recent||[]).map(function(r){
-      return '<tr><td><strong>'+r.ReqID+'</strong></td><td>'+r.OpenDate+'</td><td>'+r.JobNo+'</td><td>'+(r.RequesterName||r.RequesterEmail||'')+'</td><td>'+r.CustomerName+'</td><td>'+apChip(r.StatusApproval)+'</td><td>'+stChip(r.StatusStock)+'</td><td><button class="btn bo bsm" onclick="openDetail(\''+r.ReqID+'\')">ดูรายละเอียด</button></td></tr>';
+      var _db2=(CU&&CU.role==='MANAGER')?'<button class="btn bd bsm del-req-btn" style="padding:2px 7px;margin-left:4px" data-rid="'+r.ReqID+'">🗑️</button>':'';
+      return '<tr><td><strong>'+r.ReqID+'</strong></td><td>'+r.OpenDate+'</td><td>'+r.JobNo+'</td><td>'+(r.RequesterName||r.RequesterEmail||'')+'</td><td>'+r.CustomerName+'</td><td>'+apChip(r.StatusApproval)+'</td><td>'+stChip(r.StatusStock)+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="openDetail(\''+r.ReqID+'\')">ดู</button>'+_db2+'</td></tr>';
     }).join('');
     var dt=document.getElementById('dashTbl');
     if(dt) dt.innerHTML=rows||'<tr><td colspan="8" class="tc tm" style="padding:24px">ยังไม่มีรายการ</td></tr>';
@@ -1551,7 +1562,8 @@ function loadList(){
   var filter={month:document.getElementById('fMonth').value,jobNo:document.getElementById('fJob').value,status:document.getElementById('fStatus').value,myOnly:document.getElementById('fMyOnly').checked};
   callAPI('getRequisitions',filter).then(function(res){
     var rows=(res.data||[]).map(function(r){
-      return '<tr><td><strong>'+r.ReqID+'</strong></td><td>'+r.OpenDate+'</td><td>'+r.JobNo+'</td><td>'+(r.RequesterName||'')+'</td><td>'+r.CustomerName+'</td><td>'+apChip(r.StatusApproval)+'</td><td>'+stChip(r.StatusStock)+'</td><td><button class="btn bo bsm" onclick="openDetail(\''+r.ReqID+'\')">ดูรายละเอียด</button></td></tr>';
+      var _db1=(CU&&CU.role==='MANAGER')?'<button class="btn bd bsm del-req-btn" style="padding:2px 7px;margin-left:4px" data-rid="'+r.ReqID+'">🗑️</button>':'';
+      return '<tr><td><strong>'+r.ReqID+'</strong></td><td>'+r.OpenDate+'</td><td>'+r.JobNo+'</td><td>'+(r.RequesterName||'')+'</td><td>'+r.CustomerName+'</td><td>'+apChip(r.StatusApproval)+'</td><td>'+stChip(r.StatusStock)+'</td><td style="white-space:nowrap"><button class="btn bo bsm" onclick="openDetail(\''+r.ReqID+'\')">ดู</button>'+_db1+'</td></tr>';
     }).join('');
     var t=document.getElementById('listTbl');
     if(t) t.innerHTML=rows||'<tr><td colspan="8" class="tc tm" style="padding:24px">ไม่พบรายการ</td></tr>';
@@ -3600,153 +3612,8 @@ function viewSODetail(soNo){
 </script>
 
 <!-- ── STOCK CARD FORM MODAL ──────────────────────── -->
-<div id="scFormModal" class="mo hidden">
-  <div class="mow" style="max-width:540px">
-    <div class="moh">
-      <div class="mot" id="scFormTitle">📥 บันทึกรับเข้า</div>
-      <button class="mcl" onclick="closeModal('scFormModal')">✕</button>
-    </div>
-    <div class="mob">
-      <div class="fg">
-        <label class="fl">ประเภทรายการ <span class="rq">*</span></label>
-        <select class="fc" id="scType" onchange="onSCTypeChange()">
-          <option value="IN">📥 รับเข้า (จากฝ่ายพัสดุ สนง.ใหญ่)</option>
-          <option value="OUT_SALE">🛒 จ่ายออก — ขาย</option>
-          <option value="OUT_RENTAL">🚗 จ่ายออก — รถเช่า</option>
-          <option value="OUT_CONTRACT">🚌 จ่ายออก — รถสัมปทาน</option>
-          <option value="OUT_WARRANTY">🔧 จ่ายออก — Warranty</option>
-          <option value="OUT_BRANCH">🏢 จ่ายออก — ส่งสาขา (SAP)</option>
-          <option value="ADJUST">⚖️ ปรับยอด (นับ Stock จริง)</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label class="fl">Part No. <span class="rq">*</span></label>
-        <div style="position:relative">
-          <input class="fc" id="scPartNo" placeholder="สแกน QR หรือกรอก Part No." oninput="onSCPartInput()" autocomplete="off">
-          <button class="btn bo bsm" onclick="openQRScanner('stockcard')" style="position:absolute;right:4px;top:4px;padding:2px 8px" title="สแกน QR">📷 QR</button>
-          <div id="scPartSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:500;background:#fff;border:1.5px solid var(--gm);border-radius:0 0 var(--rs) var(--rs);max-height:160px;overflow-y:auto;box-shadow:var(--shm)"></div>
-        </div>
-      </div>
-      <div class="fg" id="scPartNameRow" style="display:none">
-        <label class="fl">ชื่ออะไหล่</label>
-        <input class="fc" id="scPartName" readonly style="color:var(--g400)">
-      </div>
-      <div class="fr">
-        <div class="fg">
-          <label class="fl">จำนวน <span class="rq">*</span></label>
-          <input class="fc" type="number" id="scQty" placeholder="0" min="1">
-        </div>
-        <div class="fg">
-          <label class="fl">หน่วย</label>
-          <input class="fc" id="scUnit" placeholder="ชิ้น" value="ชิ้น">
-        </div>
-      </div>
-      <div class="fg" id="scSerialRow" style="display:none">
-        <label class="fl">Serial No.</label>
-        <input class="fc" id="scSerial" placeholder="ระบุ Serial No. (ถ้ามี)">
-      </div>
-      <div class="fg" id="scRefRow">
-        <label class="fl" id="scRefLabel">เลขที่เอกสารอ้างอิง</label>
-        <input class="fc" id="scRef" placeholder="เช่น เลข SAP, เลข PO, เลข Request">
-      </div>
-      <div class="fg" id="scReqIdRow" style="display:none">
-        <label class="fl">เลขที่ใบเบิก (ถ้ามี)</label>
-        <input class="fc" id="scReqId" placeholder="PKT-BR-2569-XXXX">
-      </div>
-      <div class="fg">
-        <label class="fl">หมายเหตุ</label>
-        <input class="fc" id="scNote" placeholder="บันทึกเพิ่มเติม">
-      </div>
-    </div>
-    <div class="mof">
-      <button class="btn bd" onclick="closeModal('scFormModal')">ยกเลิก</button>
-      <button class="btn bgd" onclick="submitSCForm()">💾 บันทึก</button>
-    </div>
-  </div>
-</div>
-
 <!-- ── SALES ORDER FORM MODAL ──────────────────────── -->
-<div id="soFormModal" class="mo hidden">
-  <div class="mow" style="max-width:600px">
-    <div class="moh">
-      <div class="mot">🛒 เปิดรายการขายอะไหล่</div>
-      <button class="mcl" onclick="closeModal('soFormModal')">✕</button>
-    </div>
-    <div class="mob">
-      <div class="fr">
-        <div class="fg">
-          <label class="fl">เลขที่ใบเสนอราคา <span class="rq">*</span></label>
-          <input class="fc" id="soQuoteNo" placeholder="QT-XXXX">
-        </div>
-        <div class="fg">
-          <label class="fl">Ref. เลขที่ PO <span style="font-size:11px;color:var(--g400)">(ถ้ามี)</span></label>
-          <input class="fc" id="soPONo" placeholder="PO-XXXX">
-        </div>
-      </div>
-      <div class="fg">
-        <label class="fl">ชื่อลูกค้า / บริษัท</label>
-        <input class="fc" id="soCustName" placeholder="ชื่อลูกค้า">
-      </div>
-      <div class="ct" style="margin:12px 0 8px">รายการอะไหล่ที่ขาย</div>
-      <div id="soItemsBody" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button class="btn bo bsm" onclick="addSORow()" style="margin-top:8px">+ เพิ่มรายการ</button>
-    </div>
-    <div class="mof">
-      <button class="btn bd" onclick="closeModal('soFormModal')">ยกเลิก</button>
-      <button class="btn bgd" onclick="submitSOForm()">📤 ส่งให้ Stock จัด</button>
-    </div>
-  </div>
-</div>
-
-
 <!-- ── QR SCANNER MODAL ──────────────────────────── -->
-<div id="qrScanModal" class="mo hidden">
-  <div class="mow" style="max-width:420px">
-    <div class="moh">
-      <div class="mot">📷 สแกน QR Code อะไหล่</div>
-      <button class="mcl" onclick="closeQRScanner()">✕</button>
-    </div>
-    <div class="mob" style="padding:12px">
-      <div style="position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:1">
-        <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" playsinline></video>
-        <canvas id="qrCanvas" style="display:none"></canvas>
-        <!-- เส้นเล็งกลาง -->
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-          <div style="width:200px;height:200px;border:3px solid var(--gl);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)"></div>
-        </div>
-      </div>
-      <p id="qrStatus" style="text-align:center;margin-top:12px;font-size:14px;color:var(--g400)">กำลังเปิดกล้อง...</p>
-      <div style="text-align:center;margin-top:8px">
-        <button class="btn bo bsm" onclick="toggleQRFlash()" id="qrFlashBtn" style="display:none">🔦 ไฟฉาย</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ── QR PRINT MODAL ────────────────────────────── -->
-<div id="qrPrintModal" class="mo hidden">
-  <div class="mow" style="max-width:560px">
-    <div class="moh">
-      <div class="mot">🏷️ พิมพ์ QR Code อะไหล่</div>
-      <button class="mcl" onclick="closeModal('qrPrintModal')">✕</button>
-    </div>
-    <div class="mob">
-      <div class="fg">
-        <label class="fl">ค้นหาอะไหล่</label>
-        <input class="fc" id="qrPrintSearch" placeholder="Part No. หรือชื่ออะไหล่..." oninput="searchQRParts()">
-      </div>
-      <div id="qrPrintResults" style="max-height:200px;overflow-y:auto;border:1px solid var(--g200);border-radius:6px;margin-bottom:12px"></div>
-      <div id="qrPrintSelected" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:40px;padding:8px;background:var(--g50);border-radius:6px">
-        <span style="color:var(--g400);font-size:13px" id="qrPrintHint">เลือกอะไหล่ที่ต้องการพิมพ์ QR</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <label class="fl" style="margin:0;white-space:nowrap">จำนวนชุด:</label>
-        <input type="number" class="fc" id="qrCopies" value="1" min="1" max="100" style="width:80px">
-        <button class="btn bgd" onclick="printQRCodes()" style="flex:1">🖨️ พิมพ์ QR</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 </body>
 </html>
