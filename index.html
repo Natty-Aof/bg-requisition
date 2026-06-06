@@ -538,6 +538,53 @@ textarea.fc{min-height:70px;resize:vertical;}
       </div>
 
       <!-- PRINT -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div id="pg-stockcard" class="hidden">
+        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="scTabIn"  class="btn bgd bsm" onclick="switchSCTab('in')"  style="min-width:110px">📥 รับเข้า</button>
+            <button id="scTabOut" class="btn bo bsm"  onclick="switchSCTab('out')" style="min-width:110px">📤 จ่ายออก</button>
+            <button id="scTabLog" class="btn bo bsm"  onclick="switchSCTab('log')" style="min-width:110px">📋 ประวัติ</button>
+            <div style="flex:1"></div>
+            <button class="btn bp bsm" onclick="openSCForm()">+ บันทึก</button>
+          </div>
+        </div>
+        <div id="scContent"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- SALES ORDER PAGE                                    -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div id="pg-sales" class="hidden">
+        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="soTabPending" class="btn bgd bsm" onclick="switchSOTab('pending')" style="min-width:120px">🛒 รอจัด <span id="soBadgePend" class="badge" style="background:#fff;color:var(--gd)">0</span></button>
+            <button id="soTabDone"    class="btn bo bsm"  onclick="switchSOTab('done')"    style="min-width:120px">✅ จัดแล้ว</button>
+            <div style="flex:1"></div>
+            <button class="btn bgd bsm" onclick="openNewSales()">+ เปิดรายการขาย</button>
+          </div>
+        </div>
+        <div id="soList"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- INVENTORY PAGE                                      -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div id="pg-inventory" class="hidden">
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <input class="fc" id="invSearch" placeholder="🔍 ค้นหา Part No. / ชื่ออะไหล่..." oninput="filterInventory()" style="max-width:300px">
+            <select class="fc" id="invFilter" onchange="filterInventory()" style="max-width:160px">
+              <option value="">ทุกรายการ</option>
+              <option value="low">ใกล้หมด (≤5)</option>
+              <option value="out">หมดแล้ว (0)</option>
+            </select>
+            <button class="btn bo bsm" onclick="loadInventory()">🔄 รีเฟรช</button><button class="btn bp bsm" onclick="openQRPrint()">🏷️ พิมพ์ QR</button>
+          </div>
+          <div id="invContent"><div class="tc tm" style="padding:32px">⏳ กำลังโหลด...</div></div>
+        </div>
+      </div>
+
       <div id="pg-print" class="hidden">
         <div class="card">
           <div class="ct">🖨️ เลือกใบเบิกที่ต้องการพิมพ์</div>
@@ -657,52 +704,6 @@ textarea.fc{min-height:70px;resize:vertical;}
 <script src="parts_data.js"></script>
       <!-- ═══════════════════════════════════════════════════ -->
       <!-- STOCK CARD PAGE                                     -->
-      <!-- ═══════════════════════════════════════════════════ -->
-      <div id="pg-stockcard" class="hidden">
-        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button id="scTabIn"  class="btn bgd bsm" onclick="switchSCTab('in')"  style="min-width:110px">📥 รับเข้า</button>
-            <button id="scTabOut" class="btn bo bsm"  onclick="switchSCTab('out')" style="min-width:110px">📤 จ่ายออก</button>
-            <button id="scTabLog" class="btn bo bsm"  onclick="switchSCTab('log')" style="min-width:110px">📋 ประวัติ</button>
-            <div style="flex:1"></div>
-            <button class="btn bp bsm" onclick="openSCForm()">+ บันทึก</button>
-          </div>
-        </div>
-        <div id="scContent"></div>
-      </div>
-
-      <!-- ═══════════════════════════════════════════════════ -->
-      <!-- SALES ORDER PAGE                                    -->
-      <!-- ═══════════════════════════════════════════════════ -->
-      <div id="pg-sales" class="hidden">
-        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
-          <div style="display:flex;gap:8px;align-items:center">
-            <button id="soTabPending" class="btn bgd bsm" onclick="switchSOTab('pending')" style="min-width:120px">🛒 รอจัด <span id="soBadgePend" class="badge" style="background:#fff;color:var(--gd)">0</span></button>
-            <button id="soTabDone"    class="btn bo bsm"  onclick="switchSOTab('done')"    style="min-width:120px">✅ จัดแล้ว</button>
-            <div style="flex:1"></div>
-            <button class="btn bgd bsm" onclick="openNewSales()">+ เปิดรายการขาย</button>
-          </div>
-        </div>
-        <div id="soList"></div>
-      </div>
-
-      <!-- ═══════════════════════════════════════════════════ -->
-      <!-- INVENTORY PAGE                                      -->
-      <!-- ═══════════════════════════════════════════════════ -->
-      <div id="pg-inventory" class="hidden">
-        <div class="card">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-            <input class="fc" id="invSearch" placeholder="🔍 ค้นหา Part No. / ชื่ออะไหล่..." oninput="filterInventory()" style="max-width:300px">
-            <select class="fc" id="invFilter" onchange="filterInventory()" style="max-width:160px">
-              <option value="">ทุกรายการ</option>
-              <option value="low">ใกล้หมด (≤5)</option>
-              <option value="out">หมดแล้ว (0)</option>
-            </select>
-            <button class="btn bo bsm" onclick="loadInventory()">🔄 รีเฟรช</button><button class="btn bp bsm" onclick="openQRPrint()">🏷️ พิมพ์ QR</button>
-          </div>
-          <div id="invContent"><div class="tc tm" style="padding:32px">⏳ กำลังโหลด...</div></div>
-        </div>
-      </div>
 
 <!-- ── STOCK ACKNOWLEDGE MODAL ─────────────── -->
 <div id="stockAckModal" class="mo hidden">
@@ -1227,6 +1228,25 @@ function mockAPI(action, data){
     var r = DEMO_REQS.find(function(x){return x.ReqID===data.id;}) || DEMO_REQS[0];
     return {success:true,data:Object.assign({},r,{items:DEMO_ITEMS})};
   }
+  if(action==='getStockCardEntries'){
+    var now = new Date().toISOString();
+    var sampleEntries = (typeof PARTS_DB!=='undefined'?PARTS_DB:[]).slice(0,5).map(function(p,i){
+      return {EntryID:'SC-DEMO-'+(i+1), Type:'IN', PartNo:p.partNo, NameEN:p.nameEN||'-',
+              Qty:p.inStock||0, Unit:p.unit||'ชิ้น', SerialNo:'', RefNo:'INIT-6-6-69',
+              Note:'ยอดเริ่มต้น 6/6/69', CreatedAt:now};
+    });
+    return {success:true, data:sampleEntries};
+  }
+  if(action==='saveStockCardEntry') return {success:true, message:'บันทึก Stock Card แล้วค่ะ'};
+  if(action==='getInventoryBalance'){
+    if(typeof PARTS_DB !== 'undefined' && PARTS_DB.length){
+      return {success:true, data:PARTS_DB.map(function(p){
+        return {PartNo:p.partNo,NameEN:p.nameEN||'-',TotalIn:p.inStock||0,
+                TotalOut:0,Balance:p.inStock||0,Location:p.location||'',Group:p.group||''};
+      })};
+    }
+    return {success:true, data:[]};
+  }
   if(action==='getPartLocations') return {success:true,data:partLocs};
   if(action==='getPartImages') return {success:true,data:Object.assign({},_partImages)};
   if(action==='getParts') return {success:true,data:{}};
@@ -1271,7 +1291,7 @@ document.addEventListener('click', function(e){
     return;
   }
   // ปุ่มต่างๆ
-  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn');
+  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn,.del-req-btn,.del-sc-btn,.del-so-btn');
   if(!btn) return;
   var pn = decodeURIComponent(btn.dataset.pn||'');
   var en = decodeURIComponent(btn.dataset.en||'');
@@ -1836,7 +1856,7 @@ function openStockAckModal(reqId){
 
 // ── DELETE FUNCTIONS (MANAGER only) ─────────────────────────
 function deleteReq(reqId){
-  if(CU.role !== 'MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
+  if(!CU||CU.role!=='MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
   if(!confirm('ยืนยันลบใบเบิก '+reqId+' ? (ไม่สามารถกู้คืนได้)')) return;
   callAPI('deleteRequisition',{id:reqId}).then(function(res){
     toast(res.message, res.success?'success':'error');
@@ -1845,7 +1865,7 @@ function deleteReq(reqId){
 }
 
 function deleteStockEntry(entryId){
-  if(CU.role !== 'MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
+  if(!CU||CU.role!=='MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
   if(!confirm('ยืนยันลบรายการ Stock Card '+entryId+' ?')) return;
   callAPI('deleteStockCardEntry',{id:entryId}).then(function(res){
     toast(res.message, res.success?'success':'error');
@@ -1854,7 +1874,7 @@ function deleteStockEntry(entryId){
 }
 
 function deleteSalesOrder(soNo){
-  if(CU.role !== 'MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
+  if(!CU||CU.role!=='MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
   if(!confirm('ยืนยันลบใบขาย '+soNo+' ?')) return;
   callAPI('deleteSalesOrder',{soNo:soNo}).then(function(res){
     toast(res.message, res.success?'success':'error');
@@ -2973,6 +2993,21 @@ mockAPI = function(action, data) {
       ],
     };
   }
+  if(action==='getInventoryBalance'){
+    // ใช้ PARTS_DB ที่โหลดจาก parts_data.js
+    if(typeof PARTS_DB !== 'undefined' && PARTS_DB.length){
+      var invData = PARTS_DB.map(function(p){
+        return {
+          PartNo: p.partNo, NameEN: p.nameEN||p.nameTH||'-',
+          TotalIn: p.inStock||0, TotalOut: 0,
+          Balance: p.inStock||0, Location: p.location||'',
+          Group: p.group||'',
+        };
+      });
+      return {success:true, data:invData};
+    }
+    return {success:true, data:[]};
+  }
   if(action==='deleteRequisition'){
     var idx2=DEMO_REQS.findIndex(function(r){return r.ReqID===data.id;});
     if(idx2>=0){DEMO_REQS.splice(idx2,1);return{success:true,message:'ลบใบเบิก '+data.id+' แล้วค่ะ'};}
@@ -2980,6 +3015,17 @@ mockAPI = function(action, data) {
   }
   if(action==='deleteStockCardEntry') return{success:true,message:'ลบรายการ Stock Card แล้วค่ะ'};
   if(action==='deleteSalesOrder') return{success:true,message:'ลบใบขาย '+data.soNo+' แล้วค่ะ'};
+  if(action==='getSalesOrders'){
+    var pending = [{SONo:'SO-DEMO-001',QuoteNo:'QT-001',PONo:'PO-001',CustomerName:'บริษัท ทดสอบ จำกัด',Status:'PENDING',CreatedAt:new Date().toISOString()}];
+    var done = [{SONo:'SO-DEMO-002',QuoteNo:'QT-002',PONo:'',CustomerName:'ลูกค้า ทดสอบ 2',Status:'DISPATCHED',CreatedAt:new Date().toISOString()}];
+    return {success:true, data:data&&data.status==='done' ? done : pending};
+  }
+  if(action==='getSalesOrderDetail'){
+    return {success:true, data:{SONo:data.soNo,QuoteNo:'QT-001',PONo:'PO-001',CustomerName:'บริษัท ทดสอบ',Status:'PENDING',CreatedAt:new Date().toISOString(),
+      items:[{PartNo:'01PGC0000000007048',NameEN:'BUSHING, FLANGED BRONZE',Qty:2,Unit:'ชิ้น',SerialNo:'',Note:''}]}};
+  }
+  if(action==='createSalesOrder') return {success:true, message:'เปิดใบขายแล้วค่ะ SO-DEMO-'+Math.floor(Math.random()*999)};
+  if(action==='dispatchSalesOrder') return {success:true, message:'จัดของแล้วค่ะ'};
   if (action === 'exportExcel') {
     return { success:false, message:'[Demo] Export ใช้ได้เฉพาะตอน Deploy จริงค่ะ (ต้องใช้ Google Drive)' };
   }
@@ -3052,7 +3098,7 @@ function loadStockCard(){
         +'<td style="font-size:12px">'+(e.SerialNo||'-')+'</td>'
         +'<td style="font-size:12px">'+(e.RefNo||'-')+'</td>'
         +'<td style="font-size:12px">'+(e.Note||'-')+'</td>'
-        +(CU&&CU.role==='MANAGER'?'<td><button class="btn bd bsm" style="padding:2px 6px" onclick="deleteStockEntry(this.dataset.id)" data-id="'+e.EntryID+'">🗑️</button></td>':'<td></td>')
+        +(CU&&CU.role==='MANAGER'?'<td><button class="btn bd bsm" style="padding:2px 6px" class="btn bd bsm del-sc-btn" data-id="'+e.EntryID+'">🗑️</button></td>':'<td></td>')
         +'</tr>';
     });
     html += '</tbody></table></div></div>';
@@ -3401,8 +3447,30 @@ function loadInventory(){
   if(!el) return;
   el.innerHTML = '<div class="tc" style="padding:32px">⏳ กำลังโหลด...</div>';
   callAPI('getInventoryBalance',{}).then(function(res){
-    _inventoryData = res.data || [];
-    renderInventory(_inventoryData);
+    var apiData = res.data || [];
+    // ถ้า API มีข้อมูลให้ใช้เลย
+    if(apiData.length > 0){
+      _inventoryData = apiData;
+      renderInventory(_inventoryData);
+      return;
+    }
+    // fallback: ใช้ PARTS_DB (จาก parts_data.js) ที่มี inStock จริง
+    if(typeof PARTS_DB !== 'undefined' && PARTS_DB.length){
+      _inventoryData = PARTS_DB.map(function(p){
+        return {
+          PartNo:   p.partNo,
+          NameEN:   p.nameEN||p.nameTH||'-',
+          TotalIn:  p.inStock||0,
+          TotalOut: 0,
+          Balance:  p.inStock||0,
+          Location: p.location||'',
+          Group:    p.group||'',
+        };
+      });
+      renderInventory(_inventoryData);
+    } else {
+      el.innerHTML = '<div class="tc tm" style="padding:32px">ไม่พบข้อมูล Stock</div>';
+    }
   });
 }
 
@@ -3410,10 +3478,11 @@ function filterInventory(){
   var q = (document.getElementById('invSearch').value||'').toLowerCase();
   var f = document.getElementById('invFilter').value;
   var filtered = _inventoryData.filter(function(item){
-    var matchQ = !q || item.PartNo.toLowerCase().indexOf(q)>=0 || (item.NameEN||'').toLowerCase().indexOf(q)>=0;
+    var matchQ = !q || (item.PartNo||'').toLowerCase().indexOf(q)>=0 || (item.NameEN||'').toLowerCase().indexOf(q)>=0 || (item.Group||'').toLowerCase().indexOf(q)>=0;
+    var bal = item.Balance!==undefined ? item.Balance : (item.TotalIn||0);
     var matchF = !f
-      || (f==='low' && item.Balance>0 && item.Balance<=5)
-      || (f==='out' && item.Balance<=0);
+      || (f==='low' && bal>0 && bal<=5)
+      || (f==='out' && bal<=0);
     return matchQ && matchF;
   });
   renderInventory(filtered);
@@ -3423,27 +3492,33 @@ function renderInventory(data){
   var el = document.getElementById('invContent');
   if(!el) return;
   if(!data.length){ el.innerHTML='<div class="tc tm" style="padding:32px">ไม่พบข้อมูล</div>'; return; }
-  var html = '<div class="tw"><table class="it"><thead><tr>'
-    +'<th>Part No.</th><th>ชื่ออะไหล่</th>'
+  var html = '<div style="font-size:12px;color:var(--g400);margin-bottom:8px">พบ '+data.length+' รายการ</div>';
+  html += '<div class="tw"><table class="it"><thead><tr>'
+    +'<th>Part No.</th><th>ชื่ออะไหล่</th><th>หมวด</th>'
     +'<th style="text-align:center">รับเข้า</th>'
     +'<th style="text-align:center">จ่ายออก</th>'
-    +'<th style="text-align:center">คงเหลือ</th>'
-    +'<th>สถานะ</th>'
+    +'<th style="text-align:center;font-weight:700">คงเหลือ</th>'
+    +'<th>ที่เก็บ</th><th>สถานะ</th>'
     +'</tr></thead><tbody>';
   data.forEach(function(item){
-    var bal = item.Balance||0;
+    var bal = item.Balance!==undefined ? item.Balance : (item.TotalIn||0);
+    var tout = item.TotalOut||0;
+    var tin  = item.TotalIn||0;
     var statusChip = bal<=0
       ? '<span class="chip chip-red" style="font-size:11px">หมดแล้ว</span>'
       : bal<=5
       ? '<span class="chip chip-gld" style="font-size:11px">ใกล้หมด</span>'
       : '<span class="chip chip-grn" style="font-size:11px">พอ</span>';
     var balColor = bal<=0 ? 'color:var(--red);' : bal<=5 ? 'color:#e65100;' : 'color:var(--gm);';
+    var loc = item.Location||'—';
     html += '<tr>'
-      +'<td style="font-weight:700;font-size:13px">'+item.PartNo+'</td>'
-      +'<td style="font-size:13px">'+(item.NameEN||'-')+'</td>'
-      +'<td style="text-align:center;color:var(--gm);font-weight:700">'+(item.TotalIn||0)+'</td>'
-      +'<td style="text-align:center;color:var(--red);font-weight:700">'+(item.TotalOut||0)+'</td>'
-      +'<td style="text-align:center;font-size:16px;font-weight:700;'+balColor+'">'+bal+'</td>'
+      +'<td style="font-weight:700;font-size:12px;white-space:nowrap">'+item.PartNo+'</td>'
+      +'<td style="font-size:12px">'+(item.NameEN||'-')+'</td>'
+      +'<td style="font-size:11px;color:var(--g400)">'+(item.Group||'-')+'</td>'
+      +'<td style="text-align:center;color:var(--gm);font-weight:700">'+tin+'</td>'
+      +'<td style="text-align:center;color:var(--red);font-weight:700">'+tout+'</td>'
+      +'<td style="text-align:center;font-size:15px;font-weight:700;'+balColor+'">'+bal+'</td>'
+      +'<td style="font-size:12px;font-weight:600;color:var(--gd)">'+loc+'</td>'
       +'<td>'+statusChip+'</td>'
       +'</tr>';
   });
