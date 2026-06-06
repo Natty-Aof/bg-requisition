@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ระบบใบเบิกอะไหล่ — Beyond Green ภูเก็ต</title>
+<!-- jsQR: QR Code scanner -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<!-- QRCode.js: QR Code generator -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap');
 :root {
@@ -19,7 +23,7 @@ body { font-family: 'Sarabun', sans-serif; background: var(--g50); color: var(--
 #app { display: flex; min-height: 100vh; }
 
 /* SIDEBAR */
-.sidebar { width: 230px; min-height: 100vh; background: linear-gradient(180deg,var(--gd) 0%,var(--gm) 100%); display: flex; flex-direction: column; position: fixed; top:0; left:0; bottom:0; z-index:100; box-shadow:2px 0 12px rgba(0,0,0,.15); }
+.sidebar { width: 230px; background: linear-gradient(180deg,var(--gd) 0%,var(--gm) 100%); display: flex; flex-direction: column; position: fixed; top:0; left:0; bottom:0; z-index:100; box-shadow:2px 0 12px rgba(0,0,0,.15); overflow-y:auto; overflow-x:hidden; }
 .sb-logo { padding:20px 16px 16px; border-bottom:1px solid rgba(255,255,255,.12); }
 .sb-logo img { height:42px; object-fit:contain; }
 .sb-logo .branch { font-family:'Prompt',sans-serif; color:var(--goldl); font-size:11px; font-weight:500; margin-top:6px; opacity:.85; }
@@ -176,6 +180,9 @@ textarea.fc{min-height:70px;resize:vertical;}
 .btn-img-upload:hover{background:var(--gp);border-color:var(--gm);}
 
 /* SIG */
+#snav::-webkit-scrollbar{width:4px;}
+#snav::-webkit-scrollbar-track{background:transparent;}
+#snav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:2px;}
 .sigrow{display:flex;gap:2mm;margin-bottom:2.5mm;align-items:flex-end;}
 .sigrl{width:26mm;font-weight:600;font-size:8pt;flex-shrink:0;}
 .sigline{flex:1;border-bottom:0.5px solid #555;min-height:14mm;display:flex;align-items:flex-end;padding-bottom:0.5mm;}
@@ -254,6 +261,12 @@ textarea.fc{min-height:70px;resize:vertical;}
       <div class="ni" data-pg="close" onclick="go('close')"><span class="ic">🔄</span> เคลียร์ใบเบิก</div>
       <div class="ni" data-pg="report" onclick="go('report')"><span class="ic">📊</span> รายงาน</div>
       <div class="ni" data-pg="print" onclick="go('print')"><span class="ic">🖨️</span> พิมพ์ใบเบิก</div>
+      <div style="height:1px;background:rgba(255,255,255,.15);margin:8px 12px"></div>
+      <div class="ni" data-pg="stockcard" onclick="go('stockcard')"><span class="ic">🗂️</span> Stock Card</div>
+      <div class="ni" data-pg="sales" onclick="go('sales')"><span class="ic">🛒</span> เปิดรายการขาย</div>
+      <div class="ni" data-pg="inventory" onclick="go('inventory')"><span class="ic">📦</span> คงเหลือ</div>
+      <div style="flex:1"></div>
+      <div style="height:1px;background:rgba(255,255,255,.15);margin:8px 12px"></div>
       <div class="ni" data-pg="profile" onclick="go('profile')"><span class="ic">✍️</span> ลายเซ็นของฉัน</div>
     </nav>
   </aside>
@@ -315,7 +328,7 @@ textarea.fc{min-height:70px;resize:vertical;}
         </div>
         <div class="card">
           <div class="fb2" style="margin-bottom:12px"><div class="ct" style="margin:0">🔩 รายการอะไหล่<span class="rq">*</span></div><button class="btn bo bsm" onclick="addRow()">+ เพิ่มรายการ</button></div>
-          <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center"><input class="fc" id="partSearch" placeholder="🔍 ค้นหาอะไหล่ (Part No. / ชื่อ TH / EN)..." oninput="searchParts()" style="max-width:360px"><select class="fc" id="partModelFilter" onchange="searchParts()" style="max-width:180px"><option value="">ทุกรุ่น</option><option value="precedent">Precedent</option><option value="tempo">Tempo</option><option value="villager">Villager</option><option value="transporter">Transporter</option><option value="carryall">Carryall</option><option value="ds">DS</option><option value="minibus">Minibus</option><option value="e-bike">E-Bike</option></select><button class="btn bo bsm" onclick="searchParts(document.getElementById('partSearch').value)">ค้นหา</button></div><div id="searchResults" class="hidden" style="border:1.5px solid var(--gm);border-radius:var(--rs);margin-bottom:8px;max-height:200px;overflow-y:auto;background:#fff"></div><div class="tw"><table class="it"><thead><tr><th style="width:15%">Part No.</th><th style="width:20%">ชื่อ (EN)</th><th style="width:20%">ชื่อภาษาไทย</th><th style="width:7%">จำนวน</th><th style="width:7%">หน่วย</th><th style="width:10%">Serial No.</th><th style="width:8%">หมายเหตุ</th><th style="width:32px"></th></tr></thead>
+          <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center"><input class="fc" id="partSearch" placeholder="🔍 ค้นหาอะไหล่ (Part No. / ชื่อ TH / EN)..." oninput="searchParts()" style="max-width:300px"><button class="btn bo bsm" onclick="openQRScanner('create')" title="สแกน QR Code อะไหล่" style="white-space:nowrap">📷 สแกน QR</button><select class="fc" id="partModelFilter" onchange="searchParts()" style="max-width:180px"><option value="">ทุกรุ่น</option><option value="precedent">Precedent</option><option value="tempo">Tempo</option><option value="villager">Villager</option><option value="transporter">Transporter</option><option value="carryall">Carryall</option><option value="ds">DS</option><option value="minibus">Minibus</option><option value="e-bike">E-Bike</option></select><button class="btn bo bsm" onclick="searchParts(document.getElementById('partSearch').value)">ค้นหา</button></div><div id="searchResults" class="hidden" style="border:1.5px solid var(--gm);border-radius:var(--rs);margin-bottom:8px;max-height:200px;overflow-y:auto;background:#fff"></div><div class="tw"><table class="it"><thead><tr><th style="width:15%">Part No.</th><th style="width:20%">ชื่อ (EN)</th><th style="width:20%">ชื่อภาษาไทย</th><th style="width:7%">จำนวน</th><th style="width:7%">หน่วย</th><th style="width:10%">Serial No.</th><th style="width:8%">หมายเหตุ</th><th style="width:32px"></th></tr></thead>
           <tbody id="itemsBody"></tbody></table></div>
           <button class="btn bo bsm mt8" onclick="addRow()">+ เพิ่มรายการอะไหล่</button><div style="margin-top:8px;padding:10px 12px;background:var(--goldl);border-radius:var(--rs);font-size:13px;color:#5a4000">💡 ไม่พบอะไหล่ที่ต้องการ? <button class="btn bo bsm" style="padding:3px 10px;font-size:12px" onclick="showAddPart()">+ เพิ่มอะไหล่ใหม่ในฐานข้อมูล</button></div>
         </div>
@@ -348,7 +361,15 @@ textarea.fc{min-height:70px;resize:vertical;}
       <div id="pg-approval" class="hidden"><div id="apList"></div></div>
 
       <!-- STOCK -->
-      <div id="pg-stock" class="hidden"><div id="stList"></div></div>
+      <div id="pg-stock" class="hidden">
+  <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="stTabPending" class="btn bgd bsm" onclick="switchStockTab('pending')" style="min-width:120px">📦 รอจัด <span id="stBadgePend" class="badge" style="background:#fff;color:var(--gd)">0</span></button>
+      <button id="stTabDone"    class="btn bo bsm"  onclick="switchStockTab('done')"    style="min-width:120px">✅ จัดแล้ว <span id="stBadgeDone" class="badge" style="background:var(--gm);color:#fff">0</span></button>
+    </div>
+  </div>
+  <div id="stList"></div>
+</div>
 
       <!-- PICKUP: ช่างรับอะไหล่ + ถ่ายรูป -->
       <div id="pg-pickup" class="hidden">
@@ -398,8 +419,8 @@ textarea.fc{min-height:70px;resize:vertical;}
           </div>
           <!-- ช่างกรอกรายการ + ถ่ายรูปของเก่า -->
           <div class="card">
-            <div class="ct">📷 ถ่ายรูปอะไหล่เก่า / ของเสียที่คืน</div>
-            <div class="pd" id="retPhoDrop" onclick="document.getElementById('retPhoIn').click()">
+            <div class="ct">📷 ถ่ายรูปอะไหล่เสีย / ของที่คืน <span class="rq">*</span> <span style="font-size:12px;color:var(--red);font-weight:400">(บังคับ — ต้องถ่ายก่อนส่งเคลียร์)</span></div>
+            <div class="pd" id="retPhoDrop" onclick="document.getElementById('retPhoIn').click()" style="border:2px dashed var(--red)">
               <div style="font-size:32px">📷</div>
               <div style="margin-top:6px">ถ่ายรูปของเก่า / อะไหล่ที่คืน</div>
               <img id="retPhoPreview" class="pp hidden">
@@ -627,6 +648,222 @@ textarea.fc{min-height:70px;resize:vertical;}
 
 <div class="tw2" id="toastW"></div>
 <script src="parts_data.js"></script>
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- STOCK CARD PAGE                                     -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div id="pg-stockcard" class="hidden">
+        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="scTabIn"  class="btn bgd bsm" onclick="switchSCTab('in')"  style="min-width:110px">📥 รับเข้า</button>
+            <button id="scTabOut" class="btn bo bsm"  onclick="switchSCTab('out')" style="min-width:110px">📤 จ่ายออก</button>
+            <button id="scTabLog" class="btn bo bsm"  onclick="switchSCTab('log')" style="min-width:110px">📋 ประวัติ</button>
+            <div style="flex:1"></div>
+            <button class="btn bp bsm" onclick="openSCForm()">+ บันทึก</button>
+          </div>
+        </div>
+        <div id="scContent"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- SALES ORDER PAGE                                    -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div id="pg-sales" class="hidden">
+        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="soTabPending" class="btn bgd bsm" onclick="switchSOTab('pending')" style="min-width:120px">🛒 รอจัด <span id="soBadgePend" class="badge" style="background:#fff;color:var(--gd)">0</span></button>
+            <button id="soTabDone"    class="btn bo bsm"  onclick="switchSOTab('done')"    style="min-width:120px">✅ จัดแล้ว</button>
+            <div style="flex:1"></div>
+            <button class="btn bgd bsm" onclick="openNewSales()">+ เปิดรายการขาย</button>
+          </div>
+        </div>
+        <div id="soList"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════ -->
+      <!-- INVENTORY PAGE                                      -->
+      <!-- ═══════════════════════════════════════════════════ -->
+      <div id="pg-inventory" class="hidden">
+        <div class="card">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <input class="fc" id="invSearch" placeholder="🔍 ค้นหา Part No. / ชื่ออะไหล่..." oninput="filterInventory()" style="max-width:300px">
+            <select class="fc" id="invFilter" onchange="filterInventory()" style="max-width:160px">
+              <option value="">ทุกรายการ</option>
+              <option value="low">ใกล้หมด (≤5)</option>
+              <option value="out">หมดแล้ว (0)</option>
+            </select>
+            <button class="btn bo bsm" onclick="loadInventory()">🔄 รีเฟรช</button><button class="btn bp bsm" onclick="openQRPrint()">🏷️ พิมพ์ QR</button>
+          </div>
+          <div id="invContent"><div class="tc tm" style="padding:32px">⏳ กำลังโหลด...</div></div>
+        </div>
+      </div>
+
+<!-- ── STOCK ACKNOWLEDGE MODAL ─────────────── -->
+<div id="stockAckModal" class="mo hidden">
+  <div class="mow" style="max-width:520px">
+    <div class="moh">
+      <div class="mot">📦 ยืนยันจัดอะไหล่</div>
+      <button class="mcl" onclick="document.getElementById('stockAckModal').classList.add('hidden')">✕</button>
+    </div>
+    <div class="mob" id="stockAckBody"></div>
+    <div class="mof">
+      <button class="btn bd" onclick="document.getElementById('stockAckModal').classList.add('hidden')">ยกเลิก</button>
+      <button class="btn bgd" onclick="confirmStockAck()">✅ ยืนยันจัดของ</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── STOCK CARD FORM MODAL ──────────────────────── -->
+<div id="scFormModal" class="mo hidden">
+  <div class="mow" style="max-width:540px">
+    <div class="moh">
+      <div class="mot" id="scFormTitle">📥 บันทึกรับเข้า</div>
+      <button class="mcl" onclick="closeModal('scFormModal')">✕</button>
+    </div>
+    <div class="mob">
+      <div class="fg">
+        <label class="fl">ประเภทรายการ <span class="rq">*</span></label>
+        <select class="fc" id="scType" onchange="onSCTypeChange()">
+          <option value="IN">📥 รับเข้า (จากฝ่ายพัสดุ สนง.ใหญ่)</option>
+          <option value="OUT_SALE">🛒 จ่ายออก — ขาย</option>
+          <option value="OUT_RENTAL">🚗 จ่ายออก — รถเช่า</option>
+          <option value="OUT_CONTRACT">🚌 จ่ายออก — รถสัมปทาน</option>
+          <option value="OUT_WARRANTY">🔧 จ่ายออก — Warranty</option>
+          <option value="OUT_BRANCH">🏢 จ่ายออก — ส่งสาขา (SAP)</option>
+          <option value="ADJUST">⚖️ ปรับยอด (นับ Stock จริง)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Part No. <span class="rq">*</span></label>
+        <div style="position:relative">
+          <input class="fc" id="scPartNo" placeholder="สแกน QR หรือกรอก Part No." oninput="onSCPartInput()" autocomplete="off">
+          <button class="btn bo bsm" onclick="openQRScanner('stockcard')" style="position:absolute;right:4px;top:4px;padding:2px 8px" title="สแกน QR">📷 QR</button>
+          <div id="scPartSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:500;background:#fff;border:1.5px solid var(--gm);border-radius:0 0 var(--rs) var(--rs);max-height:160px;overflow-y:auto;box-shadow:var(--shm)"></div>
+        </div>
+      </div>
+      <div class="fg" id="scPartNameRow" style="display:none">
+        <label class="fl">ชื่ออะไหล่</label>
+        <input class="fc" id="scPartName" readonly style="color:var(--g400)">
+      </div>
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">จำนวน <span class="rq">*</span></label>
+          <input class="fc" type="number" id="scQty" placeholder="0" min="1">
+        </div>
+        <div class="fg">
+          <label class="fl">หน่วย</label>
+          <input class="fc" id="scUnit" placeholder="ชิ้น" value="ชิ้น">
+        </div>
+      </div>
+      <div class="fg" id="scSerialRow" style="display:none">
+        <label class="fl">Serial No.</label>
+        <input class="fc" id="scSerial" placeholder="ระบุ Serial No. (ถ้ามี)">
+      </div>
+      <div class="fg" id="scRefRow">
+        <label class="fl" id="scRefLabel">เลขที่เอกสารอ้างอิง</label>
+        <input class="fc" id="scRef" placeholder="เช่น เลข SAP, เลข PO, เลข Request">
+      </div>
+      <div class="fg" id="scReqIdRow" style="display:none">
+        <label class="fl">เลขที่ใบเบิก (ถ้ามี)</label>
+        <input class="fc" id="scReqId" placeholder="PKT-BR-2569-XXXX">
+      </div>
+      <div class="fg">
+        <label class="fl">หมายเหตุ</label>
+        <input class="fc" id="scNote" placeholder="บันทึกเพิ่มเติม">
+      </div>
+    </div>
+    <div class="mof">
+      <button class="btn bd" onclick="closeModal('scFormModal')">ยกเลิก</button>
+      <button class="btn bgd" onclick="submitSCForm()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SALES ORDER FORM MODAL ──────────────────────── -->
+<div id="soFormModal" class="mo hidden">
+  <div class="mow" style="max-width:600px">
+    <div class="moh">
+      <div class="mot">🛒 เปิดรายการขายอะไหล่</div>
+      <button class="mcl" onclick="closeModal('soFormModal')">✕</button>
+    </div>
+    <div class="mob">
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">เลขที่ใบเสนอราคา <span class="rq">*</span></label>
+          <input class="fc" id="soQuoteNo" placeholder="QT-XXXX">
+        </div>
+        <div class="fg">
+          <label class="fl">Ref. เลขที่ PO <span style="font-size:11px;color:var(--g400)">(ถ้ามี)</span></label>
+          <input class="fc" id="soPONo" placeholder="PO-XXXX">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">ชื่อลูกค้า / บริษัท</label>
+        <input class="fc" id="soCustName" placeholder="ชื่อลูกค้า">
+      </div>
+      <div class="ct" style="margin:12px 0 8px">รายการอะไหล่ที่ขาย</div>
+      <div id="soItemsBody" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn bo bsm" onclick="addSORow()" style="margin-top:8px">+ เพิ่มรายการ</button>
+    </div>
+    <div class="mof">
+      <button class="btn bd" onclick="closeModal('soFormModal')">ยกเลิก</button>
+      <button class="btn bgd" onclick="submitSOForm()">📤 ส่งให้ Stock จัด</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ── QR SCANNER MODAL ──────────────────────────── -->
+<div id="qrScanModal" class="mo hidden">
+  <div class="mow" style="max-width:420px">
+    <div class="moh">
+      <div class="mot">📷 สแกน QR Code อะไหล่</div>
+      <button class="mcl" onclick="closeQRScanner()">✕</button>
+    </div>
+    <div class="mob" style="padding:12px">
+      <div style="position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:1">
+        <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" playsinline></video>
+        <canvas id="qrCanvas" style="display:none"></canvas>
+        <!-- เส้นเล็งกลาง -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <div style="width:200px;height:200px;border:3px solid var(--gl);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)"></div>
+        </div>
+      </div>
+      <p id="qrStatus" style="text-align:center;margin-top:12px;font-size:14px;color:var(--g400)">กำลังเปิดกล้อง...</p>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn bo bsm" onclick="toggleQRFlash()" id="qrFlashBtn" style="display:none">🔦 ไฟฉาย</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── QR PRINT MODAL ────────────────────────────── -->
+<div id="qrPrintModal" class="mo hidden">
+  <div class="mow" style="max-width:560px">
+    <div class="moh">
+      <div class="mot">🏷️ พิมพ์ QR Code อะไหล่</div>
+      <button class="mcl" onclick="closeModal('qrPrintModal')">✕</button>
+    </div>
+    <div class="mob">
+      <div class="fg">
+        <label class="fl">ค้นหาอะไหล่</label>
+        <input class="fc" id="qrPrintSearch" placeholder="Part No. หรือชื่ออะไหล่..." oninput="searchQRParts()">
+      </div>
+      <div id="qrPrintResults" style="max-height:200px;overflow-y:auto;border:1px solid var(--g200);border-radius:6px;margin-bottom:12px"></div>
+      <div id="qrPrintSelected" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:40px;padding:8px;background:var(--g50);border-radius:6px">
+        <span style="color:var(--g400);font-size:13px" id="qrPrintHint">เลือกอะไหล่ที่ต้องการพิมพ์ QR</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label class="fl" style="margin:0;white-space:nowrap">จำนวนชุด:</label>
+        <input type="number" class="fc" id="qrCopies" value="1" min="1" max="100" style="width:80px">
+        <button class="btn bgd" onclick="printQRCodes()" style="flex:1">🖨️ พิมพ์ QR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 // ── CONFIG ──────────────────────────────────────────────────
 
@@ -1027,7 +1264,7 @@ document.addEventListener('click', function(e){
     return;
   }
   // ปุ่มต่างๆ
-  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn');
+  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn');
   if(!btn) return;
   var pn = decodeURIComponent(btn.dataset.pn||'');
   var en = decodeURIComponent(btn.dataset.en||'');
@@ -1044,6 +1281,14 @@ document.addEventListener('click', function(e){
   }
   if(btn.classList.contains('stk-img-btn')){
     uploadPartImg(pn, en);
+  }
+  if(btn.classList.contains('stk-ack-btn')){
+    var rid = decodeURIComponent(btn.dataset.rid||'');
+    if(rid) openStockAckModal(rid);
+  }
+  if(btn.classList.contains('stk-detail-btn')){
+    var rid2 = btn.dataset.rid||'';
+    if(rid2) openDetail(rid2);
   }
 });
 
@@ -1076,7 +1321,7 @@ function roleLabel(r){
 }
 
 // ── NAVIGATE ─────────────────────────────────────────────────
-var pgTitles={dashboard:'Dashboard',create:'เปิดใบเบิกอะไหล่',list:'รายการใบเบิกอะไหล่',approval:'รายการรออนุมัติ',stock:'จัดอะไหล่ / รับคืน',pickup:'รับอะไหล่',close:'เคลียร์ใบเบิก',print:'พิมพ์ใบเบิก',profile:'ลายเซ็นของฉัน',jobs:'จัดการ Job No.'};
+var pgTitles={dashboard:'Dashboard',create:'เปิดใบเบิกอะไหล่',list:'รายการใบเบิกอะไหล่',approval:'รายการรออนุมัติ',stock:'จัดอะไหล่ / รับคืน',pickup:'รับอะไหล่',close:'เคลียร์ใบเบิก',print:'พิมพ์ใบเบิก',profile:'ลายเซ็นของฉัน',jobs:'จัดการ Job No.',stockcard:'Stock Card',sales:'เปิดรายการขาย',inventory:'ยอดคงเหลือ'};
 
 function go(page){
   curPage = page;
@@ -1093,6 +1338,9 @@ function go(page){
   if(page==='list') {} // wait for search
   if(page==='approval') loadApproval();
   if(page==='stock'){loadStock();}
+  if(page==='stockcard'){loadStockCard();}
+  if(page==='sales'){initSales();}
+  if(page==='inventory'){loadInventory();}
   if(page==='pickup') loadPickupPage();
   if(page==='close') loadCloseSel();
   if(page==='print') loadPrintSel();
@@ -1345,10 +1593,20 @@ function loadApproval(){
 }
 
 // ── STOCK ─────────────────────────────────────────────────────
+var _stockTab = 'pending'; // 'pending' | 'done'
+
+function switchStockTab(tab){
+  _stockTab = tab;
+  var btnP = document.getElementById('stTabPending');
+  var btnD = document.getElementById('stTabDone');
+  if(btnP) btnP.className = tab==='pending' ? 'btn bgd bsm' : 'btn bo bsm';
+  if(btnD) btnD.className = tab==='done'    ? 'btn bgd bsm' : 'btn bo bsm';
+  loadStock();
+}
+
 function loadStock(){
   callAPI('getPartLocations',{}).then(function(lr){
     partLocs=lr.data||{};
-    // ดึงทั้ง APPROVED และ STOCK_NOTIFIED เพื่อให้ Stock เห็นทันทีที่ช่างส่งใบเบิก
     return Promise.all([
       callAPI('getRequisitions',{status:'APPROVED'}),
       callAPI('getRequisitions',{status:'STOCK_NOTIFIED'})
@@ -1361,9 +1619,45 @@ function loadStock(){
     }));
     var sl=document.getElementById('stList');
     if(!sl) return;
-    var pending=combined.filter(function(r){return r.StatusStock!=='CLEARED';});
-    if(!pending.length){sl.innerHTML='<div class="card tc tm" style="padding:32px">ไม่มีรายการรอจัดของ 🎉</div>';return;}
-    var proms=pending.map(function(r){
+
+    // แยก pending vs done
+    var pending = combined.filter(function(r){
+      return r.StatusStock==='PENDING'||r.StatusStock==='STOCK_NOTIFIED';
+    });
+    var done = combined.filter(function(r){
+      return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='CLEARED';
+    });
+
+    // อัปเดต badge
+    var bp = document.getElementById('stBadgePend');
+    var bd = document.getElementById('stBadgeDone');
+    if(bp) bp.textContent = pending.length;
+    if(bd) bd.textContent = done.length;
+
+    var list = _stockTab==='pending' ? pending : done;
+    if(!list.length){
+      sl.innerHTML='<div class="card tc tm" style="padding:32px">'
+        +(_stockTab==='pending' ? '🎉 ไม่มีรายการรอจัดของ' : 'ยังไม่มีรายการที่จัดแล้ว')
+        +'</div>';
+      return;
+    }
+    // tab "จัดแล้ว" แสดงแค่ list ไม่ต้องโหลด detail
+    if(_stockTab==='done'){
+      var doneHtml = list.map(function(r){
+        return '<div class="qc" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px">'
+          +'<div>'
+          +'<strong>'+r.ReqID+'</strong> '+stChip(r.StatusStock)
+          +'<div style="font-size:12px;color:var(--g400);margin-top:2px">'+r.CustomerName+' — '+r.JobNo+'</div>'
+          +'<div style="font-size:11px;color:var(--g400)">จัดโดย: '+(r.StockHandlerEmail||'-')+'</div>'
+          +'</div>'
+          +'<button class="btn bo bsm stk-detail-btn" data-rid="'+r.ReqID+'">ดูรายละเอียด</button>'
+          +'</div>';
+      }).join('');
+      if(sl) sl.innerHTML = doneHtml;
+      return;
+    }
+
+    var proms=list.map(function(r){
       return callAPI('getRequisitionDetail',{id:r.ReqID}).then(function(dr){
         var items=dr.success?(dr.data.items||[]):[];
         var itRows='';
@@ -1411,9 +1705,9 @@ function loadStock(){
           :r.StatusApproval==='PENDING_MANAGER'
           ?'<div style="background:#e3f2fd;border:1px solid #90caf9;border-radius:6px;padding:6px 10px;font-size:12px;color:#1565c0;margin-bottom:8px">⏳ รอผู้จัดการอนุมัติ — เตรียมของไว้ล่วงหน้าได้เลยค่ะ</div>'
           :'';
-        var canAck=r.StatusStock==='PENDING'||r.StatusStock==='STOCK_NOTIFIED';
+        var canAck=_stockTab==='pending'&&(r.StatusStock==='PENDING'||r.StatusStock==='STOCK_NOTIFIED');
         var stkBtn=canAck
-          ?'<button class="btn bgd bsm" onclick="doStockAck(\''+r.ReqID+'\')">📦 รับจัดของ</button>'
+          ?'<button class="btn bgd bsm stk-ack-btn" data-rid="'+encodeURIComponent(r.ReqID)+'">📦 รับจัดของ</button>'
           :'<span class="chip chip-grn">จัดของแล้ว โดย '+(r.StockHandlerEmail||'')+'</span>';
         return '<div class="qc '+(canAck?'urg':'')+'">'
           +'<div class="fb2"><div><strong>'+r.ReqID+'</strong> '+stChip(r.StatusStock)+'</div><span class="tm" style="font-size:13px">'+r.OpenDate+'</span></div>'
@@ -1450,10 +1744,105 @@ function editLoc(reqId, partNo, curLoc){
 }
 
 function doStockAck(reqId){
-  if(!confirm('ยืนยันรับจัดอะไหล่ใบเบิก '+reqId+'?')) return;
-  callAPI('stockAcknowledge',{id:reqId}).then(function(res){
-    toast(res.message,res.success?'success':'error');
-    if(res.success) loadStock();
+  // เปิด modal ให้กรอกจำนวนจ่ายจริง
+  openStockAckModal(reqId);
+}
+
+var _stockAckReqId = '';
+var _stockAckItems = [];
+
+function openStockAckModal(reqId){
+  _stockAckReqId = reqId;
+  var modal = document.getElementById('stockAckModal');
+  var body  = document.getElementById('stockAckBody');
+  if(!modal || !body) return;
+  body.innerHTML = '<div style="text-align:center;padding:20px">⏳ กำลังโหลด...</div>';
+  modal.classList.remove('hidden');
+
+  callAPI('getRequisitionDetail',{id:reqId}).then(function(res){
+    _stockAckItems = res.data ? res.data.items || [] : [];
+    var html = '<p style="font-size:14px;color:var(--g500);margin-bottom:12px">ใบเบิก <strong>'+reqId+'</strong> — กรอกจำนวนที่จ่ายได้จริงค่ะ</p>';
+    html += '<table style="width:100%;border-collapse:collapse">';
+    html += '<thead><tr style="background:var(--gm);color:#fff">'
+      + '<th style="padding:6px 8px;font-size:12px;text-align:left">Part No.</th>'
+      + '<th style="padding:6px 8px;font-size:12px;text-align:left">ชื่ออะไหล่</th>'
+      + '<th style="padding:6px 8px;font-size:12px;text-align:center">เบิก</th>'
+      + '<th style="padding:6px 8px;font-size:12px;text-align:center">จ่ายจริง</th>'
+      + '<th style="padding:6px 8px;font-size:12px;text-align:center">ขาด</th>'
+      + '<th style="padding:6px 8px;font-size:12px;text-align:left">Serial No.<span style="font-size:10px;opacity:.8"> (ถ้ามี)</span></th>'
+      + '</tr></thead><tbody>';
+
+    _stockAckItems.forEach(function(it, i){
+      var req = parseFloat(it.Qty) || 0;
+      // ตรวจว่าต้องระบุ Serial No. หรือไม่ (ไฟฟ้า/แบต/อุปกรณ์ที่มี SerialNo ใน DB)
+      var needSerial = it.SerialNo || (it.NameEN && (
+        it.NameEN.toUpperCase().indexOf('BATTERY')>=0 ||
+        it.NameEN.toUpperCase().indexOf('CONTROLLER')>=0 ||
+        it.NameEN.toUpperCase().indexOf('MOTOR')>=0 ||
+        it.NameEN.toUpperCase().indexOf('CHARGER')>=0
+      ));
+      html += '<tr style="border-bottom:1px solid #eef2ef">'
+        + '<td style="padding:6px 8px;font-size:12px">'+it.PartNo+'</td>'
+        + '<td style="padding:6px 8px;font-size:12px">'+(it.NameEN||it.NameTH||'-')+'</td>'
+        + '<td style="padding:6px 8px;font-size:12px;text-align:center">'+req+' '+(it.Unit||'ชิ้น')+'</td>'
+        + '<td style="padding:6px 8px;text-align:center">'
+        + '<input type="number" id="sack_actual_'+i+'" value="'+req+'" min="0" max="'+req+'" '
+        + 'style="width:60px;text-align:center;border:1px solid var(--g200);border-radius:4px;padding:3px" '
+        + 'oninput="updateShortage('+i+','+req+')">'
+        + '</td>'
+        + '<td style="padding:6px 8px;font-size:13px;font-weight:700;text-align:center;color:var(--red)" id="sack_short_'+i+'">0</td>'
+        + '<td style="padding:6px 8px">'
+        + '<input type="text" id="sack_serial_'+i+'" placeholder="'+(needSerial?'บังคับระบุ ⚠️':'ระบุถ้ามี')+'" '
+        + 'style="width:120px;border:1px solid '+(needSerial?'var(--red)':'var(--g200)')+';border-radius:4px;padding:3px;font-size:12px">'
+        + '</td>'
+        + '</tr>';
+    });
+
+    html += '</tbody></table>';
+    html += '<div style="margin-top:12px;padding:10px;background:#fff8e1;border-radius:6px;font-size:13px;color:#795548">'
+      + '⚠️ ถ้าจ่ายไม่ครบ ระบบจะบันทึกของขาดไว้เพื่อดึงรายงานค่ะ</div>';
+    body.innerHTML = html;
+  });
+}
+
+function updateShortage(idx, reqQty){
+  var actualEl = document.getElementById('sack_actual_'+idx);
+  var shortEl  = document.getElementById('sack_short_'+idx);
+  if(!actualEl || !shortEl) return;
+  var actual = parseFloat(actualEl.value) || 0;
+  var short  = Math.max(0, reqQty - actual);
+  shortEl.textContent = short > 0 ? short : '0';
+  shortEl.style.color = short > 0 ? 'var(--red)' : 'var(--gm)';
+}
+
+function confirmStockAck(){
+  if(!_stockAckReqId) return;
+  // รวบรวมจำนวนจ่ายจริง
+  var dispatchedItems = _stockAckItems.map(function(it, i){
+    var actualEl = document.getElementById('sack_actual_'+i);
+    var actual   = actualEl ? parseFloat(actualEl.value)||0 : parseFloat(it.Qty)||0;
+    var req      = parseFloat(it.Qty) || 0;
+    var serialEl = document.getElementById('sack_serial_'+i);
+    return {
+      partNo:      it.PartNo,
+      nameEN:      it.NameEN || it.NameTH || '',
+      requestedQty: req,
+      actualQty:    actual,
+      shortQty:     Math.max(0, req - actual),
+      unit:         it.Unit || 'ชิ้น',
+      serialNo:     serialEl ? serialEl.value.trim() : '',
+    };
+  });
+  var hasShortage = dispatchedItems.some(function(it){ return it.shortQty > 0; });
+  document.getElementById('stockAckModal').classList.add('hidden');
+  callAPI('stockAcknowledge',{id:_stockAckReqId, dispatchedItems:dispatchedItems}).then(function(res){
+    if(res.success){
+      var msg = hasShortage ? 'จัดของแล้ว — มีของขาด กรุณาติดตามค่ะ' : 'จัดของครบแล้วค่ะ ✅';
+      toast(msg, hasShortage ? 'info' : 'success');
+      loadStock();
+    } else {
+      toast(res.message || 'เกิดข้อผิดพลาด', 'error');
+    }
   });
 }
 
@@ -2187,7 +2576,7 @@ function onPickupPhoto(e){
     pickupPhotoB64 = ev.target.result;
     var pp = document.getElementById('pickupPhotoPreview'), drop = document.getElementById('pickupPhotoDrop');
     if(pp){ pp.src = pickupPhotoB64; pp.classList.remove('hidden'); }
-    if(drop) drop.classList.add('hp');
+    if(drop){ drop.classList.add('hp'); drop.style.border='2px solid var(--gm)'; }
   };
   reader.readAsDataURL(file);
 }
@@ -2235,7 +2624,7 @@ function onRetPhoto(e){
     retPhotoB64 = ev.target.result;
     var pp = document.getElementById('retPhoPreview'), drop = document.getElementById('retPhoDrop');
     if(pp){ pp.src = retPhotoB64; pp.classList.remove('hidden'); }
-    if(drop) drop.classList.add('hp');
+    if(drop){ drop.classList.add('hp'); drop.style.border='2px solid var(--gm)'; }
   };
   reader.readAsDataURL(file);
 }
@@ -2243,6 +2632,11 @@ function onRetPhoto(e){
 function submitClearByTech(){
   var reqId = document.getElementById('clSel').value;
   if(!reqId) return toast('กรุณาเลือกใบเบิก','error');
+  // ── บังคับถ่ายรูปอะไหล่เก่าก่อนส่ง ──────────────────────
+  var preview = document.getElementById('retPhoPreview');
+  if(!preview || preview.classList.contains('hidden') || !preview.src || preview.src === window.location.href){
+    return toast('กรุณาถ่ายรูปอะไหล่เก่า / ของที่คืนก่อนนะคะ 📷','error');
+  }
   var items = getClearItems();
   callAPI('submitClearance',{
     reqId: reqId,
@@ -2539,6 +2933,766 @@ pgTitles['report'] = 'รายงานและสถิติ';
 // ── CLOSE MODAL ON OVERLAY ────────────────────────────────────
 document.getElementById('detailMo').addEventListener('click',function(e){if(e.target===this)closeMo();});
 document.getElementById('noteMo').addEventListener('click',function(e){if(e.target===this)closeNoteMo();});
+
+
+// ══════════════════════════════════════════════════════════════
+// STOCK CARD FUNCTIONS
+// ══════════════════════════════════════════════════════════════
+
+var _scTab = 'in';
+var _soTab = 'pending';
+var _scSelectedPart = null;
+var _soItems = [];
+
+// ── helpers ──────────────────────────────────────────────────
+function closeModal(id){ var m=document.getElementById(id); if(m) m.classList.add('hidden'); }
+
+// ── Stock Card Tab ────────────────────────────────────────────
+function switchSCTab(tab){
+  _scTab = tab;
+  ['in','out','log'].forEach(function(t){
+    var btn = document.getElementById('scTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(btn) btn.className = t===tab ? 'btn bgd bsm' : 'btn bo bsm';
+  });
+  loadStockCard();
+}
+
+function loadStockCard(){
+  var el = document.getElementById('scContent');
+  if(!el) return;
+  el.innerHTML = '<div class="card tc" style="padding:32px">⏳ กำลังโหลด...</div>';
+  callAPI('getStockCardEntries',{type:_scTab}).then(function(res){
+    var entries = res.data || [];
+    if(!entries.length){
+      el.innerHTML = '<div class="card tc tm" style="padding:32px">ไม่มีข้อมูล</div>'; return;
+    }
+    var typeLabel = {
+      IN:'📥 รับเข้า', OUT_SALE:'🛒 ขาย', OUT_RENTAL:'🚗 รถเช่า',
+      OUT_CONTRACT:'🚌 รถสัมปทาน', OUT_WARRANTY:'🔧 Warranty',
+      OUT_BRANCH:'🏢 ส่งสาขา', ADJUST:'⚖️ ปรับยอด'
+    };
+    var html = '<div class="card" style="padding:0;overflow:hidden"><div class="tw"><table class="it"><thead><tr>'
+      +'<th>วันที่</th><th>ประเภท</th><th>Part No.</th><th>ชื่ออะไหล่</th>'
+      +'<th style="text-align:center">จำนวน</th><th>Serial No.</th><th>อ้างอิง</th><th>หมายเหตุ</th>'
+      +'</tr></thead><tbody>';
+    entries.forEach(function(e){
+      var typeClass = e.Type==='IN'||e.Type==='ADJUST' ? 'chip-grn' : 'chip-red';
+      var qtySign = e.Type==='IN'||e.Type==='ADJUST' ? '+' : '-';
+      html += '<tr>'
+        +'<td style="font-size:12px;white-space:nowrap">'+new Date(e.CreatedAt).toLocaleDateString('th-TH')+'</td>'
+        +'<td><span class="chip '+typeClass+'" style="font-size:11px">'+(typeLabel[e.Type]||e.Type)+'</span></td>'
+        +'<td style="font-size:12px;font-weight:700">'+e.PartNo+'</td>'
+        +'<td style="font-size:12px">'+(e.NameEN||'-')+'</td>'
+        +'<td style="text-align:center;font-weight:700;color:'+(e.Type==='IN'?'var(--gm)':'var(--red)')+'">'+qtySign+(e.Qty||0)+' '+(e.Unit||'ชิ้น')+'</td>'
+        +'<td style="font-size:12px">'+(e.SerialNo||'-')+'</td>'
+        +'<td style="font-size:12px">'+(e.RefNo||'-')+'</td>'
+        +'<td style="font-size:12px">'+(e.Note||'-')+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table></div></div>';
+    el.innerHTML = html;
+  });
+}
+
+// ── Stock Card Form ───────────────────────────────────────────
+function openSCForm(){
+  document.getElementById('scType').value = _scTab==='in' ? 'IN' : 'OUT_SALE';
+  ['scPartNo','scPartName','scQty','scSerial','scRef','scNote','scReqId'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('scUnit').value = 'ชิ้น';
+  document.getElementById('scPartNameRow').style.display = 'none';
+  document.getElementById('scSerialRow').style.display = 'none';
+  _scSelectedPart = null;
+  onSCTypeChange();
+  document.getElementById('scFormModal').classList.remove('hidden');
+}
+
+function onSCTypeChange(){
+  var type = document.getElementById('scType').value;
+  var refLabel = document.getElementById('scRefLabel');
+  var refRow   = document.getElementById('scRefRow');
+  var reqRow   = document.getElementById('scReqIdRow');
+  var labels = {
+    IN:'เลขที่ใบส่งของ / เลข SAP', OUT_SALE:'เลขที่ใบเสนอราคา',
+    OUT_RENTAL:'เลขที่ Job / ใบเบิก', OUT_CONTRACT:'เลขที่ Job / ใบเบิก',
+    OUT_WARRANTY:'เลขที่ใบเบิก', OUT_BRANCH:'เลขที่ Request SAP', ADJUST:'เหตุผลการปรับ'
+  };
+  if(refLabel) refLabel.textContent = labels[type] || 'เลขที่อ้างอิง';
+  var t = document.getElementById('scFormTitle');
+  if(t) t.textContent = type==='IN' ? '📥 บันทึกรับเข้า' : type==='ADJUST' ? '⚖️ ปรับยอด Stock' : '📤 บันทึกจ่ายออก';
+}
+
+function onSCPartInput(){
+  var q = document.getElementById('scPartNo').value.trim().toLowerCase();
+  var dd = document.getElementById('scPartSuggest');
+  if(!dd) return;
+  if(!q || q.length < 2){ dd.style.display='none'; return; }
+  var res = (typeof PARTS_DB!=='undefined' ? PARTS_DB : [])
+    .filter(function(p){ return p._search && p._search.indexOf(q)>=0; }).slice(0,8);
+  if(!res.length){ dd.style.display='none'; return; }
+  dd.style.display='block';
+  dd.innerHTML = res.map(function(p){
+    return '<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid #eef2ef;font-size:13px" onmousedown="selectSCPart(\''+encodeURIComponent(JSON.stringify(p))+'\')">'
+      +'<strong>'+p.partNo+'</strong> — '+(p.nameEN||p.nameTH||'')+'</div>';
+  }).join('');
+}
+
+function selectSCPart(encoded){
+  var p = JSON.parse(decodeURIComponent(encoded));
+  _scSelectedPart = p;
+  document.getElementById('scPartNo').value = p.partNo;
+  document.getElementById('scPartName').value = p.nameEN||p.nameTH||'';
+  document.getElementById('scPartNameRow').style.display = '';
+  document.getElementById('scUnit').value = p.unit||'ชิ้น';
+  document.getElementById('scPartSuggest').style.display = 'none';
+  // แสดง serial no ถ้าเป็น battery/motor/controller
+  var needSerial = p.nameEN && (
+    p.nameEN.toUpperCase().indexOf('BATTERY')>=0 ||
+    p.nameEN.toUpperCase().indexOf('CONTROLLER')>=0 ||
+    p.nameEN.toUpperCase().indexOf('MOTOR')>=0 ||
+    p.nameEN.toUpperCase().indexOf('CHARGER')>=0
+  );
+  document.getElementById('scSerialRow').style.display = needSerial ? '' : 'none';
+}
+
+function submitSCForm(){
+  var partNo = document.getElementById('scPartNo').value.trim();
+  var qty    = parseFloat(document.getElementById('scQty').value);
+  var type   = document.getElementById('scType').value;
+  if(!partNo) return toast('กรุณาระบุ Part No.','error');
+  if(!qty || qty<=0) return toast('กรุณาระบุจำนวน','error');
+  var data = {
+    partNo: partNo,
+    nameEN: document.getElementById('scPartName').value||(_scSelectedPart?_scSelectedPart.nameEN||_scSelectedPart.nameTH:''),
+    unit:   document.getElementById('scUnit').value||'ชิ้น',
+    qty:    qty,
+    type:   type,
+    serialNo: document.getElementById('scSerial').value.trim(),
+    refNo:    document.getElementById('scRef').value.trim(),
+    reqId:    document.getElementById('scReqId').value.trim(),
+    note:     document.getElementById('scNote').value.trim(),
+  };
+  callAPI('saveStockCardEntry', data).then(function(res){
+    if(res.success){
+      toast(res.message||'บันทึกแล้วค่ะ','success');
+      closeModal('scFormModal');
+      loadStockCard();
+      loadInventory();
+    } else {
+      toast(res.message||'เกิดข้อผิดพลาด','error');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// QR CODE SCANNER & GENERATOR
+// ══════════════════════════════════════════════════════════════
+
+var _qrStream = null;
+var _qrContext = null;
+var _qrScanTarget = 'create'; // 'create' | 'stockcard'
+var _qrAnimFrame = null;
+var _qrTrack = null;
+var _qrPrintItems = [];
+
+// ── QR Scanner ────────────────────────────────────────────────
+function openQRScanner(target){
+  _qrScanTarget = target || 'create';
+  var modal = document.getElementById('qrScanModal');
+  if(!modal) return;
+  modal.classList.remove('hidden');
+  startQRCamera();
+}
+
+function closeQRScanner(){
+  var modal = document.getElementById('qrScanModal');
+  if(modal) modal.classList.add('hidden');
+  stopQRCamera();
+}
+
+function startQRCamera(){
+  var video = document.getElementById('qrVideo');
+  var status = document.getElementById('qrStatus');
+  if(!video) return;
+
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    if(status) status.textContent = '❌ เบราว์เซอร์ไม่รองรับกล้อง กรุณาใช้ Chrome/Safari';
+    return;
+  }
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} }
+  }).then(function(stream){
+    _qrStream = stream;
+    _qrTrack = stream.getVideoTracks()[0];
+    video.srcObject = stream;
+    video.play();
+    video.onloadedmetadata = function(){
+      if(status) status.textContent = 'กำลังสแกน... เล็งกล้องไปที่ QR Code';
+      scanQRFrame();
+      // แสดงปุ่มไฟฉายถ้ารองรับ
+      var flashBtn = document.getElementById('qrFlashBtn');
+      if(flashBtn && _qrTrack && _qrTrack.getCapabilities && _qrTrack.getCapabilities().torch){
+        flashBtn.style.display = 'inline-block';
+      }
+    };
+  }).catch(function(err){
+    if(status) status.textContent = '❌ ไม่สามารถเปิดกล้องได้: ' + err.message;
+  });
+}
+
+function stopQRCamera(){
+  if(_qrAnimFrame){ cancelAnimationFrame(_qrAnimFrame); _qrAnimFrame=null; }
+  if(_qrStream){ _qrStream.getTracks().forEach(function(t){ t.stop(); }); _qrStream=null; }
+}
+
+function toggleQRFlash(){
+  if(!_qrTrack) return;
+  var current = _qrTrack.getConstraints().advanced;
+  var torchOn = current && current[0] && current[0].torch;
+  _qrTrack.applyConstraints({ advanced:[{ torch: !torchOn }] });
+  var btn = document.getElementById('qrFlashBtn');
+  if(btn) btn.textContent = torchOn ? '🔦 ไฟฉาย' : '💡 ปิดไฟ';
+}
+
+function scanQRFrame(){
+  var video = document.getElementById('qrVideo');
+  var canvas = document.getElementById('qrCanvas');
+  if(!video || !canvas || !_qrStream){ return; }
+  if(video.readyState !== video.HAVE_ENOUGH_DATA){
+    _qrAnimFrame = requestAnimationFrame(scanQRFrame); return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  var code = null;
+  try {
+    code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts:'dontInvert' });
+  } catch(e){}
+
+  if(code && code.data){
+    onQRDetected(code.data);
+    return;
+  }
+  _qrAnimFrame = requestAnimationFrame(scanQRFrame);
+}
+
+function onQRDetected(rawData){
+  stopQRCamera();
+  closeQRScanner();
+
+  // Format: "PartNo|NameEN|Unit" หรือแค่ Part No.
+  var parts = rawData.split('|');
+  var partNo = parts[0].trim();
+  var nameEN = parts[1] ? parts[1].trim() : '';
+  var unit   = parts[2] ? parts[2].trim() : 'ชิ้น';
+
+  // เสียง/vibrate feedback
+  if(navigator.vibrate) navigator.vibrate(100);
+  toast('สแกนได้: ' + partNo, 'success');
+
+  if(_qrScanTarget === 'create'){
+    // หาใน PARTS_DB
+    var found = typeof PARTS_DB !== 'undefined'
+      ? PARTS_DB.find(function(p){ return p.partNo===partNo; })
+      : null;
+    if(found){
+      addRow(found);
+    } else {
+      // ไม่มีใน DB — ใช้ข้อมูลจาก QR
+      addRow({ partNo:partNo, nameEN:nameEN, nameTH:'', unit:unit });
+    }
+  } else if(_qrScanTarget === 'stockcard'){
+    var el = document.getElementById('scPartNo');
+    if(el){ el.value = partNo; onSCPartInput(); }
+    var nameEl = document.getElementById('scPartName');
+    if(nameEl && nameEN){ nameEl.value = nameEN; document.getElementById('scPartNameRow').style.display=''; }
+    var unitEl = document.getElementById('scUnit');
+    if(unitEl && unit){ unitEl.value = unit; }
+  }
+}
+
+// ── QR Generator + Print ─────────────────────────────────────
+function openQRPrint(){
+  _qrPrintItems = [];
+  var searchEl = document.getElementById('qrPrintSearch');
+  var resultEl = document.getElementById('qrPrintResults');
+  if(searchEl) searchEl.value = '';
+  if(resultEl) resultEl.innerHTML = '';
+  renderQRSelected();
+  document.getElementById('qrPrintModal').classList.remove('hidden');
+}
+
+function searchQRParts(){
+  var q = (document.getElementById('qrPrintSearch').value||'').trim().toLowerCase();
+  var el = document.getElementById('qrPrintResults');
+  if(!el) return;
+  if(!q || q.length < 2){ el.innerHTML = ''; return; }
+  var db = typeof PARTS_DB !== 'undefined' ? PARTS_DB : [];
+  var res = db.filter(function(p){ return p._search && p._search.indexOf(q)>=0; }).slice(0,10);
+  if(!res.length){ el.innerHTML = '<div style="padding:8px 12px;font-size:13px;color:var(--g400)">ไม่พบอะไหล่</div>'; return; }
+  el.innerHTML = res.map(function(p){
+    return '<div style="padding:6px 12px;cursor:pointer;border-bottom:1px solid #eef2ef;font-size:13px;display:flex;justify-content:space-between;align-items:center">'
+      +'<span><strong>'+p.partNo+'</strong> — '+(p.nameEN||p.nameTH||'')+'</span>'
+      +'<button class="btn bo bsm" style="padding:2px 8px" onclick="addQRItem(\''+encodeURIComponent(JSON.stringify(p))+'\')">+ เลือก</button>'
+      +'</div>';
+  }).join('');
+}
+
+function addQRItem(encoded){
+  var p = JSON.parse(decodeURIComponent(encoded));
+  if(_qrPrintItems.find(function(x){ return x.partNo===p.partNo; })){
+    toast('เลือกไปแล้วค่ะ','info'); return;
+  }
+  _qrPrintItems.push(p);
+  renderQRSelected();
+}
+
+function removeQRItem(partNo){
+  _qrPrintItems = _qrPrintItems.filter(function(p){ return p.partNo!==partNo; });
+  renderQRSelected();
+}
+
+function renderQRSelected(){
+  var el = document.getElementById('qrPrintSelected');
+  var hint = document.getElementById('qrPrintHint');
+  if(!el) return;
+  if(_qrPrintItems.length===0){
+    el.innerHTML = '<span style="color:var(--g400);font-size:13px">เลือกอะไหล่ที่ต้องการพิมพ์ QR</span>';
+    return;
+  }
+  el.innerHTML = _qrPrintItems.map(function(p){
+    return '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--gm);border-radius:16px;padding:3px 10px;font-size:12px">'
+      +'<strong>'+p.partNo+'</strong>'
+      +'<button onclick="removeQRItem(\''+p.partNo+'\')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 2px">✕</button>'
+      +'</span>';
+  }).join('');
+}
+
+function printQRCodes(){
+  if(!_qrPrintItems.length){ toast('กรุณาเลือกอะไหล่ก่อนค่ะ','error'); return; }
+  var copies = parseInt(document.getElementById('qrCopies').value)||1;
+
+  var printWin = window.open('','_blank','width=800,height=600');
+  if(!printWin){ toast('กรุณาอนุญาต popup ก่อนค่ะ','error'); return; }
+
+  // สร้าง QR canvas สำหรับแต่ละ part
+  var items = [];
+  _qrPrintItems.forEach(function(p){
+    for(var c=0;c<copies;c++) items.push(p);
+  });
+
+  // สร้าง HTML
+  var style = '<style>'
+    +'@page{size:A4;margin:10mm}'
+    +'body{margin:0;font-family:Sarabun,Arial,sans-serif}'
+    +'.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}'
+    +'.label{border:1px solid #ccc;border-radius:6px;padding:8px;text-align:center;break-inside:avoid}'
+    +'.label canvas{width:100%;max-width:90px;height:auto}'
+    +'.pno{font-size:11px;font-weight:700;color:#1a4a2e;margin-top:4px;word-break:break-all}'
+    +'.pname{font-size:9px;color:#4a5e51;margin-top:2px;max-height:28px;overflow:hidden}'
+    +'</style>';
+
+  var cells = items.map(function(p,i){
+    var qrData = p.partNo+'|'+(p.nameEN||p.nameTH||'')+'|'+(p.unit||'ชิ้น');
+    return '<div class="label">'
+      +'<canvas id="qrc_'+i+'"></canvas>'
+      +'<div class="pno">'+p.partNo+'</div>'
+      +'<div class="pname">'+(p.nameEN||p.nameTH||'')+'</div>'
+      +'</div>';
+  }).join('');
+
+  printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'+style
+    +'<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>'
+    +'</head><body><div class="grid">'+cells+'</div>'
+    +'<script>'
+    +'var items='+JSON.stringify(items.map(function(p){
+      return {id:p.partNo, data:p.partNo+'|'+(p.nameEN||p.nameTH||'')+'|'+(p.unit||'ชิ้น')};
+    }))+';'
+    +'items.forEach(function(item,i){'
+    +'  var c=document.getElementById("qrc_"+i);'
+    +'  if(c) QRCode.toCanvas(c,item.data,{width:90,margin:1,color:{dark:"#1a4a2e",light:"#fff"}});'
+    +'});'
+    +'setTimeout(function(){window.print();window.close();},800);'
+    +'<\/script></body></html>');
+  printWin.document.close();
+  closeModal('qrPrintModal');
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// INVENTORY FUNCTIONS
+// ══════════════════════════════════════════════════════════════
+var _inventoryData = [];
+
+function loadInventory(){
+  var el = document.getElementById('invContent');
+  if(!el) return;
+  el.innerHTML = '<div class="tc" style="padding:32px">⏳ กำลังโหลด...</div>';
+  callAPI('getInventoryBalance',{}).then(function(res){
+    _inventoryData = res.data || [];
+    renderInventory(_inventoryData);
+  });
+}
+
+function filterInventory(){
+  var q = (document.getElementById('invSearch').value||'').toLowerCase();
+  var f = document.getElementById('invFilter').value;
+  var filtered = _inventoryData.filter(function(item){
+    var matchQ = !q || item.PartNo.toLowerCase().indexOf(q)>=0 || (item.NameEN||'').toLowerCase().indexOf(q)>=0;
+    var matchF = !f
+      || (f==='low' && item.Balance>0 && item.Balance<=5)
+      || (f==='out' && item.Balance<=0);
+    return matchQ && matchF;
+  });
+  renderInventory(filtered);
+}
+
+function renderInventory(data){
+  var el = document.getElementById('invContent');
+  if(!el) return;
+  if(!data.length){ el.innerHTML='<div class="tc tm" style="padding:32px">ไม่พบข้อมูล</div>'; return; }
+  var html = '<div class="tw"><table class="it"><thead><tr>'
+    +'<th>Part No.</th><th>ชื่ออะไหล่</th>'
+    +'<th style="text-align:center">รับเข้า</th>'
+    +'<th style="text-align:center">จ่ายออก</th>'
+    +'<th style="text-align:center">คงเหลือ</th>'
+    +'<th>สถานะ</th>'
+    +'</tr></thead><tbody>';
+  data.forEach(function(item){
+    var bal = item.Balance||0;
+    var statusChip = bal<=0
+      ? '<span class="chip chip-red" style="font-size:11px">หมดแล้ว</span>'
+      : bal<=5
+      ? '<span class="chip chip-gld" style="font-size:11px">ใกล้หมด</span>'
+      : '<span class="chip chip-grn" style="font-size:11px">พอ</span>';
+    var balColor = bal<=0 ? 'color:var(--red);' : bal<=5 ? 'color:#e65100;' : 'color:var(--gm);';
+    html += '<tr>'
+      +'<td style="font-weight:700;font-size:13px">'+item.PartNo+'</td>'
+      +'<td style="font-size:13px">'+(item.NameEN||'-')+'</td>'
+      +'<td style="text-align:center;color:var(--gm);font-weight:700">'+(item.TotalIn||0)+'</td>'
+      +'<td style="text-align:center;color:var(--red);font-weight:700">'+(item.TotalOut||0)+'</td>'
+      +'<td style="text-align:center;font-size:16px;font-weight:700;'+balColor+'">'+bal+'</td>'
+      +'<td>'+statusChip+'</td>'
+      +'</tr>';
+  });
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SALES ORDER FUNCTIONS
+// ══════════════════════════════════════════════════════════════
+function switchSOTab(tab){
+  _soTab = tab;
+  var btnP = document.getElementById('soTabPending');
+  var btnD = document.getElementById('soTabDone');
+  if(btnP) btnP.className = tab==='pending' ? 'btn bgd bsm' : 'btn bo bsm';
+  if(btnD) btnD.className = tab==='done'    ? 'btn bgd bsm' : 'btn bo bsm';
+  initSales();
+}
+
+function initSales(){
+  var el = document.getElementById('soList');
+  if(!el) return;
+  el.innerHTML = '<div class="card tc" style="padding:32px">⏳ กำลังโหลด...</div>';
+  callAPI('getSalesOrders',{status:_soTab}).then(function(res){
+    var orders = res.data || [];
+    // badge
+    if(_soTab==='pending'){
+      var b=document.getElementById('soBadgePend');
+      if(b) b.textContent=orders.length;
+    }
+    if(!orders.length){
+      el.innerHTML='<div class="card tc tm" style="padding:32px">ไม่มีรายการ</div>'; return;
+    }
+    var html='';
+    orders.forEach(function(o){
+      var statusChip = o.Status==='PENDING'
+        ? '<span class="chip chip-gld">รอจัด</span>'
+        : o.Status==='DISPATCHED'
+        ? '<span class="chip chip-grn">จัดแล้ว</span>'
+        : '<span class="chip chip-gry">'+o.Status+'</span>';
+      html += '<div class="qc">'
+        +'<div class="fb2"><div><strong>'+o.SONo+'</strong> '+statusChip+'</div><span class="tm" style="font-size:13px">'+new Date(o.CreatedAt).toLocaleDateString('th-TH')+'</span></div>'
+        +'<div class="dg" style="grid-template-columns:repeat(3,1fr);gap:8px 16px;margin-top:8px">'
+        +'<div class="di"><div class="dl">ใบเสนอราคา</div><div class="dv">'+o.QuoteNo+'</div></div>'
+        +'<div class="di"><div class="dl">PO</div><div class="dv">'+(o.PONo||'-')+'</div></div>'
+        +'<div class="di"><div class="dl">ลูกค้า</div><div class="dv">'+(o.CustomerName||'-')+'</div></div>'
+        +'</div>'
+        +(o.Status==='PENDING' && (CU.role==='STOCK'||CU.role==='MANAGER')
+          ? '<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">'
+            +'<button class="btn bo bsm" onclick="viewSODetail(\''+o.SONo+'\')">ดูรายละเอียด</button>'
+            +'<button class="btn bgd bsm" onclick="dispatchSO(\''+o.SONo+'\')">📦 จัดให้แล้ว</button>'
+            +'</div>'
+          : '<div style="margin-top:8px;text-align:right"><button class="btn bo bsm" onclick="viewSODetail(\''+o.SONo+'\')">ดูรายละเอียด</button></div>'
+        )
+        +'</div>';
+    });
+    el.innerHTML = html;
+  });
+}
+
+function openNewSales(){
+  _soItems = [];
+  ['soQuoteNo','soPONo','soCustName'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('soItemsBody').innerHTML='';
+  addSORow();
+  document.getElementById('soFormModal').classList.remove('hidden');
+}
+
+function addSORow(){
+  var wrap = document.getElementById('soItemsBody');
+  if(!wrap) return;
+  var i = wrap.children.length;
+  var div = document.createElement('div');
+  div.style.cssText = 'background:#f8faf9;border:1px solid var(--g200);border-radius:8px;padding:10px;position:relative;margin-bottom:4px';
+  div.innerHTML = '<button onclick="this.parentElement.remove()" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;color:var(--red);font-size:16px" title="ลบรายการ">✕</button>'
+    +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:6px">'
+    +'<div><label style="font-size:11px;color:var(--g400)">Part No.</label>'
+    +'<input class="fc" placeholder="Part No." id="so_pn_'+i+'" oninput="onSOPartInput('+i+')" autocomplete="off"></div>'
+    +'<div><label style="font-size:11px;color:var(--g400)">ชื่ออะไหล่</label>'
+    +'<input class="fc" placeholder="ชื่ออะไหล่" id="so_name_'+i+'" readonly style="color:var(--g400)"></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 2fr 2fr;gap:8px">'
+    +'<div><label style="font-size:11px;color:var(--g400)">จำนวน</label>'
+    +'<input class="fc" type="number" id="so_qty_'+i+'" value="1" min="1"></div>'
+    +'<div><label style="font-size:11px;color:var(--g400)">หน่วย</label>'
+    +'<input class="fc" id="so_unit_'+i+'" value="ชิ้น"></div>'
+    +'<div><label style="font-size:11px;color:var(--g400)">Serial No.</label>'
+    +'<input class="fc" placeholder="S/N (ถ้ามี)" id="so_sn_'+i+'"></div>'
+    +'<div><label style="font-size:11px;color:var(--g400)">หมายเหตุ/ประกัน</label>'
+    +'<input class="fc" placeholder="หมายเหตุ" id="so_note_'+i+'"></div>'
+    +'</div>';
+  wrap.appendChild(div);
+}
+
+function onSOPartInput(i){
+  var q = (document.getElementById('so_pn_'+i).value||'').trim().toLowerCase();
+  if(!q||q.length<2) return;
+  var res = (typeof PARTS_DB!=='undefined'?PARTS_DB:[])
+    .filter(function(p){return p._search&&p._search.indexOf(q)>=0;}).slice(0,1);
+  if(res.length){
+    document.getElementById('so_name_'+i).value = res[0].nameEN||res[0].nameTH||'';
+    document.getElementById('so_unit_'+i).value = res[0].unit||'ชิ้น';
+  }
+}
+
+function submitSOForm(){
+  var quoteNo = document.getElementById('soQuoteNo').value.trim();
+  if(!quoteNo) return toast('กรุณาระบุเลขที่ใบเสนอราคาค่ะ','error');
+  var wrap = document.getElementById('soItemsBody');
+  var items = [];
+  var count = wrap ? wrap.children.length : 0;
+  for(var i=0;i<count;i++){
+    var pn = document.getElementById('so_pn_'+i);
+    var qty = document.getElementById('so_qty_'+i);
+    if(!pn||!pn.value.trim()) continue;
+    items.push({
+      partNo: pn.value.trim(),
+      nameEN: (document.getElementById('so_name_'+i)||{}).value||'',
+      qty:    parseFloat((qty||{}).value)||1,
+      unit:   (document.getElementById('so_unit_'+i)||{}).value||'ชิ้น',
+      serialNo:(document.getElementById('so_sn_'+i)||{}).value||'',
+      note:   (document.getElementById('so_note_'+i)||{}).value||'',
+    });
+  }
+  if(!items.length) return toast('กรุณาเพิ่มรายการอะไหล่อย่างน้อย 1 รายการค่ะ','error');
+  callAPI('createSalesOrder',{
+    quoteNo:quoteNo,
+    poNo:document.getElementById('soPONo').value.trim(),
+    customerName:document.getElementById('soCustName').value.trim(),
+    items:items,
+  }).then(function(res){
+    if(res.success){
+      toast(res.message||'เปิดรายการขายแล้วค่ะ','success');
+      closeModal('soFormModal');
+      initSales();
+    } else {
+      toast(res.message||'เกิดข้อผิดพลาด','error');
+    }
+  });
+}
+
+function dispatchSO(soNo){
+  if(!confirm('ยืนยันว่าจัดอะไหล่สำหรับใบ '+soNo+' เรียบร้อยแล้วค่ะ?')) return;
+  callAPI('dispatchSalesOrder',{soNo:soNo}).then(function(res){
+    toast(res.message||(res.success?'จัดแล้วค่ะ':'error'), res.success?'success':'error');
+    if(res.success) initSales();
+  });
+}
+
+function viewSODetail(soNo){
+  callAPI('getSalesOrderDetail',{soNo:soNo}).then(function(res){
+    if(!res.success||!res.data) return toast('ไม่พบข้อมูล','error');
+    var o=res.data;
+    var rows = (o.items||[]).map(function(it){
+      return '<tr><td>'+it.PartNo+'</td><td>'+(it.NameEN||'-')+'</td>'
+        +'<td style="text-align:center">'+it.Qty+' '+(it.Unit||'ชิ้น')+'</td>'
+        +'<td>'+(it.SerialNo||'-')+'</td><td>'+(it.Note||'-')+'</td></tr>';
+    }).join('');
+    alert('ใบ '+soNo+'\nใบเสนอราคา: '+o.QuoteNo+'\nPO: '+(o.PONo||'-')+'\nลูกค้า: '+(o.CustomerName||'-')+'\nรายการ: '+o.items.length+' รายการ');
+  });
+}
+
+
 </script>
+
+<!-- ── STOCK CARD FORM MODAL ──────────────────────── -->
+<div id="scFormModal" class="mo hidden">
+  <div class="mow" style="max-width:540px">
+    <div class="moh">
+      <div class="mot" id="scFormTitle">📥 บันทึกรับเข้า</div>
+      <button class="mcl" onclick="closeModal('scFormModal')">✕</button>
+    </div>
+    <div class="mob">
+      <div class="fg">
+        <label class="fl">ประเภทรายการ <span class="rq">*</span></label>
+        <select class="fc" id="scType" onchange="onSCTypeChange()">
+          <option value="IN">📥 รับเข้า (จากฝ่ายพัสดุ สนง.ใหญ่)</option>
+          <option value="OUT_SALE">🛒 จ่ายออก — ขาย</option>
+          <option value="OUT_RENTAL">🚗 จ่ายออก — รถเช่า</option>
+          <option value="OUT_CONTRACT">🚌 จ่ายออก — รถสัมปทาน</option>
+          <option value="OUT_WARRANTY">🔧 จ่ายออก — Warranty</option>
+          <option value="OUT_BRANCH">🏢 จ่ายออก — ส่งสาขา (SAP)</option>
+          <option value="ADJUST">⚖️ ปรับยอด (นับ Stock จริง)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Part No. <span class="rq">*</span></label>
+        <div style="position:relative">
+          <input class="fc" id="scPartNo" placeholder="สแกน QR หรือกรอก Part No." oninput="onSCPartInput()" autocomplete="off">
+          <button class="btn bo bsm" onclick="openQRScanner('stockcard')" style="position:absolute;right:4px;top:4px;padding:2px 8px" title="สแกน QR">📷 QR</button>
+          <div id="scPartSuggest" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:500;background:#fff;border:1.5px solid var(--gm);border-radius:0 0 var(--rs) var(--rs);max-height:160px;overflow-y:auto;box-shadow:var(--shm)"></div>
+        </div>
+      </div>
+      <div class="fg" id="scPartNameRow" style="display:none">
+        <label class="fl">ชื่ออะไหล่</label>
+        <input class="fc" id="scPartName" readonly style="color:var(--g400)">
+      </div>
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">จำนวน <span class="rq">*</span></label>
+          <input class="fc" type="number" id="scQty" placeholder="0" min="1">
+        </div>
+        <div class="fg">
+          <label class="fl">หน่วย</label>
+          <input class="fc" id="scUnit" placeholder="ชิ้น" value="ชิ้น">
+        </div>
+      </div>
+      <div class="fg" id="scSerialRow" style="display:none">
+        <label class="fl">Serial No.</label>
+        <input class="fc" id="scSerial" placeholder="ระบุ Serial No. (ถ้ามี)">
+      </div>
+      <div class="fg" id="scRefRow">
+        <label class="fl" id="scRefLabel">เลขที่เอกสารอ้างอิง</label>
+        <input class="fc" id="scRef" placeholder="เช่น เลข SAP, เลข PO, เลข Request">
+      </div>
+      <div class="fg" id="scReqIdRow" style="display:none">
+        <label class="fl">เลขที่ใบเบิก (ถ้ามี)</label>
+        <input class="fc" id="scReqId" placeholder="PKT-BR-2569-XXXX">
+      </div>
+      <div class="fg">
+        <label class="fl">หมายเหตุ</label>
+        <input class="fc" id="scNote" placeholder="บันทึกเพิ่มเติม">
+      </div>
+    </div>
+    <div class="mof">
+      <button class="btn bd" onclick="closeModal('scFormModal')">ยกเลิก</button>
+      <button class="btn bgd" onclick="submitSCForm()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SALES ORDER FORM MODAL ──────────────────────── -->
+<div id="soFormModal" class="mo hidden">
+  <div class="mow" style="max-width:600px">
+    <div class="moh">
+      <div class="mot">🛒 เปิดรายการขายอะไหล่</div>
+      <button class="mcl" onclick="closeModal('soFormModal')">✕</button>
+    </div>
+    <div class="mob">
+      <div class="fr">
+        <div class="fg">
+          <label class="fl">เลขที่ใบเสนอราคา <span class="rq">*</span></label>
+          <input class="fc" id="soQuoteNo" placeholder="QT-XXXX">
+        </div>
+        <div class="fg">
+          <label class="fl">Ref. เลขที่ PO <span style="font-size:11px;color:var(--g400)">(ถ้ามี)</span></label>
+          <input class="fc" id="soPONo" placeholder="PO-XXXX">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">ชื่อลูกค้า / บริษัท</label>
+        <input class="fc" id="soCustName" placeholder="ชื่อลูกค้า">
+      </div>
+      <div class="ct" style="margin:12px 0 8px">รายการอะไหล่ที่ขาย</div>
+      <div id="soItemsBody" style="display:flex;flex-direction:column;gap:8px"></div>
+      <button class="btn bo bsm" onclick="addSORow()" style="margin-top:8px">+ เพิ่มรายการ</button>
+    </div>
+    <div class="mof">
+      <button class="btn bd" onclick="closeModal('soFormModal')">ยกเลิก</button>
+      <button class="btn bgd" onclick="submitSOForm()">📤 ส่งให้ Stock จัด</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── QR SCANNER MODAL ──────────────────────────── -->
+<div id="qrScanModal" class="mo hidden">
+  <div class="mow" style="max-width:420px">
+    <div class="moh">
+      <div class="mot">📷 สแกน QR Code อะไหล่</div>
+      <button class="mcl" onclick="closeQRScanner()">✕</button>
+    </div>
+    <div class="mob" style="padding:12px">
+      <div style="position:relative;width:100%;background:#000;border-radius:8px;overflow:hidden;aspect-ratio:1">
+        <video id="qrVideo" style="width:100%;height:100%;object-fit:cover" playsinline></video>
+        <canvas id="qrCanvas" style="display:none"></canvas>
+        <!-- เส้นเล็งกลาง -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <div style="width:200px;height:200px;border:3px solid var(--gl);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.4)"></div>
+        </div>
+      </div>
+      <p id="qrStatus" style="text-align:center;margin-top:12px;font-size:14px;color:var(--g400)">กำลังเปิดกล้อง...</p>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn bo bsm" onclick="toggleQRFlash()" id="qrFlashBtn" style="display:none">🔦 ไฟฉาย</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── QR PRINT MODAL ────────────────────────────── -->
+<div id="qrPrintModal" class="mo hidden">
+  <div class="mow" style="max-width:560px">
+    <div class="moh">
+      <div class="mot">🏷️ พิมพ์ QR Code อะไหล่</div>
+      <button class="mcl" onclick="closeModal('qrPrintModal')">✕</button>
+    </div>
+    <div class="mob">
+      <div class="fg">
+        <label class="fl">ค้นหาอะไหล่</label>
+        <input class="fc" id="qrPrintSearch" placeholder="Part No. หรือชื่ออะไหล่..." oninput="searchQRParts()">
+      </div>
+      <div id="qrPrintResults" style="max-height:200px;overflow-y:auto;border:1px solid var(--g200);border-radius:6px;margin-bottom:12px"></div>
+      <div id="qrPrintSelected" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;min-height:40px;padding:8px;background:var(--g50);border-radius:6px">
+        <span style="color:var(--g400);font-size:13px" id="qrPrintHint">เลือกอะไหล่ที่ต้องการพิมพ์ QR</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label class="fl" style="margin:0;white-space:nowrap">จำนวนชุด:</label>
+        <input type="number" class="fc" id="qrCopies" value="1" min="1" max="100" style="width:80px">
+        <button class="btn bgd" onclick="printQRCodes()" style="flex:1">🖨️ พิมพ์ QR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
