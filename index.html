@@ -469,8 +469,8 @@ textarea.fc{min-height:70px;resize:vertical;}
       <!-- REPORT -->
       <div id="pg-report" class="hidden">
 
-        <!-- ══ 1. ALERT PANEL ════════════════════════════════ -->
-        <div id="rptAlertPanel" class="card" style="border-left:4px solid var(--red);background:#fff5f5;display:none;margin-bottom:0">
+        <!-- ① Alert Panel ──────────────────────────────── -->
+        <div id="rptAlertPanel" class="card" style="display:none;border-left:4px solid var(--red);background:#fff5f5;padding:14px 16px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
             <span style="font-size:18px">🚨</span>
             <strong style="color:var(--red);font-size:14px">รายการที่ต้องตรวจสอบด่วน</strong>
@@ -478,125 +478,95 @@ textarea.fc{min-height:70px;resize:vertical;}
           <div id="rptAlertList"></div>
         </div>
 
-        <!-- ══ 2. KPI CARDS ══════════════════════════════════ -->
-        <div id="rptKPIRow" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:0">
-          <!-- KPI cards injected by JS -->
-        </div>
+        <!-- ② KPI Cards ─────────────────────────────────── -->
+        <div id="rptKPIRow" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px"></div>
 
-        <!-- ══ 3. WORKFLOW PIPELINE ══════════════════════════ -->
-        <div class="card" style="margin-top:0">
-          <div class="ct" style="margin-bottom:14px">🔄 Workflow Pipeline — คอขวดที่ต้องติดตาม</div>
+        <!-- ③ Workflow Pipeline ─────────────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:12px">🔄 Workflow Pipeline</div>
           <div id="rptPipeline" style="display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px"></div>
         </div>
 
-        <!-- ══ 4. งานที่ต้องติดตาม (ค้างนานสุด) ════════════ -->
-        <div class="card" style="margin-top:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="ct">⏰ งานที่ต้องติดตาม — เรียงตามค้างนานสุด</div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <span style="font-size:11px;color:var(--g400)">สี:</span>
-              <span style="background:#fff9e6;border:1px solid #c9a84c;border-radius:4px;padding:2px 8px;font-size:11px">3 เดือน</span>
-              <span style="background:#fff0e0;border:1px solid #e65100;border-radius:4px;padding:2px 8px;font-size:11px">6 เดือน</span>
-              <span style="background:#ffe8e8;border:1px solid var(--red);border-radius:4px;padding:2px 8px;font-size:11px">1 ปี</span>
-              <span style="background:#c62828;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">2+ ปี วิกฤต</span>
+        <!-- ④ งานที่ต้องติดตาม ────────────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:700;color:var(--gd)">⏰ งานที่ต้องติดตาม</div>
+            <div style="display:flex;gap:6px;font-size:11px">
+              <span style="background:#fffde7;border:1px solid #f9a825;border-radius:4px;padding:2px 8px;color:#f57f17">🟡 >3 เดือน</span>
+              <span style="background:#fff3e0;border:1px solid #e65100;border-radius:4px;padding:2px 8px;color:#e65100">🟠 >6 เดือน</span>
+              <span style="background:#ffebee;border:1px solid var(--red);border-radius:4px;padding:2px 8px;color:var(--red)">🔴 >1 ปี</span>
+              <span style="background:#b71c1c;border-radius:4px;padding:2px 8px;color:#fff">⚠️ >2 ปี</span>
             </div>
           </div>
-          <div id="rptOverdueTable">
-            <div class="tc tm" style="padding:24px">⏳ กด "โหลดรายงาน" ด้านล่างค่ะ</div>
-          </div>
+          <div id="rptOverdueTable"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
-        <!-- ══ 5. ตัวกรองและโหลด ═══════════════════════════ -->
-        <div class="card" style="margin-top:0">
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <div class="fg" style="flex:0 0 auto">
-              <label class="fl">เดือน</label>
-              <input class="fc" id="rptMonth" placeholder="เช่น 04/2569" style="width:120px">
-            </div>
-            <div class="fg" style="flex:0 0 auto">
-              <label class="fl">Job No.</label>
-              <input class="fc" id="rptJob" placeholder="Job No." style="width:120px">
-            </div>
-            <div class="fg" style="flex:0 0 auto">
-              <label class="fl">ผู้เบิก</label>
-              <input class="fc" id="rptRequester" placeholder="ชื่อช่าง" style="width:120px">
-            </div>
-            <div style="flex:1"></div>
-            <button class="btn bgd" onclick="loadFullReport()">📊 โหลดรายงาน</button>
-            <button class="btn bo bsm" onclick="exportReportCSV()">📥 Export CSV</button>
-          </div>
-        </div>
-
-        <!-- ══ 6. รายงานช่าง ══════════════════════════════════ -->
-        <div class="card" style="margin-top:0">
-          <div class="ct" style="margin-bottom:12px">👷 รายงานตามช่าง — เรียงตามงานค้างมากสุด</div>
+        <!-- ⑤ รายงานตามช่าง ───────────────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">👷 รายงานตามช่าง</div>
           <div id="rptTechTable"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
-        <!-- ══ 7. อะไหล่ที่เบิกบ่อย (ล่างสุด) ═══════════════ -->
-        <div class="card" style="margin-top:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="ct">📊 Top 10 อะไหล่ที่จ่ายออกจริง <span style="font-size:11px;color:var(--g400);font-weight:400">(Issued Qty — ไม่ใช่ Stock คงเหลือ)</span></div>
-            <div style="display:flex;gap:6px">
-              <button class="btn bo bsm" onclick="setRptType('slowmove')" id="rptBtnSlow">🐢 ไม่เคลื่อนไหว</button>
-            </div>
+        <!-- ⑥ Top 5 อะไหล่จ่ายออกจริง ─────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">📊 Top 5 อะไหล่ที่จ่ายออกจริง</div>
+          <div style="position:relative;width:100%;overflow:hidden">
+            <canvas id="rptChart" style="width:100%;display:block"></canvas>
           </div>
-          <canvas id="rptChart" style="width:100%;min-height:320px"></canvas>
           <div id="rptTopParts" style="margin-top:12px"></div>
         </div>
 
-        <!-- ══ รายการอะไหล่ค้างจ่าย ════════════════════════ -->
-        <div class="card" style="margin-top:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-            <span style="font-size:18px">⏳</span>
-            <div>
-              <div class="ct" style="margin:0">รายการอะไหล่ค้างจ่าย / จ่ายไม่ครบ</div>
-              <div style="font-size:11px;color:var(--g400)">กรณีขอเบิก 7 แต่จ่ายจริง 5 — ค้างจ่ายอีก 2</div>
-            </div>
-          </div>
+        <!-- ⑦ รายการค้างจ่าย ──────────────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">⏳ รายการค้างจ่าย</div>
           <div id="rptPendingIssue"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
-        <!-- ══ รายการอะไหล่รอคืน / รอเคลียร์ ══════════════ -->
-        <div class="card" style="margin-top:0">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
-            <span style="font-size:18px">🔄</span>
-            <div>
-              <div class="ct" style="margin:0">อะไหล่รอคืน / รอเคลียร์</div>
-              <div style="font-size:11px;color:var(--g400)">อะไหล่ที่จ่ายให้ช่างแล้ว แต่ยังไม่ปิดงานหรือยังไม่คืนของเหลือ</div>
-            </div>
-          </div>
+        <!-- ⑧ รายการรอคืน / รอเคลียร์ ─────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">🔄 รายการรอคืน / รอเคลียร์</div>
           <div id="rptReturnReport"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
-        <!-- Slow moving panel -->
-        <div id="rptSlowMove" class="hidden">
-          <div class="card">
-            <div class="ct">🐢 รายงานอะไหล่ไม่เคลื่อนไหว</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-              <button class="btn bp bsm" onclick="showSlowMove(3)">3 เดือน</button>
-              <button class="btn bo bsm" onclick="showSlowMove(6)">6 เดือน</button>
-              <button class="btn bo bsm" onclick="showSlowMove(12)">1 ปี</button>
-              <button class="btn bo bsm" onclick="showSlowMove(24)">2 ปี</button>
-              <button class="btn bo bsm" onclick="showSlowMove(36)">3 ปี</button>
-              <button class="btn bo bsm" onclick="showSlowMove(999)">ไม่เคลื่อนไหวเลย</button>
+        <!-- ⑨ รายงานอะไหล่ไม่เคลื่อนไหว ──────────────── -->
+        <div id="rptSlowMove" class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">🐢 รายงานอะไหล่ไม่เคลื่อนไหว</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="slowMoveBtns">
+            <button class="btn bp bsm" onclick="showSlowMove(3)"  id="smBtn3">3 เดือน</button>
+            <button class="btn bo bsm" onclick="showSlowMove(6)"  id="smBtn6">6 เดือน</button>
+            <button class="btn bo bsm" onclick="showSlowMove(12)" id="smBtn12">1 ปี</button>
+            <button class="btn bo bsm" onclick="showSlowMove(24)" id="smBtn24">2 ปี</button>
+            <button class="btn bo bsm" onclick="showSlowMove(999)" id="smBtn999">ไม่เคลื่อนไหวเลย</button>
+          </div>
+          <div id="slowMoveContent"><div class="tc tm" style="padding:24px">เลือกช่วงเวลาค่ะ</div></div>
+        </div>
+
+        <!-- ⑩ ตัวกรองและโหลด ──────────────────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <label style="font-size:11px;color:var(--g400)">เดือน</label>
+              <input class="fc" id="rptMonth" placeholder="เช่น 04/2569" style="width:110px;margin-top:4px">
             </div>
-            <div id="slowMoveContent"><div class="tc tm" style="padding:24px">เลือกช่วงเวลาค่ะ</div></div>
+            <div>
+              <label style="font-size:11px;color:var(--g400)">Job No.</label>
+              <input class="fc" id="rptJob" placeholder="Job No." style="width:110px;margin-top:4px">
+            </div>
+            <div>
+              <label style="font-size:11px;color:var(--g400)">ผู้เบิก</label>
+              <input class="fc" id="rptRequester" placeholder="ชื่อช่าง" style="width:110px;margin-top:4px">
+            </div>
+            <button class="btn bgd" onclick="loadFullReport()" style="margin-top:4px">📊 โหลดรายงาน</button>
+            <button class="btn bo bsm" onclick="exportReportCSV()" style="margin-top:4px">📥 Export CSV</button>
           </div>
         </div>
 
-        <div id="rptSummary" class="hidden">
-          <div class="sg" id="rptStats"></div>
-          <div class="card" id="rptChartCard" style="display:none">
-            <div class="ct" id="rptChartTitle">📊 กราฟ</div>
-          </div>
-        </div>
-        <div id="rptEmpty" class="hidden">
-          <div class="card tc tm" style="padding:40px">ไม่พบข้อมูลในช่วงที่เลือก</div>
-        </div>
+        <div id="rptSummary" class="hidden"><div class="sg" id="rptStats"></div></div>
+        <div id="rptEmpty"   class="hidden"><div class="card tc tm" style="padding:40px">ไม่พบข้อมูล</div></div>
 
       </div>
 
+      <!-- PRINT -->
       <!-- PRINT -->
       <!-- PRINT -->
       <!-- ═══════════════════════════════════════════════════ -->
@@ -5019,7 +4989,7 @@ function loadFullReport(){
   var techList=Object.values(techMap).sort(function(a,b){return (b.inProgress+b.waitClear)-(a.inProgress+a.waitClear);});
   var techEl=document.getElementById('rptTechTable');
   if(techEl&&techList.length){
-    var h2='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+    var h2='<div class="tw"><table class="it" style="font-size:13px"><thead><tr style="font-size:13px;font-weight:700">'
       +'<th>ชื่อช่าง</th><th style="text-align:center">ทั้งหมด</th>'
       +'<th style="text-align:center">ดำเนินการ</th><th style="text-align:center">รอเคลียร์</th>'
       +'<th style="text-align:center">ปิดแล้ว</th><th style="text-align:center">เวลาเฉลี่ย</th>'
@@ -5060,7 +5030,7 @@ function loadFullReport(){
   var issuedList=Object.keys(issuedMap).map(function(pn){
     var name=getPartName(pn); // ← ใช้ getPartName เสมอ
     return {partNo:pn, nameEN:name, issuedQty:issuedMap[pn]};
-  }).sort(function(a,b){return b.issuedQty-a.issuedQty;}).slice(0,10);
+  }).sort(function(a,b){return b.issuedQty-a.issuedQty;}).slice(0,5);
 
   // ถ้าไม่มี issued data เลย (demo ใหม่) — ใช้ DEMO_ITEMS
   if(!issuedList.length && items.length){
@@ -5076,11 +5046,13 @@ function loadFullReport(){
 
   // วาด Horizontal Bar Chart
   var canvas=document.getElementById('rptChart');
-  if(canvas&&canvas.getContext&&issuedList.length){
-    var rowH=32, padL=180, padR=70, padTop=40, padBot=20;
-    canvas.width=canvas.parentElement?canvas.parentElement.offsetWidth-32:600;
-    canvas.height=padTop+rowH*issuedList.length+padBot;
-    drawHorizontalBar(canvas.getContext('2d'), canvas, issuedList, padL, padR, padTop, rowH);
+  if(canvas&&canvas.getContext){
+    var top5draw = issuedList.slice(0,5);
+    if(top5draw.length){
+      drawHorizontalBar(canvas.getContext('2d'), canvas, top5draw, 0, 0, 0, 0);
+    } else {
+      canvas.style.display='none';
+    }
   }
 
   // ตาราง Top 10 — แสดงชื่ออะไหล่จริง ไม่ใช่ Part No.
@@ -5090,24 +5062,22 @@ function loadFullReport(){
       topEl.innerHTML='<div class="tc tm" style="padding:20px">ยังไม่มีข้อมูลการจ่ายจริงค่ะ — บันทึก Stock Card เพื่อดูข้อมูลได้เลย</div>';
     } else {
       var maxIssued=issuedList[0].issuedQty||1;
-      topEl.innerHTML='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
-        +'<th style="width:30px">#</th><th>ชื่ออะไหล่</th><th style="font-size:10px;color:var(--g400)">Part No.</th>'
-        +'<th style="text-align:center">จ่ายจริง (Issued)</th>'
-        +'<th>สัดส่วน</th></tr></thead><tbody>'
-        +issuedList.map(function(p,i){
-          var w=Math.round(p.issuedQty/maxIssued*100);
-          var c=i===0?'#1a4a2e':i<2?'#2d6a4f':i<3?'#40916c':'#74c69d';
+      var top5 = issuedList.slice(0,5);
+      topEl.innerHTML='<div class="tw"><table class="it" style="font-size:13px"><thead><tr>'
+        +'<th style="width:40px;text-align:center">ลำดับ</th>'
+        +'<th style="font-size:13px;font-weight:700">ชื่ออะไหล่</th>'
+        +'<th style="font-size:11px;color:var(--g400)">Part No.</th>'
+        +'<th style="text-align:center;font-size:13px;font-weight:700">จ่ายจริง</th>'
+        +'</tr></thead><tbody>'
+        +top5.map(function(p,i){
           var medal=['🥇','🥈','🥉'][i]||'';
-          var nameDisp = p.nameEN && p.nameEN!=='—' ? p.nameEN : '<span style="color:#aaa">ไม่พบชื่ออะไหล่</span>';
-          return '<tr><td style="text-align:center">'+medal+(i+1)+'</td>'
-            +'<td style="font-weight:600">'+nameDisp+'</td>'
-            +'<td style="font-size:10px;color:var(--g400)">'+p.partNo+'</td>'
-            +'<td style="text-align:center;font-weight:700;color:var(--gm)">'+p.issuedQty+'</td>'
-            +'<td><div style="display:flex;align-items:center;gap:6px">'
-            +'<div style="flex:1;height:8px;background:#e8f5e9;border-radius:4px">'
-            +'<div style="width:'+w+'%;height:100%;background:'+c+';border-radius:4px"></div></div>'
-            +'<span style="font-size:11px;color:var(--g400);min-width:30px">'+w+'%</span>'
-            +'</div></td></tr>';
+          var nameDisp = p.nameEN && p.nameEN!=='—' ? p.nameEN : '<span style="color:#aaa;font-size:11px">ไม่พบชื่ออะไหล่</span>';
+          return '<tr style="height:40px">'
+            +'<td style="text-align:center;font-size:16px">'+medal+(i+1)+'</td>'
+            +'<td style="font-weight:600;padding:8px 10px">'+nameDisp+'</td>'
+            +'<td style="font-size:11px;color:var(--g400);padding:8px 10px">'+p.partNo+'</td>'
+            +'<td style="text-align:center;font-weight:700;color:var(--gm);font-size:15px;padding:8px 10px">'+p.issuedQty+'</td>'
+            +'</tr>';
         }).join('')+'</tbody></table></div>';
     }
   }
@@ -5136,7 +5106,7 @@ function loadFullReport(){
     if(!pendingRows.length){
       pendingEl.innerHTML='<div class="tc tm" style="padding:20px;color:var(--gm)">✅ ไม่มีรายการค้างจ่ายค่ะ</div>';
     } else {
-      var h3='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+      var h3='<div class="tw"><table class="it" style="font-size:13px"><thead><tr style="font-size:13px;font-weight:700">'
         +'<th>เลขใบเบิก</th><th>Job No.</th><th>ลูกค้า</th><th>ผู้เบิก</th>'
         +'<th>ชื่ออะไหล่</th><th style="font-size:10px;color:var(--g400)">Part No.</th>'
         +'<th style="text-align:center">ขอเบิก</th>'
@@ -5164,117 +5134,172 @@ function loadFullReport(){
     }
   }
 
-  // ── 8. รายการอะไหล่รอคืน / รอเคลียร์ ───────────────────
+  // ── 8. รายการรอคืน — สรุประดับใบเบิก (ไม่แตก per item) ──
   var returnEl=document.getElementById('rptReturnReport');
   if(returnEl){
-    var returnRows=[];
+    // สรุปต่อใบเบิก
+    var retSummary=[];
     reqs.forEach(function(r){
       if(r.StatusStock==='CLEARED') return;
+      var totalIssued=0, totalOutstanding=0, itemCount=0;
       items.forEach(function(item){
-        var issued=getIssued(item);
-        if(issued<=0) return;
-        var outstanding=getOutstanding(item);
-        if(outstanding<=0) return;
-        returnRows.push({
-          reqId:r.ReqID, jobNo:r.JobNo, customer:r.CustomerName,
-          requester:r.RequesterName||r.RequesterEmail||'—',
-          partNo:item.PartNo, partName:getPartName(item.PartNo),
-          issued:issued, returned:getReturned(item), outstanding:outstanding,
-          status:r.StatusStock, days:ageDays(r.OpenDate)
-        });
+        var iss=getIssued(item);
+        if(iss<=0) return;
+        var out=getOutstanding(item);
+        if(out<=0) return;
+        totalIssued+=iss; totalOutstanding+=out; itemCount++;
+      });
+      if(itemCount===0) return;
+      retSummary.push({
+        reqId:r.ReqID, jobNo:r.JobNo, customer:r.CustomerName,
+        requester:r.RequesterName||r.RequesterEmail||'—',
+        itemCount:itemCount, totalIssued:totalIssued, totalOutstanding:totalOutstanding,
+        status:r.StatusStock, days:ageDays(r.OpenDate)
       });
     });
-    returnRows.sort(function(a,b){return b.days-a.days;});
-    if(!returnRows.length){
+    retSummary.sort(function(a,b){return b.days-a.days;});
+
+    if(!retSummary.length){
       returnEl.innerHTML='<div class="tc tm" style="padding:20px;color:var(--gm)">✅ ไม่มีอะไหล่ค้างกับช่างค่ะ</div>';
     } else {
-      var stLabelMap={'ACKNOWLEDGED':'🔧 Stock จ่ายแล้ว','PICKED_UP':'✋ ช่างรับแล้ว','PARTIAL':'⚠️ บางส่วน'};
-      var h4='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+      var stMap2={'ACKNOWLEDGED':'🔧 จ่ายแล้ว','PICKED_UP':'✋ รอเคลียร์','PARTIAL':'⚠️ บางส่วน'};
+      var h4='<div class="tw"><table class="it" style="font-size:13px"><thead><tr style="font-size:13px;font-weight:700">'
         +'<th>เลขใบเบิก</th><th>Job No.</th><th>ลูกค้า</th><th>ผู้เบิก</th>'
-        +'<th>ชื่ออะไหล่</th><th style="font-size:10px">Part No.</th>'
-        +'<th style="text-align:center;color:var(--gm)">จ่ายจริง</th>'
-        +'<th style="text-align:center">คืนแล้ว</th>'
-        +'<th style="text-align:center;color:var(--red)">ค้างกับช่าง</th>'
-        +'<th>สถานะใบเบิก</th><th>อายุใบเบิก</th>'
+        +'<th style="text-align:center">รายการที่จ่าย</th>'
+        +'<th style="text-align:center;color:var(--red)">รายการค้างกับช่าง</th>'
+        +'<th style="text-align:center">อายุใบเบิก</th>'
+        +'<th>สถานะ</th><th></th>'
         +'</tr></thead><tbody>';
-      returnRows.forEach(function(row){
+      retSummary.forEach(function(row){
         var ac=ageStyle(row.days);
-        var nameDisp=row.partName&&row.partName!=='—'?row.partName:'<span style="color:#aaa">ไม่พบชื่ออะไหล่</span>';
-        h4+='<tr style="'+(ac.bg?'background:'+ac.bg+';':'')+'">'
-          +'<td style="font-weight:700">'+row.reqId+'</td><td>'+row.jobNo+'</td>'
-          +'<td>'+row.customer+'</td><td>'+row.requester+'</td>'
-          +'<td style="font-weight:600">'+nameDisp+'</td>'
-          +'<td style="font-size:10px;color:var(--g400)">'+row.partNo+'</td>'
-          +'<td style="text-align:center;color:var(--gm);font-weight:700">'+row.issued+'</td>'
-          +'<td style="text-align:center;color:var(--g400)">'+row.returned+'</td>'
-          +'<td style="text-align:center;color:var(--red);font-weight:700">'+row.outstanding+'</td>'
-          +'<td>'+(stLabelMap[row.status]||row.status)+'</td>'
-          +'<td style="font-size:11px">'+fmtAge(row.days)+'</td>'
+        h4+='<tr style="height:44px;'+(ac.bg?'background:'+ac.bg+';color:'+ac.tx+';':'')+'">'
+          +'<td style="font-weight:700;padding:8px 10px">'+row.reqId+'</td>'
+          +'<td style="padding:8px 10px">'+row.jobNo+'</td>'
+          +'<td style="padding:8px 10px">'+row.customer+'</td>'
+          +'<td style="padding:8px 10px">'+row.requester+'</td>'
+          +'<td style="text-align:center;font-weight:700;color:var(--gm);padding:8px 10px">'+row.totalIssued+' ชิ้น</td>'
+          +'<td style="text-align:center;font-weight:700;color:var(--red);font-size:15px;padding:8px 10px">'+row.totalOutstanding+' ชิ้น</td>'
+          +'<td style="text-align:center;padding:8px 10px">'+fmtAge(row.days)+'</td>'
+          +'<td style="padding:8px 10px">'+(stMap2[row.status]||row.status)+'</td>'
+          +'<td style="padding:8px 10px"><button class="btn bo bsm stk-detail-btn" data-rid="'+row.reqId+'">ดูรายละเอียด</button></td>'
           +'</tr>';
       });
-      h4+='</tbody></table></div>';
+      h4+='</tbody></table></div>'
+        +'<div style="font-size:11px;color:var(--g400);margin-top:6px">กด "ดูรายละเอียด" เพื่อดูรายการอะไหล่แยก Part No. ค่ะ</div>';
       returnEl.innerHTML=h4;
     }
   }
 }
 
 
-// ── Horizontal Bar Chart (Beyond Green Theme) ──────────────
-function drawHorizontalBar(ctx, canvas, data, padL, padR, padTop, rowH){
-  var W=canvas.width, H=canvas.height;
-  var chartW=W-padL-padR;
-  var maxVal=Math.max.apply(null,data.map(function(d){return d.issuedQty;}));
-  if(maxVal<1) maxVal=1;
-  var colors=['#1a4a2e','#2d6a4f','#40916c','#52b788','#74c69d',
-              '#95d5b2','#b7e4c7','#a8dadc','#90e0ef','#caf0f8'];
+// ── Horizontal Bar Chart ─────────────────────────────────────
+function drawHorizontalBar(ctx, canvas, data, padLArg, padRArg, padTopArg, rowHArg){
+  // ใช้ค่าที่เหมาะสมเสมอ (ไม่รับ arg เพื่อความปลอดภัย)
+  var N      = Math.min(data.length, 5); // Top 5 เท่านั้น
+  var items  = data.slice(0, N);
+  var LABEL_W = 220; // พื้นที่ชื่ออะไหล่ด้านซ้าย
+  var VAL_W   = 60;  // พื้นที่ตัวเลขด้านขวา
+  var ROW_H   = 52;  // ความสูงต่อแถว
+  var PAD_TOP = 44;  // พื้นที่ header
+  var PAD_BOT = 16;
 
-  // bg
-  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+  canvas.width  = canvas.parentElement ? canvas.parentElement.offsetWidth - 0 : 600;
+  canvas.height = PAD_TOP + ROW_H * N + PAD_BOT;
+  canvas.style.height = canvas.height + 'px';
 
-  // title
-  ctx.fillStyle='#1a4a2e'; ctx.font='bold 12px Prompt,Sarabun,sans-serif'; ctx.textAlign='center';
-  ctx.fillText('จำนวนจ่ายจริง (Issued Qty)', padL + chartW/2, 22);
+  var W      = canvas.width;
+  var BAR_AREA = W - LABEL_W - VAL_W - 8;
+  var maxVal = Math.max.apply(null, items.map(function(d){ return d.issuedQty||0; }));
+  if(maxVal < 1) maxVal = 1;
 
-  data.forEach(function(item, i){
-    var y = padTop + i*rowH;
-    var barH = Math.round(rowH*0.52);
-    var barY = y + (rowH-barH)/2;
-    var barW = Math.round((item.issuedQty/maxVal)*chartW);
-    var col = colors[i]||'#74c69d';
+  // Beyond Green palette
+  var palette = ['#1a4a2e','#2d6a4f','#40916c','#74c69d','#95d5b2'];
 
-    // bar bg
-    ctx.fillStyle='#f0faf5';
-    ctx.fillRect(padL, barY, chartW, barH);
+  var ctx2 = ctx;
+  // background
+  ctx2.fillStyle = '#fff'; ctx2.fillRect(0,0,W,canvas.height);
 
-    // bar fill with gradient
-    var grad=ctx.createLinearGradient(padL,0,padL+barW,0);
+  // header title
+  ctx2.fillStyle = '#1a4a2e';
+  ctx2.font = 'bold 12px "Prompt",Sarabun,sans-serif';
+  ctx2.textAlign = 'center';
+  ctx2.fillText('จำนวนที่จ่ายจริง (ชิ้น)', LABEL_W + BAR_AREA/2, 20);
+
+  // grid lines บน bar area
+  for(var g = 0; g <= 4; g++){
+    var gx = LABEL_W + Math.round(g/4 * BAR_AREA);
+    ctx2.strokeStyle = g===0 ? '#aaa' : '#e0e0e0';
+    ctx2.lineWidth = g===0 ? 1 : 0.5;
+    ctx2.beginPath();
+    ctx2.moveTo(gx, PAD_TOP - 8);
+    ctx2.lineTo(gx, PAD_TOP + ROW_H * N);
+    ctx2.stroke();
+    // label บน grid
+    if(g > 0){
+      ctx2.fillStyle = '#aaa'; ctx2.font = '9px Sarabun,sans-serif';
+      ctx2.textAlign = 'center';
+      ctx2.fillText(Math.round(maxVal*g/4), gx, PAD_TOP - 2);
+    }
+  }
+
+  items.forEach(function(item, i){
+    var y    = PAD_TOP + i * ROW_H;
+    var barH = Math.round(ROW_H * 0.48);
+    var barY = y + (ROW_H - barH) / 2;
+    var barW = Math.max(4, Math.round((item.issuedQty / maxVal) * BAR_AREA));
+    var col  = palette[i] || '#74c69d';
+
+    // zebra row bg
+    ctx2.fillStyle = i % 2 === 0 ? '#f9fdf9' : '#fff';
+    ctx2.fillRect(0, y, W, ROW_H);
+
+    // bar background track
+    ctx2.fillStyle = '#e8f5e9';
+    ctx2.fillRect(LABEL_W, barY, BAR_AREA, barH);
+
+    // bar gradient
+    var grad = ctx2.createLinearGradient(LABEL_W, 0, LABEL_W + barW, 0);
     grad.addColorStop(0, col);
-    grad.addColorStop(1, col+'cc');
-    ctx.fillStyle=grad;
-    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(padL, barY, Math.max(4,barW), barH, [0,3,3,0]); ctx.fill(); }
-    else { ctx.fillRect(padL, barY, Math.max(4,barW), barH); }
+    grad.addColorStop(1, col + 'bb');
+    ctx2.fillStyle = grad;
+    ctx2.beginPath();
+    if(ctx2.roundRect){ ctx2.roundRect(LABEL_W, barY, barW, barH, [0,4,4,0]); }
+    else { ctx2.rect(LABEL_W, barY, barW, barH); }
+    ctx2.fill();
 
-    // label (ชื่ออะไหล่)
-    var name = item.nameEN && item.nameEN!=='—' ? item.nameEN : item.partNo;
-    var shortName = name.length>24 ? name.slice(0,22)+'…' : name;
-    ctx.fillStyle='#333'; ctx.font=(i<3?'bold ':'')+'11px Sarabun,sans-serif'; ctx.textAlign='right';
-    ctx.fillText(shortName, padL-6, barY+barH/2+4);
+    // separator line
+    ctx2.strokeStyle = '#e0f2e9'; ctx2.lineWidth = 0.5;
+    ctx2.beginPath();
+    ctx2.moveTo(0, y + ROW_H - 0.5);
+    ctx2.lineTo(W, y + ROW_H - 0.5);
+    ctx2.stroke();
+
+    // ชื่ออะไหล่ (ซ้าย) — ตัดถ้ายาวเกิน 28 ตัวอักษร
+    var name = (item.nameEN && item.nameEN !== '—') ? item.nameEN : ('Part: ' + item.partNo);
+    var shortName = name.length > 28 ? name.slice(0, 26) + '…' : name;
+    var medal = i < 3 ? ['🥇','🥈','🥉'][i] : '';
+
+    // rank badge
+    ctx2.font = '12px serif';
+    ctx2.textAlign = 'left';
+    ctx2.fillText(medal, 4, barY + barH/2 + 5);
+
+    // name
+    ctx2.fillStyle = '#222';
+    ctx2.font = (i < 3 ? 'bold ' : '') + '11.5px Sarabun,sans-serif';
+    ctx2.textAlign = 'left';
+    ctx2.fillText(shortName, medal ? 20 : 6, barY + barH/2 + 4);
 
     // value ที่ปลายแท่ง
-    ctx.fillStyle= i<3?'#1a4a2e':'#555'; ctx.font='bold 11px Sarabun,sans-serif'; ctx.textAlign='left';
-    ctx.fillText(item.issuedQty, padL+Math.max(4,barW)+5, barY+barH/2+4);
-
-    // rank badge อันดับ 1-3
-    if(i<3){
-      var medal=['🥇','🥈','🥉'][i];
-      ctx.font='13px serif'; ctx.textAlign='right';
-      ctx.fillText(medal, padL-2, barY+barH/2+5);
-    }
-
-    // separator
-    ctx.strokeStyle='#e8f5e9'; ctx.lineWidth=0.5;
-    ctx.beginPath(); ctx.moveTo(0,y+rowH); ctx.lineTo(W,y+rowH); ctx.stroke();
+    ctx2.fillStyle = i < 3 ? '#1a4a2e' : '#555';
+    ctx2.font = 'bold 12px Sarabun,sans-serif';
+    ctx2.textAlign = 'left';
+    ctx2.fillText(item.issuedQty, LABEL_W + barW + 6, barY + barH/2 + 5);
   });
+
+  // border
+  ctx2.strokeStyle = '#c8e6c9'; ctx2.lineWidth = 1;
+  ctx2.strokeRect(LABEL_W, PAD_TOP - 8, BAR_AREA, ROW_H * N + 8);
 }
 
 
