@@ -24,8 +24,8 @@ body { font-family: 'Sarabun', sans-serif; background: var(--g50); color: var(--
 
 /* SIDEBAR */
 .sidebar { width: 230px; background: linear-gradient(180deg,var(--gd) 0%,var(--gm) 100%); display: flex; flex-direction: column; position: fixed; top:0; left:0; bottom:0; z-index:100; box-shadow:2px 0 12px rgba(0,0,0,.15); overflow-y:auto; overflow-x:hidden; }
-.sb-logo { padding:20px 16px 16px; border-bottom:1px solid rgba(255,255,255,.12); }
-.sb-logo img { height:42px; object-fit:contain; }
+.sb-logo { padding:20px 16px 18px; border-bottom:1px solid rgba(255,255,255,.12); }
+.sb-logo img { height:64px; object-fit:contain; }
 .sb-logo .branch { font-family:'Prompt',sans-serif; color:var(--goldl); font-size:11px; font-weight:500; margin-top:6px; opacity:.85; }
 .sb-user { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.12); display:flex; align-items:center; gap:10px; }
 .avatar { width:34px; height:34px; border-radius:50%; background:var(--gold); display:flex; align-items:center; justify-content:center; font-family:'Prompt',sans-serif; font-weight:600; color:var(--gd); font-size:14px; flex-shrink:0; }
@@ -469,84 +469,83 @@ textarea.fc{min-height:70px;resize:vertical;}
       <!-- REPORT -->
       <div id="pg-report" class="hidden">
 
-        <!-- Filter Bar -->
-        <div class="card">
-          <div class="ct">📊 เลือกประเภทรายงาน</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
-            <button class="btn bp bsm" onclick="setRptType('requisition')" id="rptBtnReq">📋 ใบเบิกอะไหล่</button>
-            <button class="btn bo bsm" onclick="setRptType('stock')" id="rptBtnStock">📦 ความเคลื่อนไหว Stock</button>
-            <button class="btn bo bsm" onclick="setRptType('parts')" id="rptBtnParts">🔩 อะไหล่ที่ใช้บ่อย</button>
-            <button class="btn bo bsm" onclick="setRptType('technician')" id="rptBtnTech">👷 รายช่าง</button>
-            <button class="btn bo bsm" onclick="setRptType('slowmove')" id="rptBtnSlow">🐢 ไม่เคลื่อนไหว</button>
+        <!-- ══ 1. ALERT PANEL ════════════════════════════════ -->
+        <div id="rptAlertPanel" class="card" style="border-left:4px solid var(--red);background:#fff5f5;display:none;margin-bottom:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <span style="font-size:18px">🚨</span>
+            <strong style="color:var(--red);font-size:14px">รายการที่ต้องตรวจสอบด่วน</strong>
           </div>
-          <div class="ct">🔍 กรองรายงาน</div>
-          <div class="fr">
-            <div class="fg"><label class="fl">วันที่เริ่ม</label><input class="fc" type="date" id="rptFrom"></div>
-            <div class="fg"><label class="fl">วันที่สิ้นสุด</label><input class="fc" type="date" id="rptTo"></div>
-          </div>
-          <div class="fr">
-            <div class="fg"><label class="fl">ช่าง / ผู้เบิก</label><input class="fc" id="rptTech" placeholder="ชื่อช่าง หรือ email"></div>
-            <div class="fg"><label class="fl">Job No.</label><input class="fc" id="rptJob" placeholder="Job No."></div>
-          </div>
-          <div class="fr">
-            <div class="fg"><label class="fl">สถานะ</label>
-              <select class="fc" id="rptStatus">
-                <option value="">ทุกสถานะ</option>
-                <option value="PENDING_SUPERVISOR">รอหัวหน้าช่าง</option>
-                <option value="PENDING_MANAGER">รอผจก.</option>
-                <option value="APPROVED">อนุมัติแล้ว</option>
-                <option value="REJECTED">ปฏิเสธ</option>
-                <option value="CLEARED">ปิดงานแล้ว</option>
-              </select>
+          <div id="rptAlertList"></div>
+        </div>
+
+        <!-- ══ 2. KPI CARDS ══════════════════════════════════ -->
+        <div id="rptKPIRow" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:0">
+          <!-- KPI cards injected by JS -->
+        </div>
+
+        <!-- ══ 3. WORKFLOW PIPELINE ══════════════════════════ -->
+        <div class="card" style="margin-top:0">
+          <div class="ct" style="margin-bottom:14px">🔄 Workflow Pipeline — คอขวดที่ต้องติดตาม</div>
+          <div id="rptPipeline" style="display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:4px"></div>
+        </div>
+
+        <!-- ══ 4. งานที่ต้องติดตาม (ค้างนานสุด) ════════════ -->
+        <div class="card" style="margin-top:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="ct">⏰ งานที่ต้องติดตาม — เรียงตามค้างนานสุด</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <span style="font-size:11px;color:var(--g400)">สี:</span>
+              <span style="background:#fff9e6;border:1px solid #c9a84c;border-radius:4px;padding:2px 8px;font-size:11px">3 เดือน</span>
+              <span style="background:#fff0e0;border:1px solid #e65100;border-radius:4px;padding:2px 8px;font-size:11px">6 เดือน</span>
+              <span style="background:#ffe8e8;border:1px solid var(--red);border-radius:4px;padding:2px 8px;font-size:11px">1 ปี</span>
+              <span style="background:#c62828;color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">2+ ปี วิกฤต</span>
             </div>
-            <div class="fg" style="display:flex;align-items:flex-end;gap:8px">
-              <button class="btn bp" onclick="loadReport()" style="flex:1">📊 ดูรายงาน</button>
-              <button class="btn bgd" onclick="exportExcel()" id="exportBtn" style="flex:1">📥 Export Excel</button>
-            </div>
+          </div>
+          <div id="rptOverdueTable">
+            <div class="tc tm" style="padding:24px">⏳ กด "โหลดรายงาน" ด้านล่างค่ะ</div>
           </div>
         </div>
 
-        <!-- Summary Cards -->
-        <div id="rptSummary" class="hidden">
-          <div class="sg" id="rptStats"></div>
-          <!-- Chart Section -->
-          <div class="card" id="rptChartCard" style="display:none">
-            <div class="ct" id="rptChartTitle">📊 กราฟ</div>
-            <canvas id="rptChart" style="max-height:300px"></canvas>
-          </div>
-
-          <!-- Top Parts -->
-          <div class="card">
-            <div class="ct">🔩 อะไหล่ที่เบิกมากที่สุด (Top 10)</div>
-            <div class="tw"><table>
-              <thead><tr><th>อันดับ</th><th>Part No.</th><th>ชื่อ EN</th><th>ชื่อ TH</th><th style="text-align:center">จำนวนรวม</th></tr></thead>
-              <tbody id="rptTopParts"></tbody>
-            </table></div>
-          </div>
-
-          <!-- By Technician -->
-          <div class="card">
-            <div class="ct">👷 สรุปตามช่าง</div>
-            <div class="tw"><table>
-              <thead><tr><th>ช่าง</th><th style="text-align:center">ใบเบิกทั้งหมด</th><th style="text-align:center">ปิดงานแล้ว</th><th style="text-align:center">% สำเร็จ</th></tr></thead>
-              <tbody id="rptByTech"></tbody>
-            </table></div>
-          </div>
-
-          <!-- Detail Table -->
-          <div class="card">
-            <div class="ct">📋 รายการใบเบิกทั้งหมด</div>
-            <div class="tw"><table>
-              <thead><tr>
-                <th>เลขที่</th><th>วันที่</th><th>Job No.</th><th>ผู้เบิก</th><th>ลูกค้า</th>
-                <th>สถานะ</th><th>เลข IM</th><th></th>
-              </tr></thead>
-              <tbody id="rptTable"></tbody>
-            </table></div>
+        <!-- ══ 5. ตัวกรองและโหลด ═══════════════════════════ -->
+        <div class="card" style="margin-top:0">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div class="fg" style="flex:0 0 auto">
+              <label class="fl">เดือน</label>
+              <input class="fc" id="rptMonth" placeholder="เช่น 04/2569" style="width:120px">
+            </div>
+            <div class="fg" style="flex:0 0 auto">
+              <label class="fl">Job No.</label>
+              <input class="fc" id="rptJob" placeholder="Job No." style="width:120px">
+            </div>
+            <div class="fg" style="flex:0 0 auto">
+              <label class="fl">ผู้เบิก</label>
+              <input class="fc" id="rptRequester" placeholder="ชื่อช่าง" style="width:120px">
+            </div>
+            <div style="flex:1"></div>
+            <button class="btn bgd" onclick="loadFullReport()">📊 โหลดรายงาน</button>
+            <button class="btn bo bsm" onclick="exportReportCSV()">📥 Export CSV</button>
           </div>
         </div>
 
-        <!-- Slow Moving Report -->
+        <!-- ══ 6. รายงานช่าง ══════════════════════════════════ -->
+        <div class="card" style="margin-top:0">
+          <div class="ct" style="margin-bottom:12px">👷 รายงานตามช่าง — เรียงตามงานค้างมากสุด</div>
+          <div id="rptTechTable"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
+        </div>
+
+        <!-- ══ 7. อะไหล่ที่เบิกบ่อย (ล่างสุด) ═══════════════ -->
+        <div class="card" style="margin-top:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="ct">🔩 อะไหล่ที่เบิกบ่อย Top 10</div>
+            <div style="display:flex;gap:6px">
+              <button class="btn bo bsm" onclick="setRptType('slowmove')" id="rptBtnSlow">🐢 ไม่เคลื่อนไหว</button>
+            </div>
+          </div>
+          <canvas id="rptChart" style="max-height:240px"></canvas>
+          <div id="rptTopParts" style="margin-top:12px"></div>
+        </div>
+
+        <!-- Slow moving panel -->
         <div id="rptSlowMove" class="hidden">
           <div class="card">
             <div class="ct">🐢 รายงานอะไหล่ไม่เคลื่อนไหว</div>
@@ -562,12 +561,19 @@ textarea.fc{min-height:70px;resize:vertical;}
           </div>
         </div>
 
+        <div id="rptSummary" class="hidden">
+          <div class="sg" id="rptStats"></div>
+          <div class="card" id="rptChartCard" style="display:none">
+            <div class="ct" id="rptChartTitle">📊 กราฟ</div>
+          </div>
+        </div>
         <div id="rptEmpty" class="hidden">
           <div class="card tc tm" style="padding:40px">ไม่พบข้อมูลในช่วงที่เลือก</div>
         </div>
 
       </div>
 
+      <!-- PRINT -->
       <!-- PRINT -->
       <!-- ═══════════════════════════════════════════════════ -->
       <div id="pg-stockcard" class="hidden">
@@ -4678,25 +4684,101 @@ function printSCCard(){
   if(!win){ toast('กรุณาอนุญาต popup ค่ะ','error'); return; }
   var tbl = document.getElementById('scContent');
   var tableHTML = tbl ? tbl.innerHTML : '';
+  // สร้างตารางใหม่แบบ compact สำหรับพิมพ์
+  var entries = [];
+  var rows = win.document && document.querySelectorAll('#scContent tbody tr');
+  // เก็บข้อมูลจาก _scAllEntries หรือ render ใหม่จาก DOM
+  var printRows = [];
+  if(typeof _scCurrentPart !== 'undefined' && _scCurrentPart){
+    // สร้าง entries จาก renderSCForPart logic (simplified)
+    var pp = _scCurrentPart;
+    var demoNew2 = (window._scDemoEntries||[]).filter(function(e){ return e.PartNo===pp.partNo; });
+    var allE = [{
+      date:'06/06/2569', type:'ยอดยกมา', doc:'STOCK-INIT-06-06-69',
+      by:'ระบบ', job:'—', cust:'Beyond Green', purpose:'ยอดเริ่มต้น',
+      qin:pp.inStock||0, qout:0, bal:pp.inStock||0, unit:pp.unit||'ชิ้น', note:'ยอดเริ่มต้น'
+    }];
+    printRows = allE;
+  }
+
   win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
-    +'<style>body{font-family:Sarabun,sans-serif;font-size:12px;margin:10px}'
-    +'table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px 7px}'
-    +'th{background:#1a4a2e;color:#fff}.chip{padding:2px 6px;border-radius:10px;font-size:10px}'
-    +'@media print{@page{size:A4 landscape;margin:10mm}}</style>'
+    +'<style>'
+    +'*{box-sizing:border-box}'
+    +'body{font-family:Sarabun,sans-serif;font-size:9px;margin:6mm}'
+    +'h2{font-size:13px;margin:0 0 2px;color:#1a4a2e;text-align:center}'
+    +'.sub{font-size:10px;text-align:center;color:#555;margin-bottom:6px}'
+    +'.info{width:100%;border-collapse:collapse;margin-bottom:6px}'
+    +'.info td{border:0.5px solid #999;padding:3px 6px;font-size:9px}'
+    +'.info strong{color:#1a4a2e}'
+    +'table.sc{width:100%;border-collapse:collapse;table-layout:fixed}'
+    +'table.sc th{background:#1a4a2e;color:#fff;padding:3px 4px;font-size:8px;'
+    +'text-align:center;border:0.5px solid #0d3320;white-space:nowrap}'
+    +'table.sc td{border:0.5px solid #ccc;padding:2px 4px;font-size:8px;'
+    +'vertical-align:top;word-break:break-word}'
+    +'table.sc tr:nth-child(even){background:#f9fdf9}'
+    +'table.sc tr:first-child{background:#e8f5e9}'
+    +'.in{color:#1a6b3a;font-weight:bold;text-align:center}'
+    +'.out{color:#b71c1c;font-weight:bold;text-align:center}'
+    +'.bal{font-weight:bold;text-align:center;font-size:9px}'
+    +'@media print{'
+    +'@page{size:A4 landscape;margin:8mm}'
+    +'body{margin:0}'
+    +'}'
+    +'</style>'
     +'</head><body>'
-    +'<div style="text-align:center;margin-bottom:10px">'
-    +'<h2 style="margin:0;color:#1a4a2e">STOCK BIN CARD — ใบควบคุมอะไหล่</h2>'
-    +'<div style="font-size:13px">Beyond Green — สาขาภูเก็ต</div>'
-    +'</div>'
-    +'<table style="width:100%;margin-bottom:10px;border-collapse:collapse"><tr>'
-    +'<td style="border:1px solid #ccc;padding:6px 10px;width:50%"><strong>Part No.:</strong> '+p.partNo+'</td>'
-    +'<td style="border:1px solid #ccc;padding:6px 10px"><strong>ชื่ออะไหล่:</strong> '+(p.nameEN||p.nameTH||'-')+'</td>'
-    +'</tr><tr>'
-    +'<td style="border:1px solid #ccc;padding:6px 10px"><strong>ที่เก็บ:</strong> '+(p.location||'-')+'</td>'
-    +'<td style="border:1px solid #ccc;padding:6px 10px"><strong>วันที่พิมพ์:</strong> '+new Date().toLocaleDateString('th-TH')+'</td>'
+    +'<h2>STOCK BIN CARD — ใบควบคุมอะไหล่ (Beyond Green สาขาภูเก็ต)</h2>'
+    +'<table class="info"><tr>'
+    +'<td style="width:30%"><strong>Part No.:</strong> '+p.partNo+'</td>'
+    +'<td style="width:35%"><strong>ชื่อ:</strong> '+(p.nameEN||p.nameTH||'-')+'</td>'
+    +'<td style="width:15%"><strong>ที่เก็บ:</strong> '+(p.location||'-')+'</td>'
+    +'<td style="width:20%"><strong>วันที่พิมพ์:</strong> '+new Date().toLocaleDateString('th-TH')+' | <strong>คงเหลือ:</strong> '+(p.inStock||0)+' '+(p.unit||'ชิ้น')+'</td>'
     +'</tr></table>'
-    +tableHTML
-    +'<script>setTimeout(function(){window.print();},400);<\/script>'
+    +'<table class="sc"><thead><tr>'
+    +'<th style="width:7%">วันที่</th>'
+    +'<th style="width:9%">ประเภท</th>'
+    +'<th style="width:12%">เลขเอกสาร</th>'
+    +'<th style="width:10%">ผู้เบิก</th>'
+    +'<th style="width:9%">Job No.</th>'
+    +'<th style="width:12%">ลูกค้า/สาขา</th>'
+    +'<th style="width:18%">วัตถุประสงค์</th>'
+    +'<th style="width:7%">เข้า</th>'
+    +'<th style="width:7%">ออก</th>'
+    +'<th style="width:9%">คงเหลือ</th>'
+    +'</tr></thead><tbody>'
+    + (function(){
+        var tbl = document.getElementById('scContent');
+        if(!tbl) return '<tr><td colspan="10">ไม่มีข้อมูล</td></tr>';
+        var srcRows = tbl.querySelectorAll('tbody tr');
+        var out = '';
+        srcRows.forEach(function(row){
+          var cells = row.querySelectorAll('td');
+          if(cells.length < 10) return;
+          // วันที่, ประเภท(text only), เลขเอกสาร, ผู้เบิก, job, ลูกค้า, วัตถุประสงค์, เข้า, ออก, คงเหลือ
+          var bg = row.style.background || '';
+          var rowStyle = bg ? 'background:'+bg+';' : '';
+          var typeText = cells[1].textContent.trim();
+          var inVal = cells[7].textContent.trim();
+          var outVal = cells[8].textContent.trim();
+          var balVal = cells[9].textContent.trim();
+          var inClass = inVal !== '—' ? 'in' : '';
+          var outClass = outVal !== '—' ? 'out' : '';
+          out += '<tr style="'+rowStyle+'">'
+            +'<td>'+cells[0].textContent.trim()+'</td>'
+            +'<td>'+typeText+'</td>'
+            +'<td>'+cells[2].textContent.trim()+'</td>'
+            +'<td>'+cells[3].textContent.trim()+'</td>'
+            +'<td>'+cells[4].textContent.trim()+'</td>'
+            +'<td>'+cells[5].textContent.trim()+'</td>'
+            +'<td>'+cells[6].textContent.trim()+'</td>'
+            +'<td class="'+inClass+'">'+inVal+'</td>'
+            +'<td class="'+outClass+'">'+outVal+'</td>'
+            +'<td class="bal">'+balVal+'</td>'
+            +'</tr>';
+        });
+        return out || '<tr><td colspan="10" style="text-align:center">ไม่มีข้อมูล</td></tr>';
+      })()
+    +'</tbody></table>'
+    +'<script>setTimeout(function(){window.print();},500);<\/script>'
     +'</body></html>');
   win.document.close();
 }
@@ -4718,6 +4800,292 @@ document.addEventListener('click', function(e){
     if(dd) dd.style.display='none';
   }
 });
+
+
+// ════════════════════════════════════════════════════════════
+// OPERATIONAL CONTROL DASHBOARD — Report Page
+// ════════════════════════════════════════════════════════════
+
+function loadFullReport(){
+  var reqs = typeof DEMO_REQS !== 'undefined' ? DEMO_REQS : [];
+  var now = new Date();
+
+  // ── คำนวณอายุใบเบิก (วัน) ──────────────────────────────
+  function getAgeDays(dateStr){
+    if(!dateStr) return 0;
+    // parse dd/mm/yyyy (thai BE → subtract 543)
+    var parts = dateStr.split('/');
+    if(parts.length < 3) return 0;
+    var d = parseInt(parts[0]), m = parseInt(parts[1])-1;
+    var y = parseInt(parts[2]);
+    if(y > 2500) y -= 543; // แปลง พ.ศ. → ค.ศ.
+    var date = new Date(y, m, d);
+    return Math.floor((now - date) / (1000*60*60*24));
+  }
+
+  function formatAge(days){
+    if(days < 30) return days + ' วัน';
+    if(days < 365) return Math.floor(days/30) + ' เดือน ' + (days%30) + ' วัน';
+    var y = Math.floor(days/365), rem = days%365;
+    return y + ' ปี ' + Math.floor(rem/30) + ' เดือน';
+  }
+
+  function getAgeColor(days){
+    if(days >= 730) return {bg:'#b71c1c', text:'#fff', border:'#7f0000', label:'⚠️ วิกฤต'};
+    if(days >= 365) return {bg:'#ffebee', text:'#b71c1c', border:'#ef9a9a', label:'🔴 เกิน 1 ปี'};
+    if(days >= 180) return {bg:'#fff3e0', text:'#e65100', border:'#ffcc80', label:'🟠 เกิน 6 เดือน'};
+    if(days >= 90)  return {bg:'#fffde7', text:'#f57f17', border:'#fff176', label:'🟡 เกิน 3 เดือน'};
+    return {bg:'', text:'', border:'', label:''};
+  }
+
+  // ── 1. KPI Cards ────────────────────────────────────────
+  var total    = reqs.length;
+  var waitAppr = reqs.filter(function(r){ return r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER'; }).length;
+  var waitStock= reqs.filter(function(r){ return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING'; }).length;
+  var inUse    = reqs.filter(function(r){ return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP'; }).length;
+  var waitClear= reqs.filter(function(r){ return r.StatusStock==='PICKED_UP'&&r.StatusApproval==='APPROVED'; }).length;
+  var closed   = reqs.filter(function(r){ return r.StatusStock==='CLEARED'; }).length;
+  var overdue7 = reqs.filter(function(r){ return getAgeDays(r.OpenDate)>=7 && r.StatusStock!=='CLEARED'; }).length;
+
+  var kpiRow = document.getElementById('rptKPIRow');
+  if(kpiRow){
+    var kpis = [
+      {label:'ใบเบิกทั้งหมด', val:total,    color:'var(--gd)',   icon:'📋', filter:'all'},
+      {label:'รออนุมัติ',      val:waitAppr, color:'#e65100',    icon:'⏳', filter:'pending'},
+      {label:'รอจ่ายอะไหล่', val:waitStock,color:'#1565c0',    icon:'📦', filter:'approved'},
+      {label:'กำลังใช้งาน',   val:inUse,    color:'var(--gm)',   icon:'🔧', filter:'inuse'},
+      {label:'รอเคลียร์',     val:waitClear,color:'#c9a84c',    icon:'📝', filter:'waitclear'},
+      {label:'ปิดงานแล้ว',    val:closed,   color:'#388e3c',    icon:'✅', filter:'cleared'},
+      {label:'ค้างเกิน 7 วัน',val:overdue7, color:overdue7>0?'#b71c1c':'var(--g400)', icon:'🚨', filter:'overdue'},
+    ];
+    kpiRow.innerHTML = kpis.map(function(k){
+      return '<div class="kpi-card" data-filter="'+k.filter+'" style="cursor:pointer;background:#fff;border:1px solid var(--g200);border-radius:10px;padding:12px 10px;text-align:center;transition:box-shadow .2s;box-shadow:0 1px 4px rgba(0,0,0,.06)">'
+        +'<div style="font-size:20px">'+k.icon+'</div>'
+        +'<div style="font-size:26px;font-weight:700;color:'+k.color+';line-height:1.2">'+k.val+'</div>'
+        +'<div style="font-size:11px;color:var(--g400);margin-top:4px">'+k.label+'</div>'
+        +'</div>';
+    }).join('');
+  }
+  // Event delegation สำหรับ KPI cards
+  if(kpiRow){
+    kpiRow.addEventListener('click', function(e){
+      var card = e.target.closest('.kpi-card');
+      if(card) filterReportBy(card.dataset.filter||'');
+    });
+  }
+
+  // ── 2. Workflow Pipeline ────────────────────────────────
+  var pipelineEl = document.getElementById('rptPipeline');
+  if(pipelineEl){
+    var steps = [
+      {label:'สร้างใบเบิก',      count: total,     color:'#1a4a2e', status:'all'},
+      {label:'รอหัวหน้าช่าง',    count: reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR';}).length, color:'#e65100', status:'sup'},
+      {label:'รอผู้จัดการ',       count: reqs.filter(function(r){return r.StatusApproval==='PENDING_MANAGER';}).length,    color:'#1565c0', status:'mgr'},
+      {label:'รอจ่ายอะไหล่',    count: waitStock,  color:'#6a1599', status:'stock'},
+      {label:'กำลังใช้งาน',      count: inUse,      color:'#2d6a4f', status:'inuse'},
+      {label:'รอเคลียร์',        count: waitClear,  color:'#c9a84c', status:'clear'},
+      {label:'ปิดงาน',           count: closed,     color:'#388e3c', status:'done'},
+    ];
+    // หา max เพื่อ highlight คอขวด
+    var maxPending = Math.max.apply(null, steps.slice(1,6).map(function(s){return s.count;}));
+    pipelineEl.innerHTML = steps.map(function(s, i){
+      var isBottleneck = i>0 && i<6 && s.count===maxPending && s.count>0;
+      var borderStyle = isBottleneck ? '2px solid var(--red)' : '1px solid var(--g200)';
+      var bgStyle = isBottleneck ? '#fff5f5' : '#fff';
+      var arrow = i<steps.length-1 ? '<div style="font-size:18px;color:var(--g400);flex-shrink:0;padding:0 2px">→</div>' : '';
+      return '<div style="display:flex;align-items:center;gap:0">'
+        +'<div style="background:'+bgStyle+';border:'+borderStyle+';border-radius:8px;padding:10px 12px;text-align:center;min-width:90px;flex-shrink:0'+(isBottleneck?';box-shadow:0 0 0 2px rgba(183,28,28,.15)':'')+'">'
+        +(isBottleneck?'<div style="font-size:9px;color:var(--red);font-weight:700;margin-bottom:2px">⚠️ คอขวด</div>':'')
+        +'<div style="font-size:22px;font-weight:700;color:'+s.color+'">'+s.count+'</div>'
+        +'<div style="font-size:10px;color:var(--g400);margin-top:2px;white-space:nowrap">'+s.label+'</div>'
+        +'</div>'+arrow+'</div>';
+    }).join('');
+  }
+
+  // ── 3. งานที่ต้องติดตาม (Overdue table) ────────────────
+  var overdueEl = document.getElementById('rptOverdueTable');
+  if(overdueEl){
+    // เอาเฉพาะที่ยังไม่ปิด และเรียงตามเก่าสุด
+    var tracked = reqs
+      .filter(function(r){ return r.StatusStock !== 'CLEARED'; })
+      .map(function(r){ return Object.assign({}, r, {_days: getAgeDays(r.OpenDate)}); })
+      .sort(function(a,b){ return b._days - a._days; });
+
+    if(!tracked.length){
+      overdueEl.innerHTML = '<div class="tc tm" style="padding:24px;color:var(--gm)">✅ ไม่มีงานค้างค่ะ</div>';
+    } else {
+      var html = '<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+        +'<th>เลขใบเบิก</th><th>วันที่เบิก</th><th>Job No.</th>'
+        +'<th>ลูกค้า</th><th>ผู้เบิก</th>'
+        +'<th style="text-align:center">อายุใบเบิก</th>'
+        +'<th>สถานะ</th><th></th>'
+        +'</tr></thead><tbody>';
+      tracked.forEach(function(r){
+        var ac = getAgeColor(r._days);
+        var rowStyle = ac.bg ? 'background:'+ac.bg+';color:'+ac.text+';' : '';
+        var stText = ({
+          'PENDING_SUPERVISOR':'⏳ รออนุมัติหัวหน้า',
+          'PENDING_MANAGER':'⏳ รออนุมัติผจก.',
+          'APPROVED':'✅ อนุมัติแล้ว',
+          'PENDING':'📦 รอจ่ายอะไหล่',
+          'ACKNOWLEDGED':'🔧 จ่ายแล้ว/ใช้งาน',
+          'PICKED_UP':'✋ ช่างรับแล้ว',
+        })[r.StatusApproval === 'APPROVED' ? r.StatusStock : r.StatusApproval] || r.StatusApproval;
+        html += '<tr style="'+rowStyle+'">'
+          +'<td style="font-weight:700">'+r.ReqID+'</td>'
+          +'<td>'+r.OpenDate+'</td>'
+          +'<td>'+r.JobNo+'</td>'
+          +'<td>'+r.CustomerName+'</td>'
+          +'<td>'+(r.RequesterName||r.RequesterEmail||'—')+'</td>'
+          +'<td style="text-align:center;font-weight:700">'
+          +(ac.label ? '<span style="background:'+ac.color+';color:'+ac.text+';border-radius:4px;padding:2px 6px;font-size:11px">'+ac.label+'</span> ' : '')
+          +formatAge(r._days)+'</td>'
+          +'<td>'+stText+'</td>'
+          +'<td><button class="btn bo bsm stk-detail-btn" data-rid="'+r.ReqID+'">ดู</button></td>'
+          +'</tr>';
+      });
+      html += '</tbody></table></div>';
+      overdueEl.innerHTML = html;
+    }
+  }
+
+  // ── 4. Alert Panel ──────────────────────────────────────
+  var alerts = [];
+  reqs.forEach(function(r){
+    var days = getAgeDays(r.OpenDate);
+    if((r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER') && days>=3){
+      alerts.push({msg:'ใบเบิก <strong>'+r.ReqID+'</strong> รออนุมัติมาแล้ว <strong>'+days+' วัน</strong>', type:'warn'});
+    }
+    if(r.StatusStock==='PICKED_UP' && days>=7){
+      alerts.push({msg:'ใบเบิก <strong>'+r.ReqID+'</strong> ยังไม่เคลียร์ มาแล้ว <strong>'+days+' วัน</strong>', type:'error'});
+    }
+  });
+  var alertPanel = document.getElementById('rptAlertPanel');
+  var alertList  = document.getElementById('rptAlertList');
+  if(alertPanel && alertList){
+    if(alerts.length){
+      alertList.innerHTML = alerts.map(function(a){
+        return '<div style="padding:6px 10px;margin-bottom:4px;background:rgba(183,28,28,.07);border-radius:6px;font-size:13px">⚠️ '+a.msg+'</div>';
+      }).join('');
+      alertPanel.style.display = '';
+    } else {
+      alertPanel.style.display = 'none';
+    }
+  }
+
+  // ── 5. รายงานช่าง ────────────────────────────────────────
+  var techMap = {};
+  reqs.forEach(function(r){
+    var name = r.RequesterName || r.RequesterEmail || 'ไม่ระบุ';
+    if(!techMap[name]) techMap[name] = {name:name, total:0, inProgress:0, waitClear:0, closed:0, days:[]};
+    techMap[name].total++;
+    if(r.StatusStock==='CLEARED') techMap[name].closed++;
+    else if(r.StatusStock==='PICKED_UP') techMap[name].waitClear++;
+    else techMap[name].inProgress++;
+    var d = getAgeDays(r.OpenDate);
+    if(r.StatusStock==='CLEARED') techMap[name].days.push(d);
+  });
+  var techList = Object.values(techMap).sort(function(a,b){
+    return (b.inProgress+b.waitClear) - (a.inProgress+a.waitClear);
+  });
+  var techEl = document.getElementById('rptTechTable');
+  if(techEl && techList.length){
+    var h = '<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+      +'<th>ชื่อช่าง</th><th style="text-align:center">ใบเบิกทั้งหมด</th>'
+      +'<th style="text-align:center">กำลังดำเนินการ</th>'
+      +'<th style="text-align:center">รอเคลียร์</th>'
+      +'<th style="text-align:center">ปิดงานแล้ว</th>'
+      +'<th style="text-align:center">เวลาปิดงานเฉลี่ย</th>'
+      +'<th style="text-align:center">% ปิดงาน</th>'
+      +'</tr></thead><tbody>';
+    techList.forEach(function(t){
+      var avgDays = t.days.length ? Math.round(t.days.reduce(function(a,b){return a+b;},0)/t.days.length) : 0;
+      var pct = t.total ? Math.round(t.closed/t.total*100) : 0;
+      var pctColor = pct>=80?'var(--gm)':pct>=50?'#c9a84c':'var(--red)';
+      h += '<tr>'
+        +'<td style="font-weight:600">'+t.name+'</td>'
+        +'<td style="text-align:center">'+t.total+'</td>'
+        +'<td style="text-align:center;color:#1565c0;font-weight:700">'+t.inProgress+'</td>'
+        +'<td style="text-align:center;color:#c9a84c;font-weight:700">'+t.waitClear+'</td>'
+        +'<td style="text-align:center;color:var(--gm);font-weight:700">'+t.closed+'</td>'
+        +'<td style="text-align:center;color:var(--g400)">'+( avgDays?formatAge(avgDays):'—')+'</td>'
+        +'<td style="text-align:center">'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<div style="flex:1;height:6px;background:#eee;border-radius:3px"><div style="width:'+pct+'%;height:100%;background:'+pctColor+';border-radius:3px"></div></div>'
+        +'<span style="font-weight:700;color:'+pctColor+';font-size:12px;min-width:32px">'+pct+'%</span>'
+        +'</div></td>'
+        +'</tr>';
+    });
+    h += '</tbody></table></div>';
+    techEl.innerHTML = h;
+  }
+
+  // ── 6. Top Parts Chart ──────────────────────────────────
+  var topEl = document.getElementById('rptTopParts');
+  if(topEl && typeof PARTS_DB !== 'undefined'){
+    var top10 = PARTS_DB.filter(function(p){return p.inStock>0;})
+      .sort(function(a,b){return b.inStock-a.inStock;}).slice(0,10);
+    topEl.innerHTML = '<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+      +'<th>#</th><th>Part No.</th><th>ชื่ออะไหล่</th>'
+      +'<th style="text-align:center">คงเหลือ</th>'
+      +'<th style="text-align:left">กราฟ</th></tr></thead><tbody>'
+      + top10.map(function(p,i){
+          var w = Math.round(p.inStock/top10[0].inStock*100);
+          return '<tr><td style="color:var(--g400)">'+(i+1)+'</td>'
+            +'<td style="font-weight:700;font-size:11px">'+p.partNo+'</td>'
+            +'<td>'+( p.nameEN||p.nameTH||'-')+'</td>'
+            +'<td style="text-align:center;font-weight:700;color:var(--gm)">'+p.inStock+'</td>'
+            +'<td><div style="height:8px;background:var(--gp);border-radius:4px;width:'+w+'%"><div style="height:100%;background:var(--gm);border-radius:4px;width:'+w+'%"></div></div></td>'
+            +'</tr>';
+      }).join('')
+      +'</tbody></table></div>';
+
+    // วาด bar chart
+    var canvas = document.getElementById('rptChart');
+    if(canvas && canvas.getContext){
+      canvas.width = canvas.parentElement.offsetWidth - 32;
+      canvas.height = 200;
+      drawBarChart(canvas.getContext('2d'), canvas,
+        top10.map(function(p){return p.partNo.slice(-8);}),
+        top10.map(function(p){return p.inStock;}),
+        'var(--gm)', 'Stock คงเหลือ Top 10');
+    }
+  }
+}
+
+function filterReportBy(filter){
+  // เลื่อนไปยัง overdue table และ highlight
+  var el = document.getElementById('rptOverdueTable');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function exportReportCSV(){
+  var reqs = typeof DEMO_REQS !== 'undefined' ? DEMO_REQS : [];
+  var rows = [['เลขใบเบิก','วันที่','Job No.','ลูกค้า','ผู้เบิก','สถานะอนุมัติ','สถานะ Stock','หมายเหตุ']];
+  reqs.forEach(function(r){
+    rows.push([r.ReqID, r.OpenDate, r.JobNo, r.CustomerName,
+               r.RequesterName||r.RequesterEmail||'', r.StatusApproval, r.StatusStock, '']);
+  });
+  var csv = '\uFEFF' + rows.map(function(r){
+    return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');
+  }).join('\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href=url; a.download='report_'+new Date().toLocaleDateString('th-TH').replace(/\//g,'-')+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Export CSV แล้วค่ะ','success');
+}
+
+// Auto load เมื่อเข้าหน้ารายงาน
+var _origGoReport = go;
+go = function(page){
+  _origGoReport(page);
+  if(page === 'report'){
+    setTimeout(loadFullReport, 300);
+  }
+};
 
 </script>
 
