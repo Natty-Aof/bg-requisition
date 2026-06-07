@@ -489,13 +489,15 @@ textarea.fc{min-height:70px;resize:vertical;}
 
         <!-- ④ งานที่ต้องติดตาม ────────────────────────── -->
         <div class="card" style="padding:14px 16px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
             <div style="font-size:13px;font-weight:700;color:var(--gd)">⏰ งานที่ต้องติดตาม</div>
-            <div style="display:flex;gap:6px;font-size:11px">
-              <span style="background:#fffde7;border:1px solid #f9a825;border-radius:4px;padding:2px 8px;color:#f57f17">🟡 >3 เดือน</span>
-              <span style="background:#fff3e0;border:1px solid #e65100;border-radius:4px;padding:2px 8px;color:#e65100">🟠 >6 เดือน</span>
-              <span style="background:#ffebee;border:1px solid var(--red);border-radius:4px;padding:2px 8px;color:var(--red)">🔴 >1 ปี</span>
-              <span style="background:#b71c1c;border-radius:4px;padding:2px 8px;color:#fff">⚠️ >2 ปี</span>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div style="font-size:11px;color:var(--g400)">สีแถวตามอายุค้าง:</div>
+              <span style="background:#fffde7;border:1px solid #f9a825;border-radius:4px;padding:3px 8px;color:#f57f17;font-size:11px">🟡 3-6 เดือน</span>
+              <span style="background:#fff3e0;border:1px solid #e65100;border-radius:4px;padding:3px 8px;color:#e65100;font-size:11px">🟠 6-12 เดือน</span>
+              <span style="background:#ffebee;border:1px solid var(--red);border-radius:4px;padding:3px 8px;color:var(--red);font-size:11px">🔴 1-2 ปี</span>
+              <span style="background:#b71c1c;border-radius:4px;padding:3px 8px;color:#fff;font-size:11px">⚠️ เกิน 2 ปี วิกฤต</span>
+              <button class="btn bo bsm" onclick="printOverdueReport()" style="font-size:11px">🖨️ พิมพ์</button>
             </div>
           </div>
           <div id="rptOverdueTable"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
@@ -509,7 +511,7 @@ textarea.fc{min-height:70px;resize:vertical;}
 
         <!-- ⑥ Top 5 อะไหล่จ่ายออกจริง ─────────────────── -->
         <div class="card" style="padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">📊 Top 5 อะไหล่ที่จ่ายออกจริง</div>
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">📊 Top 10 อะไหล่ที่จ่ายออกจริง</div>
           <div style="position:relative;width:100%;overflow:hidden">
             <canvas id="rptChart" style="width:100%;display:block"></canvas>
           </div>
@@ -518,7 +520,17 @@ textarea.fc{min-height:70px;resize:vertical;}
 
         <!-- ⑦ รายการค้างจ่าย ──────────────────────────── -->
         <div class="card" style="padding:14px 16px">
-          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">⏳ รายการค้างจ่าย</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--gd)">⏳ รายการค้างจ่าย</div>
+              <div style="font-size:11px;color:var(--g400);margin-top:2px">รายการที่ Stock จ่ายได้ไม่ครบตามที่ขอ — เมื่อจ่ายครบแล้วรายการจะหายออกไป</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn bo bsm" onclick="printPendingReport()" style="font-size:11px">🖨️ พิมพ์รายงาน</button>
+              <button class="btn bo bsm" onclick="showShortageAnalysis()" style="font-size:11px">📊 วิเคราะห์ขาดบ่อย</button>
+            </div>
+          </div>
+          <div id="shortageAnalysis" style="display:none"></div>
           <div id="rptPendingIssue"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
@@ -532,11 +544,11 @@ textarea.fc{min-height:70px;resize:vertical;}
         <div id="rptSlowMove" class="card" style="padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">🐢 รายงานอะไหล่ไม่เคลื่อนไหว</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="slowMoveBtns">
-            <button class="btn bp bsm" onclick="showSlowMove(3)"  id="smBtn3">3 เดือน</button>
-            <button class="btn bo bsm" onclick="showSlowMove(6)"  id="smBtn6">6 เดือน</button>
-            <button class="btn bo bsm" onclick="showSlowMove(12)" id="smBtn12">1 ปี</button>
-            <button class="btn bo bsm" onclick="showSlowMove(24)" id="smBtn24">2 ปี</button>
-            <button class="btn bo bsm" onclick="showSlowMove(999)" id="smBtn999">ไม่เคลื่อนไหวเลย</button>
+            <button class="btn bgd bsm" onclick="showSlowMove(3)"   data-months="3">3 เดือน</button>
+            <button class="btn bo bsm"  onclick="showSlowMove(6)"   data-months="6">6 เดือน</button>
+            <button class="btn bo bsm"  onclick="showSlowMove(12)"  data-months="12">1 ปี</button>
+            <button class="btn bo bsm"  onclick="showSlowMove(24)"  data-months="24">2 ปี</button>
+            <button class="btn bo bsm"  onclick="showSlowMove(999)" data-months="999">ไม่เคลื่อนไหวเลย</button>
           </div>
           <div id="slowMoveContent"><div class="tc tm" style="padding:24px">เลือกช่วงเวลาค่ะ</div></div>
         </div>
@@ -1179,10 +1191,16 @@ var _DEMO_PART_IMGS = {
 (function(){ Object.assign(_partImages, _DEMO_PART_IMGS); })();
 
 var DEMO_ITEMS = [
-  {PartNo:'05-16U291',NameTH:'ลูกปืน',NameEN:'BEARING 6205',Qty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'07-16290250',NameTH:'ซีลเพลาล่าง',NameEN:'SEAL LOWER SHAFT',Qty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'02-23U700014',NameTH:'ยางโอริง',NameEN:'O-RING STEERING',Qty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'01BPB000010396',NameTH:'แบตเตอรี่ 6V',NameEN:'BATTERY 6V TROJAN T105',Qty:12,Unit:'ก้อน',SerialNo:'',Note:'48V System'},
+  {PartNo:'01BPB000010396',NameTH:'แบตเตอรี่ 6V',NameEN:'BATTERY 6V TROJAN T105',Qty:12,IssuedQty:12,Unit:'ก้อน',SerialNo:'',Note:'48V System'},
+  {PartNo:'05-16U291',NameTH:'ลูกปืน',NameEN:'BEARING 6205',Qty:4,IssuedQty:3,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'07-16290250',NameTH:'ซีลเพลาล่าง',NameEN:'SEAL LOWER SHAFT',Qty:3,IssuedQty:3,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'02-23U700014',NameTH:'ยางโอริง',NameEN:'O-RING STEERING',Qty:2,IssuedQty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'03PGL0000010155836',NameTH:'บูชยูรีเทน',NameEN:'BUSHING URETHANE 29mm',Qty:6,IssuedQty:5,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'01PGC0000000007048',NameTH:'บูชสำริด',NameEN:'BUSHING FLANGED BRONZE',Qty:4,IssuedQty:4,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'03SPP0000000WS0022',NameTH:'น้ำกลั่น',NameEN:'น้ำกลั่น แบบขวด',Qty:8,IssuedQty:8,Unit:'ขวด',SerialNo:'',Note:''},
+  {PartNo:'01PGC0001029562016',NameTH:'บูชยูรีเทนสั้น',NameEN:'BUSHING URETHANE SHORT',Qty:3,IssuedQty:3,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'01PGC0000001012303',NameTH:'บูชเหล็ก',NameEN:'BUSHING STEEL GAS CAR',Qty:2,IssuedQty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
+  {PartNo:'03PGL0000001016346',NameTH:'บูชยูรีเทนสีน้ำเงิน',NameEN:'BUSHING URETHANE BLUE',Qty:5,IssuedQty:4,Unit:'ชิ้น',SerialNo:'',Note:''},
 ];
 var DEMO_REQS = [
   {ReqID:'PKT-BR-2569-0001',JobNo:'2569030606',CustomerName:'คัมปัส ยีส',OpenDate:'16/04/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'',SerialNos:'FO-02',Purpose:'รถเช่า, เคลมไม่ได้',StatusApproval:'APPROVED',StatusStock:'CLEARED',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-04-16T10:30:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-04-16T11:00:00Z',ManagerNote:'',StockHandlerEmail:'Hathaichanok@beyond-green.co.th',StockAcknowledgedAt:'2026-04-16T11:30:00Z',ClosedAt:'2026-04-17T09:00:00Z',ClosedNote:'เรียบร้อย',IMNumber:'IM-2569-00099',CreatedAt:'2026-04-16T09:00:00Z',PickedUpAt:'2026-04-16T12:00:00Z'},
@@ -4293,69 +4311,104 @@ function setRptType(type){
 }
 
 function showSlowMove(months){
-  // อัปเดต active state ปุ่ม
-  document.querySelectorAll('#rptSlowMove .btn').forEach(function(btn){
-    btn.className = btn.textContent.trim().indexOf(
-      months>=999?'ไม่เคลื่อน':months===36?'3 ปี':months===24?'2 ปี':months===12?'1 ปี':months===6?'6':'3'
-    )>=0 ? 'btn bgd bsm' : 'btn bo bsm';
+  // ── Active state — ใช้ data-months แทน indexOf text ────────
+  document.querySelectorAll('#slowMoveBtns .btn').forEach(function(btn){
+    var m = parseInt(btn.getAttribute('data-months')||'0',10);
+    var isActive = (months >= 999 && btn.getAttribute('data-months')==='999') || (months < 999 && m===months);
+    btn.className = isActive ? 'btn bgd bsm' : 'btn bo bsm';
   });
+
   var el = document.getElementById('slowMoveContent');
   if(!el) return;
+
+  el.innerHTML = '<div class="tc" style="padding:16px">⏳ กำลังโหลด...</div>';
+
   var db = typeof PARTS_DB !== 'undefined' ? PARTS_DB : [];
-  // Demo: อะไหล่ที่ inStock > 0 ถือว่า "ไม่เคลื่อนไหว" (demo ไม่มี transaction history)
-  var cutoff = new Date();
-  cutoff.setMonth(cutoff.getMonth() - months);
-  var label = months >= 999 ? 'ไม่เคลื่อนไหวเลย' : months + ' เดือน';
+  if(!db.length){
+    el.innerHTML = '<div class="tc tm" style="padding:20px">ยังไม่มีข้อมูล PARTS_DB ค่ะ</div>';
+    return;
+  }
 
-  // Demo: สุ่มจาก PARTS_DB ที่ stock สูงถือว่าไม่เคลื่อนไหว
-  var slowItems = db.filter(function(p){ return (p.inStock||0) > 50; })
+  var labelMap = {3:'3 เดือน', 6:'6 เดือน', 12:'1 ปี', 24:'2 ปี', 36:'3 ปี', 999:'ไม่เคลื่อนไหวเลย'};
+  var label = labelMap[months] || months + ' เดือน';
+  var maxItems = months >= 999 ? 50 : Math.min(months * 3, 50);
+
+  // Logic: Stock ที่สูง = น่าจะไม่เคลื่อนไหว (demo ไม่มี transaction date จริง)
+  var slowItems = db
+    .filter(function(p){ return (p.inStock||0) > 0; })
     .sort(function(a,b){ return b.inStock - a.inStock; })
-    .slice(0, months >= 999 ? 50 : Math.min(months*3, 50));
+    .slice(0, maxItems);
 
-  var totalValue = slowItems.reduce(function(s,p){ return s+(p.inStock||0); }, 0);
-  var html = '<div style="display:flex;gap:10px;margin-bottom:12px">'
+  if(!slowItems.length){
+    el.innerHTML = '<div class="tc tm" style="padding:24px">✅ ไม่มีรายการในช่วงนี้ค่ะ</div>';
+    return;
+  }
+
+  var totalQty = slowItems.reduce(function(s,p){ return s+(p.inStock||0); }, 0);
+  var outOfStock = slowItems.filter(function(p){ return p.inStock <= 0; }).length;
+
+  // ── Summary cards ────────────────────────────────────────
+  var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">'
     +'<div class="sc" style="text-align:center;border-left:4px solid #e65100">'
-    +'<div class="lb">รายการที่ไม่เคลื่อนไหว '+label+'</div>'
-    +'<div class="vl" style="color:#e65100">'+slowItems.length+'</div></div>'
-    +'<div class="sc" style="text-align:center;border-left:4px solid var(--red)">'
-    +'<div class="lb">จำนวนรวม (อาจค้างสต็อก)</div>'
-    +'<div class="vl" style="color:var(--red)">'+totalValue.toLocaleString()+'</div></div>'
+    +'<div class="lb">ไม่เคลื่อนไหว '+label+'</div>'
+    +'<div class="vl" style="color:#e65100;font-size:22px">'+slowItems.length+'</div></div>'
+    +'<div class="sc" style="text-align:center;border-left:4px solid #c9a84c">'
+    +'<div class="lb">จำนวนรวมที่ค้างสต็อก</div>'
+    +'<div class="vl" style="color:#c9a84c;font-size:22px">'+totalQty.toLocaleString()+'</div></div>'
+    +'<div class="sc" style="text-align:center;border-left:4px solid var(--gm)">'
+    +'<div class="lb">⚠️ ควรพิจารณาจำหน่าย/คืน</div>'
+    +'<div class="vl" style="color:var(--gm);font-size:22px">'+slowItems.filter(function(p){return p.inStock>100;}).length+'</div></div>'
     +'</div>';
 
-  if(slowItems.length){
-    html += '<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
-      +'<th>Part No.</th><th>ชื่ออะไหล่</th><th>หมวด</th>'
-      +'<th style="text-align:center">คงเหลือ</th>'
-      +'<th style="text-align:center">จ่ายจริงรวม</th>'
-      +'<th style="text-align:center">วันไม่เคลื่อนไหว</th>'
-      +'<th>เคลื่อนไหวล่าสุด</th>'
-      +'<th>ที่เก็บ</th><th>สถานะ</th>'
-      +'</tr></thead><tbody>';
-    slowItems.forEach(function(p){
-      var risk = p.inStock>100 ? '<span class="chip chip-red" style="font-size:11px">⚠️ ค้างสต็อก</span>'
-               : p.inStock>50  ? '<span class="chip chip-gld" style="font-size:11px">🔶 ระวัง</span>'
-               : '<span class="chip chip-gry" style="font-size:11px">ติดตาม</span>';
-      var issued = (window._scDemoEntries||[]).filter(function(e){return e.PartNo===p.partNo&&e.Type!=='IN'&&e.Type!=='ADJUST';}).reduce(function(s,e){return s+(e.Qty||0);},0);
-      var lastMoveDate = '06/06/2569'; // ยอดยกมา (demo)
-      var noMoveDays = months>=999 ? 9999 : months*30;
-      html += '<tr>'
-        +'<td style="font-size:11px;font-weight:700;color:var(--g400)">'+p.partNo+'</td>'
-        +'<td style="font-size:12px;font-weight:600">'+(p.nameEN||p.nameTH||'-')+'</td>'
-        +'<td style="font-size:11px;color:var(--g400)">'+p.group+'</td>'
-        +'<td style="text-align:center;font-weight:700;color:#e65100">'+p.inStock+'</td>'
-        +'<td style="text-align:center;color:var(--g400)">'+(issued||'—')+'</td>'
-        +'<td style="text-align:center;font-weight:700;color:var(--red)">'+( noMoveDays>=9999?'>3 ปี':noMoveDays+' วัน')+'</td>'
-        +'<td style="font-size:11px;color:var(--g400)">'+lastMoveDate+'</td>'
-        +'<td style="font-size:12px">'+(p.location||'—')+'</td>'
-        +'<td>'+risk+'</td>'
-        +'</tr>';
-    });
-    html += '</tbody></table></div>';
-  } else {
-    html = '<div class="tc tm" style="padding:24px">✅ ไม่มีรายการที่ไม่เคลื่อนไหวในช่วงนี้</div>';
+  // คำแนะนำ
+  if(months <= 6){
+    html += '<div style="background:#fff9e6;border:1px solid #c9a84c;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#6b4f00">'
+      +'💡 <strong>แนะนำ:</strong> ตรวจสอบอะไหล่ที่ไม่เคลื่อนไหวเกิน '+label+' ว่ายังจำเป็นหรือสามารถคืน/จำหน่ายได้'
+      +'</div>';
   }
+
+  // ── ตาราง ────────────────────────────────────────────────
+  html += '<div style="display:flex;justify-content:flex-end;margin-bottom:6px">'
+    +'<button class="btn bo bsm" onclick="printSlowMoveReport()" style="font-size:11px">🖨️ พิมพ์รายงาน</button>'
+    +'</div>';
+
+  html += '<div class="tw"><table class="it" style="font-size:13px"><thead><tr style="font-size:13px;font-weight:700">'
+    +'<th>Part No.</th><th>ชื่ออะไหล่</th><th>หมวด</th>'
+    +'<th style="text-align:center">คงเหลือ</th>'
+    +'<th style="text-align:center">จ่ายจริงรวม</th>'
+    +'<th style="text-align:center">ไม่เคลื่อนไหว</th>'
+    +'<th>เคลื่อนไหวล่าสุด</th>'
+    +'<th>ที่เก็บ</th><th>สถานะ</th>'
+    +'</tr></thead><tbody>';
+
+  slowItems.forEach(function(p, i){
+    var risk = p.inStock > 100
+      ? '<span class="chip chip-red" style="font-size:11px">⚠️ ค้างสต็อก</span>'
+      : p.inStock > 50
+      ? '<span class="chip chip-gld" style="font-size:11px">🔶 ระวัง</span>'
+      : '<span class="chip chip-gry" style="font-size:11px;background:#f0f0f0;color:#666">ติดตาม</span>';
+    var issued = (window._scDemoEntries||[])
+      .filter(function(e){ return e.PartNo===p.partNo && e.Type!=='IN' && e.Type!=='ADJUST'; })
+      .reduce(function(s,e){ return s+(e.Qty||0); }, 0);
+    var lastMove = '06/06/2569';
+    var noMoveTxt = months >= 999 ? '>3 ปี' : months >= 12 ? Math.floor(months/12)+' ปี' : months+' เดือน';
+    html += '<tr style="height:40px;'+(i%2===0?'':'background:#f9fdf9;')+'">'
+      +'<td style="font-size:11px;font-weight:600;color:var(--g400);padding:8px 10px">'+p.partNo+'</td>'
+      +'<td style="font-weight:600;padding:8px 10px">'+(p.nameEN||p.nameTH||'-')+'</td>'
+      +'<td style="font-size:11px;color:var(--g400);padding:8px 10px">'+(p.group||'-')+'</td>'
+      +'<td style="text-align:center;font-weight:700;color:#e65100;font-size:15px;padding:8px 10px">'+p.inStock+'</td>'
+      +'<td style="text-align:center;color:var(--g400);padding:8px 10px">'+(issued||'—')+'</td>'
+      +'<td style="text-align:center;font-weight:700;color:var(--red);padding:8px 10px">'+noMoveTxt+'</td>'
+      +'<td style="font-size:11px;color:var(--g400);padding:8px 10px">'+lastMove+'</td>'
+      +'<td style="font-size:12px;padding:8px 10px">'+(p.location||'—')+'</td>'
+      +'<td style="padding:8px 10px">'+risk+'</td>'
+      +'</tr>';
+  });
+
+  html += '</tbody></table></div>';
   el.innerHTML = html;
 }
+
 
 // ── MIN STOCK ─────────────────────────────────────────────
 function editMinStock(partNo){
@@ -5030,7 +5083,7 @@ function loadFullReport(){
   var issuedList=Object.keys(issuedMap).map(function(pn){
     var name=getPartName(pn); // ← ใช้ getPartName เสมอ
     return {partNo:pn, nameEN:name, issuedQty:issuedMap[pn]};
-  }).sort(function(a,b){return b.issuedQty-a.issuedQty;}).slice(0,5);
+  }).sort(function(a,b){return b.issuedQty-a.issuedQty;}).slice(0,10);
 
   // ถ้าไม่มี issued data เลย (demo ใหม่) — ใช้ DEMO_ITEMS
   if(!issuedList.length && items.length){
@@ -5047,7 +5100,7 @@ function loadFullReport(){
   // วาด Horizontal Bar Chart
   var canvas=document.getElementById('rptChart');
   if(canvas&&canvas.getContext){
-    var top5draw = issuedList.slice(0,5);
+    var top5draw = issuedList.slice(0,10);
     if(top5draw.length){
       drawHorizontalBar(canvas.getContext('2d'), canvas, top5draw, 0, 0, 0, 0);
     } else {
@@ -5062,14 +5115,14 @@ function loadFullReport(){
       topEl.innerHTML='<div class="tc tm" style="padding:20px">ยังไม่มีข้อมูลการจ่ายจริงค่ะ — บันทึก Stock Card เพื่อดูข้อมูลได้เลย</div>';
     } else {
       var maxIssued=issuedList[0].issuedQty||1;
-      var top5 = issuedList.slice(0,5);
+      var top10 = issuedList.slice(0,10);
       topEl.innerHTML='<div class="tw"><table class="it" style="font-size:13px"><thead><tr>'
         +'<th style="width:40px;text-align:center">ลำดับ</th>'
         +'<th style="font-size:13px;font-weight:700">ชื่ออะไหล่</th>'
         +'<th style="font-size:11px;color:var(--g400)">Part No.</th>'
         +'<th style="text-align:center;font-size:13px;font-weight:700">จ่ายจริง</th>'
         +'</tr></thead><tbody>'
-        +top5.map(function(p,i){
+        +top10.map(function(p,i){
           var medal=['🥇','🥈','🥉'][i]||'';
           var nameDisp = p.nameEN && p.nameEN!=='—' ? p.nameEN : '<span style="color:#aaa;font-size:11px">ไม่พบชื่ออะไหล่</span>';
           return '<tr style="height:40px">'
@@ -5192,114 +5245,135 @@ function loadFullReport(){
 }
 
 
-// ── Horizontal Bar Chart ─────────────────────────────────────
-function drawHorizontalBar(ctx, canvas, data, padLArg, padRArg, padTopArg, rowHArg){
-  // ใช้ค่าที่เหมาะสมเสมอ (ไม่รับ arg เพื่อความปลอดภัย)
-  var N      = Math.min(data.length, 5); // Top 5 เท่านั้น
-  var items  = data.slice(0, N);
-  var LABEL_W = 220; // พื้นที่ชื่ออะไหล่ด้านซ้าย
-  var VAL_W   = 60;  // พื้นที่ตัวเลขด้านขวา
-  var ROW_H   = 52;  // ความสูงต่อแถว
-  var PAD_TOP = 44;  // พื้นที่ header
-  var PAD_BOT = 16;
+// ── Horizontal Bar Chart — Beyond Green ─────────────────────
+function drawHorizontalBar(ctx, canvas, data, _a, _b, _c, _d){
+  var N       = Math.min(data.length, 10);
+  var items   = data.slice(0, N);
 
-  canvas.width  = canvas.parentElement ? canvas.parentElement.offsetWidth - 0 : 600;
-  canvas.height = PAD_TOP + ROW_H * N + PAD_BOT;
-  canvas.style.height = canvas.height + 'px';
+  // ── ขนาดที่กะทัดรัด ──────────────────────────────────────
+  var LABEL_W = 180;   // พื้นที่ชื่อ (เล็กลง)
+  var VAL_W   = 42;    // พื้นที่ตัวเลขขวา
+  var VAL_GAP = 6;     // ช่องว่างหลังแท่ง
+  var ROW_H   = 38;    // ความสูงต่อแถว (เล็กลง)
+  var PAD_TOP = 44;    // header height
+  var PAD_BOT = 8;
+  var PAD_L   = 8;     // padding ด้านซ้าย
 
-  var W      = canvas.width;
-  var BAR_AREA = W - LABEL_W - VAL_W - 8;
-  var maxVal = Math.max.apply(null, items.map(function(d){ return d.issuedQty||0; }));
-  if(maxVal < 1) maxVal = 1;
+  // ── Canvas size ──────────────────────────────────────────
+  var dpr  = window.devicePixelRatio || 1;
+  var cont = canvas.parentElement;
+  var cssW = cont ? Math.min(cont.getBoundingClientRect().width || cont.offsetWidth || 560, 800) : 560;
+  var cssH = PAD_TOP + ROW_H * N + PAD_BOT;
 
-  // Beyond Green palette
-  var palette = ['#1a4a2e','#2d6a4f','#40916c','#74c69d','#95d5b2'];
+  canvas.width        = Math.round(cssW * dpr);
+  canvas.height       = Math.round(cssH * dpr);
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = cssH + 'px';
+  ctx.scale(dpr, dpr);
 
-  var ctx2 = ctx;
-  // background
-  ctx2.fillStyle = '#fff'; ctx2.fillRect(0,0,W,canvas.height);
+  var W     = cssW;
+  var BAR_W = W - PAD_L - LABEL_W - VAL_W - VAL_GAP - 4;
 
-  // header title
-  ctx2.fillStyle = '#1a4a2e';
-  ctx2.font = 'bold 12px "Prompt",Sarabun,sans-serif';
-  ctx2.textAlign = 'center';
-  ctx2.fillText('จำนวนที่จ่ายจริง (ชิ้น)', LABEL_W + BAR_AREA/2, 20);
+  var maxVal = Math.max.apply(null, items.map(function(d){ return d.issuedQty||1; }));
 
-  // grid lines บน bar area
-  for(var g = 0; g <= 4; g++){
-    var gx = LABEL_W + Math.round(g/4 * BAR_AREA);
-    ctx2.strokeStyle = g===0 ? '#aaa' : '#e0e0e0';
-    ctx2.lineWidth = g===0 ? 1 : 0.5;
-    ctx2.beginPath();
-    ctx2.moveTo(gx, PAD_TOP - 8);
-    ctx2.lineTo(gx, PAD_TOP + ROW_H * N);
-    ctx2.stroke();
-    // label บน grid
-    if(g > 0){
-      ctx2.fillStyle = '#aaa'; ctx2.font = '9px Sarabun,sans-serif';
-      ctx2.textAlign = 'center';
-      ctx2.fillText(Math.round(maxVal*g/4), gx, PAD_TOP - 2);
-    }
-  }
+  // Beyond Green color scale
+  var palette = ['#1a4a2e','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2','#b7e4c7','#d8f3dc','#d8f3dc','#d8f3dc'];
 
+  // ── Background ───────────────────────────────────────────
+  ctx.fillStyle = '#f8fbf9';
+  ctx.fillRect(0, 0, W, cssH);
+
+  // ── Header ───────────────────────────────────────────────
+  ctx.fillStyle = '#1a4a2e';
+  ctx.fillRect(0, 0, W, PAD_TOP - 2);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Sarabun,Arial,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Top 10 อะไหล่ที่จ่ายออกจริง', PAD_L + LABEL_W + BAR_W/2, 16);
+
+  ctx.font = '9px Sarabun,Arial,sans-serif';
+  ctx.fillStyle = '#a8d5b9';
+  ctx.fillText('วัดจากจำนวนที่จ่ายจริง (Issued Qty)', PAD_L + LABEL_W + BAR_W/2, 30);
+
+  // Column label
+  ctx.fillStyle = '#888';
+  ctx.font = '9px Sarabun,Arial,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('ชื่ออะไหล่', PAD_L + 18, PAD_TOP - 4);
+  ctx.textAlign = 'center';
+  ctx.fillText('จ่าย', PAD_L + LABEL_W + BAR_W + VAL_GAP + VAL_W/2, PAD_TOP - 4);
+
+  // ── Rows ─────────────────────────────────────────────────
   items.forEach(function(item, i){
     var y    = PAD_TOP + i * ROW_H;
-    var barH = Math.round(ROW_H * 0.48);
+    var barH = Math.round(ROW_H * 0.42);
     var barY = y + (ROW_H - barH) / 2;
-    var barW = Math.max(4, Math.round((item.issuedQty / maxVal) * BAR_AREA));
-    var col  = palette[i] || '#74c69d';
+    var pct  = item.issuedQty / maxVal;
+    var bw   = Math.max(3, Math.round(pct * BAR_W));
+    var col  = palette[i] || '#95d5b2';
+    var barX = PAD_L + LABEL_W;
 
-    // zebra row bg
-    ctx2.fillStyle = i % 2 === 0 ? '#f9fdf9' : '#fff';
-    ctx2.fillRect(0, y, W, ROW_H);
+    // zebra
+    ctx.fillStyle = i%2===0 ? '#fff' : '#f3faf6';
+    ctx.fillRect(0, y, W, ROW_H);
 
-    // bar background track
-    ctx2.fillStyle = '#e8f5e9';
-    ctx2.fillRect(LABEL_W, barY, BAR_AREA, barH);
+    // separator
+    ctx.strokeStyle = '#e0ede8'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
 
-    // bar gradient
-    var grad = ctx2.createLinearGradient(LABEL_W, 0, LABEL_W + barW, 0);
-    grad.addColorStop(0, col);
-    grad.addColorStop(1, col + 'bb');
-    ctx2.fillStyle = grad;
-    ctx2.beginPath();
-    if(ctx2.roundRect){ ctx2.roundRect(LABEL_W, barY, barW, barH, [0,4,4,0]); }
-    else { ctx2.rect(LABEL_W, barY, barW, barH); }
-    ctx2.fill();
+    // track
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(barX, barY, BAR_W, barH, 4);
+    else ctx.rect(barX, barY, BAR_W, barH);
+    ctx.fill();
+    ctx.globalAlpha = 1;
 
-    // separator line
-    ctx2.strokeStyle = '#e0f2e9'; ctx2.lineWidth = 0.5;
-    ctx2.beginPath();
-    ctx2.moveTo(0, y + ROW_H - 0.5);
-    ctx2.lineTo(W, y + ROW_H - 0.5);
-    ctx2.stroke();
+    // bar fill
+    ctx.shadowColor = i<3 ? col : 'transparent';
+    ctx.shadowBlur  = i<3 ? 4 : 0;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(barX, barY, bw, barH, 4);
+    else ctx.rect(barX, barY, bw, barH);
+    ctx.fill();
+    ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
 
-    // ชื่ออะไหล่ (ซ้าย) — ตัดถ้ายาวเกิน 28 ตัวอักษร
-    var name = (item.nameEN && item.nameEN !== '—') ? item.nameEN : ('Part: ' + item.partNo);
-    var shortName = name.length > 28 ? name.slice(0, 26) + '…' : name;
-    var medal = i < 3 ? ['🥇','🥈','🥉'][i] : '';
+    // medal badge
+    var medal = ['🥇','🥈','🥉'][i] || '';
+    var xName = PAD_L;
+    if(medal){
+      ctx.font = '11px serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(medal, PAD_L, barY + barH/2 + 4);
+      xName = PAD_L + 15;
+    }
 
-    // rank badge
-    ctx2.font = '12px serif';
-    ctx2.textAlign = 'left';
-    ctx2.fillText(medal, 4, barY + barH/2 + 5);
+    // ชื่ออะไหล่ — วัดความกว้างก่อน render
+    ctx.font = (i<3?'bold ':'') + '10.5px Sarabun,Arial,sans-serif';
+    ctx.fillStyle = '#1a3628';
+    var name = (item.nameEN && item.nameEN!=='—' && item.nameEN!==item.partNo)
+      ? item.nameEN : item.partNo;
+    var maxNW = LABEL_W - (xName - PAD_L) - 6;
+    while(name.length > 3 && ctx.measureText(name).width > maxNW){
+      name = name.slice(0,-1);
+    }
+    if(item.nameEN && item.nameEN.length > name.length + 1) name += '…';
+    ctx.textAlign = 'left';
+    ctx.fillText(name, xName, barY + barH/2 + 4);
 
-    // name
-    ctx2.fillStyle = '#222';
-    ctx2.font = (i < 3 ? 'bold ' : '') + '11.5px Sarabun,sans-serif';
-    ctx2.textAlign = 'left';
-    ctx2.fillText(shortName, medal ? 20 : 6, barY + barH/2 + 4);
-
-    // value ที่ปลายแท่ง
-    ctx2.fillStyle = i < 3 ? '#1a4a2e' : '#555';
-    ctx2.font = 'bold 12px Sarabun,sans-serif';
-    ctx2.textAlign = 'left';
-    ctx2.fillText(item.issuedQty, LABEL_W + barW + 6, barY + barH/2 + 5);
+    // ค่าที่ปลายแท่ง
+    ctx.fillStyle = i<3 ? '#1a4a2e' : '#4a7c5f';
+    ctx.font = (i<3?'bold ':'') + '10px Sarabun,Arial,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(item.issuedQty, barX + bw + VAL_GAP, barY + barH/2 + 4);
   });
 
-  // border
-  ctx2.strokeStyle = '#c8e6c9'; ctx2.lineWidth = 1;
-  ctx2.strokeRect(LABEL_W, PAD_TOP - 8, BAR_AREA, ROW_H * N + 8);
+  // left accent
+  ctx.fillStyle = '#1a4a2e';
+  ctx.fillRect(0, PAD_TOP, 3, ROW_H * N);
 }
 
 
@@ -5430,6 +5504,143 @@ go = function(page){
   }
 };
 
+
+// ── พิมพ์รายงานงานค้าง ──────────────────────────────────────
+function printOverdueReport(){
+  var el = document.getElementById('rptOverdueTable');
+  if(!el){ toast('ยังไม่มีข้อมูล — กด "โหลดรายงาน" ก่อนค่ะ','error'); return; }
+  var win = window.open('','_blank','width=1000,height=700');
+  if(!win){ toast('กรุณาอนุญาต popup ค่ะ','error'); return; }
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<style>body{font-family:Sarabun,sans-serif;font-size:12px;margin:10mm}'
+    +'h2{color:#1a4a2e;margin-bottom:4px}table{width:100%;border-collapse:collapse}'
+    +'th{background:#1a4a2e;color:#fff;padding:7px 10px;text-align:left}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee}'
+    +'tr:nth-child(even){background:#f9fdf9}'
+    +'@media print{@page{size:A4 landscape;margin:10mm}}</style>'
+    +'</head><body>'
+    +'<h2>⏰ งานที่ต้องติดตาม — Beyond Green สาขาภูเก็ต</h2>'
+    +'<p style="color:#888;font-size:11px">พิมพ์วันที่: '+new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"})+'</p>'
+    + el.innerHTML
+    +'<script>setTimeout(function(){window.print();},400);<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ── พิมพ์รายงานค้างจ่าย ─────────────────────────────────────
+function printPendingReport(){
+  var el = document.getElementById('rptPendingIssue');
+  if(!el){ toast('ยังไม่มีข้อมูล — กด "โหลดรายงาน" ก่อนค่ะ','error'); return; }
+  var win = window.open('','_blank','width=1000,height=700');
+  if(!win){ toast('กรุณาอนุญาต popup ค่ะ','error'); return; }
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<style>body{font-family:Sarabun,sans-serif;font-size:12px;margin:10mm}'
+    +'h2{color:#1a4a2e}table{width:100%;border-collapse:collapse}'
+    +'th{background:#1a4a2e;color:#fff;padding:7px 10px;text-align:left}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee}'
+    +'tr:nth-child(even){background:#f9fdf9}'
+    +'@media print{@page{size:A4 landscape;margin:10mm}}</style>'
+    +'</head><body>'
+    +'<h2>⏳ รายการอะไหล่ค้างจ่าย — Beyond Green สาขาภูเก็ต</h2>'
+    +'<p style="color:#888;font-size:11px">พิมพ์วันที่: '+new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"})+'</p>'
+    +'<p style="font-size:12px;color:#555">หมายเหตุ: รายการนี้แสดงเฉพาะอะไหล่ที่จ่ายได้ไม่ครบ — เมื่อ Stock จ่ายครบแล้ว รายการจะหายออกไปอัตโนมัติค่ะ</p>'
+    + el.innerHTML
+    +'<script>setTimeout(function(){window.print();},400);<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ── วิเคราะห์อะไหล่ขาดบ่อย ──────────────────────────────────
+function showShortageAnalysis(){
+  var el = document.getElementById('shortageAnalysis');
+  if(!el) return;
+  if(el.style.display !== 'none'){ el.style.display='none'; return; }
+
+  var items = typeof DEMO_ITEMS !== 'undefined' ? DEMO_ITEMS : [];
+  var reqs  = typeof DEMO_REQS  !== 'undefined' ? DEMO_REQS  : [];
+
+  // รวม shortage ต่อ Part No.
+  var shortMap = {};
+  reqs.forEach(function(r){
+    if(r.StatusStock==='CLEARED') return;
+    items.forEach(function(item){
+      var issued  = typeof item.IssuedQty!=='undefined' ? (item.IssuedQty||0) : (item.Qty||0);
+      var req     = item.Qty||0;
+      var pending = Math.max(0, req - issued);
+      if(pending <= 0) return;
+      var pn = item.PartNo;
+      if(!shortMap[pn]) shortMap[pn] = {pn:pn, name:getPartName(pn), totalReq:0, totalIssued:0, totalPending:0, count:0};
+      shortMap[pn].totalReq    += req;
+      shortMap[pn].totalIssued += issued;
+      shortMap[pn].totalPending+= pending;
+      shortMap[pn].count++;
+    });
+  });
+
+  var list = Object.values(shortMap).sort(function(a,b){ return b.totalPending-a.totalPending; });
+
+  if(!list.length){
+    el.innerHTML='<div style="background:#e8f5e9;border-radius:8px;padding:12px 16px;font-size:13px;color:#2d6a4f;margin-bottom:12px">✅ ไม่มีอะไหล่ค้างจ่ายในขณะนี้ค่ะ</div>';
+    el.style.display='';
+    return;
+  }
+
+  var maxPend = list[0].totalPending || 1;
+  var html = '<div style="background:#fff9e6;border:1px solid #c9a84c;border-radius:8px;padding:14px 16px;margin-bottom:12px">'
+    +'<div style="font-size:13px;font-weight:700;color:#6b4f00;margin-bottom:10px">📊 วิเคราะห์อะไหล่ที่ขาดบ่อย</div>'
+    +'<div style="font-size:11px;color:#8d7000;margin-bottom:12px">อะไหล่ที่ Stock ไม่สามารถจ่ายได้ครบในหลายใบเบิก ควรเพิ่มสั่งซื้อหรือติดตาม</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +'<th style="background:#c9a84c;color:#fff;padding:6px 10px;text-align:left">ชื่ออะไหล่</th>'
+    +'<th style="background:#c9a84c;color:#fff;padding:6px 10px;text-align:center">ขอรวม</th>'
+    +'<th style="background:#c9a84c;color:#fff;padding:6px 10px;text-align:center;color:#90ee90">จ่ายได้</th>'
+    +'<th style="background:#c9a84c;color:#fff;padding:6px 10px;text-align:center">ขาด</th>'
+    +'<th style="background:#c9a84c;color:#fff;padding:6px 10px">สัดส่วนขาด</th>'
+    +'</tr></thead><tbody>'
+    +list.map(function(p,i){
+      var w = Math.round(p.totalPending/maxPend*100);
+      var fillColor = i===0?'#b71c1c':i<3?'#e65100':'#c9a84c';
+      return '<tr style="background:'+(i%2===0?'#fff':'#fffdf0')+'">'
+        +'<td style="padding:7px 10px;font-weight:600">'+(i===0?'⚠️ ':i<3?'🔶 ':'')+(p.name||p.pn)+'</td>'
+        +'<td style="padding:7px 10px;text-align:center">'+p.totalReq+'</td>'
+        +'<td style="padding:7px 10px;text-align:center;color:var(--gm)">'+p.totalIssued+'</td>'
+        +'<td style="padding:7px 10px;text-align:center;font-weight:700;color:var(--red)">'+p.totalPending+'</td>'
+        +'<td style="padding:7px 10px">'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<div style="flex:1;height:8px;background:#eee;border-radius:4px">'
+        +'<div style="width:'+w+'%;height:100%;background:'+fillColor+';border-radius:4px"></div></div>'
+        +'<span style="font-size:11px;color:'+fillColor+';font-weight:700;min-width:30px">'+Math.round(p.totalPending/p.totalReq*100)+'%</span>'
+        +'</div></td></tr>';
+    }).join('')
+    +'</tbody></table>'
+    +'<div style="margin-top:10px;font-size:11px;color:#8d7000">💡 แนะนำ: อะไหล่ที่ขาดบ่อยควรเพิ่ม Min Stock และแจ้งฝ่ายจัดซื้อค่ะ</div>'
+    +'</div>';
+
+  el.innerHTML = html;
+  el.style.display = '';
+}
+
+
+function printSlowMoveReport(){
+  var el = document.getElementById('slowMoveContent');
+  if(!el || !el.querySelector('table')){ toast('กด "โหลดรายงาน" ก่อนค่ะ แล้วเลือกช่วงเวลา','error'); return; }
+  var win = window.open('','_blank','width=1100,height=700');
+  if(!win){ toast('กรุณาอนุญาต popup ค่ะ','error'); return; }
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<style>body{font-family:Sarabun,sans-serif;font-size:12px;margin:10mm}'
+    +'h2{color:#1a4a2e;margin-bottom:4px}p{color:#888;font-size:11px}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'th{background:#1a4a2e;color:#fff;padding:7px 10px;text-align:left}'
+    +'td{padding:7px 10px;border-bottom:1px solid #eee}'
+    +'tr:nth-child(even){background:#f9fdf9}'
+    +'@media print{@page{size:A4 landscape;margin:10mm}}</style>'
+    +'</head><body>'
+    +'<h2>🐢 รายงานอะไหล่ไม่เคลื่อนไหว — Beyond Green สาขาภูเก็ต</h2>'
+    +'<p>พิมพ์วันที่: '+new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"})+'</p>'
+    + el.innerHTML
+    +'<script>setTimeout(function(){window.print();},400);<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
 </script>
 
 <!-- ── STOCK CARD FORM MODAL ──────────────────────── -->
