@@ -159,11 +159,11 @@ textarea.fc{min-height:70px;resize:vertical;}
 @keyframes si{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
 
 /* MOBILE */
-.bn{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--gd);border-top:1px solid rgba(255,255,255,.15);padding:6px 0 env(safe-area-inset-bottom,6px);}
+.bn{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--gd);border-top:2px solid rgba(255,255,255,.15);padding:8px 0 env(safe-area-inset-bottom,8px);}
 .bni{display:flex;justify-content:space-around;}
-.bib{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.6);font-size:10px;font-weight:600;min-width:52px;border-radius:8px;}
-.bib .ic2{font-size:20px;line-height:1;}
-.bib.active{color:var(--gold);}
+.bib{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 12px;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.65);font-size:12px;font-weight:600;min-width:60px;border-radius:10px;transition:background .15s;}
+.bib .ic2{font-size:28px;line-height:1.1;}
+.bib.active{color:var(--gold);background:rgba(255,255,255,.08);}
 .ms{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--gd);border-radius:16px 16px 0 0;padding:12px 0 env(safe-area-inset-bottom,12px);box-shadow:0 -4px 24px rgba(0,0,0,.3);}
 .ms.open{display:block;}
 .msh{width:36px;height:4px;background:rgba(255,255,255,.3);border-radius:2px;margin:0 auto 12px;}
@@ -215,7 +215,7 @@ textarea.fc{min-height:70px;resize:vertical;}
   .content{padding:32px 56px;}
 }
 @media(max-width:768px){
-  .sidebar{display:none;} .bn{display:block;} .main{margin-left:0;padding-bottom:70px;}
+  .sidebar{display:none;} .bn{display:block;} .main{margin-left:0;padding-bottom:90px;}
   .topbar{padding:10px 16px;} .topbar h1{font-size:16px;} .sub{display:none;}
   .content{padding:14px;}
   .fr,.fr3{grid-template-columns:1fr;} .dg{grid-template-columns:1fr;} .sg{grid-template-columns:1fr 1fr;gap:10px;}
@@ -512,8 +512,8 @@ textarea.fc{min-height:70px;resize:vertical;}
         <!-- ⑥ Top 5 อะไหล่จ่ายออกจริง ─────────────────── -->
         <div class="card" style="padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">📊 Top 10 อะไหล่ที่จ่ายออกจริง</div>
-          <div style="position:relative;width:100%;overflow:hidden">
-            <canvas id="rptChart" style="width:100%;display:block"></canvas>
+          <div style="width:100%;overflow-x:auto;background:#fafdfb;border-radius:10px;padding:8px 0">
+            <canvas id="rptChart" style="width:100%;display:block;border-radius:8px"></canvas>
           </div>
           <div id="rptTopParts" style="margin-top:12px"></div>
         </div>
@@ -5259,25 +5259,20 @@ function loadFullReport(){
 }
 
 
-// ── Horizontal Bar Chart — Beyond Green ─────────────────────
+// ── Vertical Bar Chart — Modern Style ───────────────────────
 function drawHorizontalBar(ctx, canvas, data, _a, _b, _c, _d){
   var N       = Math.min(data.length, 10);
   var items   = data.slice(0, N);
 
-  // ── ขนาดที่กะทัดรัด ──────────────────────────────────────
-  var LABEL_W = 180;   // พื้นที่ชื่อ (เล็กลง)
-  var VAL_W   = 42;    // พื้นที่ตัวเลขขวา
-  var VAL_GAP = 6;     // ช่องว่างหลังแท่ง
-  var ROW_H   = 38;    // ความสูงต่อแถว (เล็กลง)
-  var PAD_TOP = 44;    // header height
-  var PAD_BOT = 8;
-  var PAD_L   = 8;     // padding ด้านซ้าย
-
-  // ── Canvas size ──────────────────────────────────────────
+  // ── sizing ────────────────────────────────────────────────
   var dpr  = window.devicePixelRatio || 1;
   var cont = canvas.parentElement;
-  var cssW = cont ? Math.min(cont.getBoundingClientRect().width || cont.offsetWidth || 560, 800) : 560;
-  var cssH = PAD_TOP + ROW_H * N + PAD_BOT;
+  var cssW = cont ? Math.min(cont.getBoundingClientRect().width||cont.offsetWidth||600, 900) : 600;
+  var PAD_TOP  = 56;   // พื้นที่บน (ค่าตัวเลข + title)
+  var PAD_BOT  = 72;   // พื้นที่ล่าง (label)
+  var PAD_L    = 20;
+  var PAD_R    = 20;
+  var cssH     = 340;  // ความสูงรวม
 
   canvas.width        = Math.round(cssW * dpr);
   canvas.height       = Math.round(cssH * dpr);
@@ -5285,109 +5280,138 @@ function drawHorizontalBar(ctx, canvas, data, _a, _b, _c, _d){
   canvas.style.height = cssH + 'px';
   ctx.scale(dpr, dpr);
 
-  var W     = cssW;
-  var BAR_W = W - PAD_L - LABEL_W - VAL_W - VAL_GAP - 4;
+  var W        = cssW;
+  var chartW   = W - PAD_L - PAD_R;
+  var chartH   = cssH - PAD_TOP - PAD_BOT;
+  var maxVal   = Math.max.apply(null, items.map(function(d){ return d.issuedQty||1; }));
+  var gapRatio = 0.35;  // ช่องว่างระหว่างแท่ง
+  var barSlot  = chartW / N;
+  var barW     = Math.round(barSlot * (1 - gapRatio));
+  var barX0    = PAD_L + (barSlot - barW) / 2;
 
-  var maxVal = Math.max.apply(null, items.map(function(d){ return d.issuedQty||1; }));
-
-  // Beyond Green color scale
-  var palette = ['#1a4a2e','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2','#b7e4c7','#d8f3dc','#d8f3dc','#d8f3dc'];
+  // Beyond Green vibrant palette (เพิ่มสีสดใส)
+  var palette = [
+    '#1a4a2e', // 1 เขียวเข้ม
+    '#2d6a4f', // 2
+    '#40916c', // 3
+    '#52b788', // 4
+    '#74c69d', // 5
+    '#c9a84c', // 6 ทอง
+    '#1565c0', // 7 น้ำเงิน
+    '#00796b', // 8 เขียวมรกต
+    '#d84315', // 9 ส้ม
+    '#5d4037', // 10 น้ำตาล
+  ];
 
   // ── Background ───────────────────────────────────────────
-  ctx.fillStyle = '#f8fbf9';
+  ctx.fillStyle = '#fafdfb';
   ctx.fillRect(0, 0, W, cssH);
 
-  // ── Header ───────────────────────────────────────────────
+  // ── Grid lines แนวนอน ────────────────────────────────────
+  var gridCount = 4;
+  for(var g = 1; g <= gridCount; g++){
+    var gy = PAD_TOP + chartH - (g/gridCount)*chartH;
+    ctx.strokeStyle = '#e8f0ec'; ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(PAD_L, gy); ctx.lineTo(W-PAD_R, gy); ctx.stroke();
+    ctx.setLineDash([]);
+    // Y axis label
+    ctx.fillStyle = '#aaa'; ctx.font = '9px Sarabun,Arial,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxVal*g/gridCount), PAD_L - 4, gy + 3);
+  }
+
+  // ── Baseline ─────────────────────────────────────────────
+  ctx.strokeStyle = '#c8ddd4'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(PAD_L, PAD_TOP + chartH);
+  ctx.lineTo(W - PAD_R, PAD_TOP + chartH);
+  ctx.stroke();
+
+  // ── Title ────────────────────────────────────────────────
   ctx.fillStyle = '#1a4a2e';
-  ctx.fillRect(0, 0, W, PAD_TOP - 2);
-
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 11px Sarabun,Arial,sans-serif';
+  ctx.font = 'bold 12px Sarabun,Arial,sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Top 10 อะไหล่ที่จ่ายออกจริง', PAD_L + LABEL_W + BAR_W/2, 16);
-
+  ctx.fillText('Top '+N+' อะไหล่ที่จ่ายออกจริง (Issued Qty)', W/2, 18);
+  ctx.fillStyle = '#95b0a0';
   ctx.font = '9px Sarabun,Arial,sans-serif';
-  ctx.fillStyle = '#a8d5b9';
-  ctx.fillText('วัดจากจำนวนที่จ่ายจริง (Issued Qty)', PAD_L + LABEL_W + BAR_W/2, 30);
+  ctx.fillText('วัดจากจำนวนที่จ่ายจริง — ไม่ใช่จำนวนที่ขอเบิก', W/2, 32);
 
-  // Column label
-  ctx.fillStyle = '#888';
-  ctx.font = '9px Sarabun,Arial,sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('ชื่ออะไหล่', PAD_L + 18, PAD_TOP - 4);
-  ctx.textAlign = 'center';
-  ctx.fillText('จ่าย', PAD_L + LABEL_W + BAR_W + VAL_GAP + VAL_W/2, PAD_TOP - 4);
-
-  // ── Rows ─────────────────────────────────────────────────
+  // ── Bars ─────────────────────────────────────────────────
   items.forEach(function(item, i){
-    var y    = PAD_TOP + i * ROW_H;
-    var barH = Math.round(ROW_H * 0.42);
-    var barY = y + (ROW_H - barH) / 2;
-    var pct  = item.issuedQty / maxVal;
-    var bw   = Math.max(3, Math.round(pct * BAR_W));
-    var col  = palette[i] || '#95d5b2';
-    var barX = PAD_L + LABEL_W;
+    var bh   = Math.max(4, Math.round((item.issuedQty/maxVal)*chartH));
+    var bx   = PAD_L + i*barSlot + (barSlot-barW)/2;
+    var by   = PAD_TOP + chartH - bh;
+    var col  = palette[i] || '#74c69d';
 
-    // zebra
-    ctx.fillStyle = i%2===0 ? '#fff' : '#f3faf6';
-    ctx.fillRect(0, y, W, ROW_H);
-
-    // separator
-    ctx.strokeStyle = '#e0ede8'; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
-
-    // track
-    ctx.globalAlpha = 0.18;
+    // track (พื้นหลังแท่ง)
+    ctx.globalAlpha = 0.12;
     ctx.fillStyle = col;
     ctx.beginPath();
-    if(ctx.roundRect) ctx.roundRect(barX, barY, BAR_W, barH, 4);
-    else ctx.rect(barX, barY, BAR_W, barH);
+    if(ctx.roundRect) ctx.roundRect(bx, PAD_TOP, barW, chartH, [8,8,0,0]);
+    else ctx.rect(bx, PAD_TOP, barW, chartH);
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // bar fill
-    ctx.shadowColor = i<3 ? col : 'transparent';
-    ctx.shadowBlur  = i<3 ? 4 : 0;
-    ctx.fillStyle = col;
+    // bar fill gradient
+    var grad = ctx.createLinearGradient(bx, by, bx, by+bh);
+    grad.addColorStop(0, col);
+    grad.addColorStop(1, col+'88');
+    ctx.fillStyle = grad;
+
+    // shadow กรณี top 3
+    if(i < 3){
+      ctx.shadowColor = col;
+      ctx.shadowBlur  = 8;
+      ctx.shadowOffsetY = 2;
+    }
+
     ctx.beginPath();
-    if(ctx.roundRect) ctx.roundRect(barX, barY, bw, barH, 4);
-    else ctx.rect(barX, barY, bw, barH);
+    if(ctx.roundRect) ctx.roundRect(bx, by, barW, bh, [8,8,0,0]);
+    else ctx.rect(bx, by, barW, bh);
     ctx.fill();
-    ctx.shadowBlur = 0; ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0; ctx.shadowColor = 'transparent'; ctx.shadowOffsetY = 0;
 
-    // medal badge
+    // ค่าตัวเลขบนแท่ง
+    ctx.fillStyle = '#1a4a2e';
+    ctx.font = (i<3?'bold ':'') + '11px Sarabun,Arial,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.issuedQty, bx+barW/2, by-6);
+
+    // rank badge
     var medal = ['🥇','🥈','🥉'][i] || '';
-    var xName = PAD_L;
     if(medal){
-      ctx.font = '11px serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(medal, PAD_L, barY + barH/2 + 4);
-      xName = PAD_L + 15;
+      ctx.font = '14px serif';
+      ctx.fillText(medal, bx+barW/2, by-20);
     }
 
-    // ชื่ออะไหล่ — วัดความกว้างก่อน render
-    ctx.font = (i<3?'bold ':'') + '10.5px Sarabun,Arial,sans-serif';
-    ctx.fillStyle = '#1a3628';
+    // Label ล่าง (ชื่ออะไหล่ wrap 2 บรรทัด)
     var name = (item.nameEN && item.nameEN!=='—' && item.nameEN!==item.partNo)
-      ? item.nameEN : item.partNo;
-    var maxNW = LABEL_W - (xName - PAD_L) - 6;
-    while(name.length > 3 && ctx.measureText(name).width > maxNW){
-      name = name.slice(0,-1);
-    }
-    if(item.nameEN && item.nameEN.length > name.length + 1) name += '…';
-    ctx.textAlign = 'left';
-    ctx.fillText(name, xName, barY + barH/2 + 4);
+      ? item.nameEN : item.partNo.slice(-10);
+    ctx.fillStyle = '#444';
+    ctx.font = (i<3?'bold ':'') + '9.5px Sarabun,Arial,sans-serif';
 
-    // ค่าที่ปลายแท่ง
-    ctx.fillStyle = i<3 ? '#1a4a2e' : '#4a7c5f';
-    ctx.font = (i<3?'bold ':'') + '10px Sarabun,Arial,sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(item.issuedQty, barX + bw + VAL_GAP, barY + barH/2 + 4);
+    // ตัดชื่อให้พอดีความกว้างแท่ง
+    var maxW = barSlot - 4;
+    var line1 = name, line2 = '';
+    while(line1.length > 3 && ctx.measureText(line1).width > maxW){
+      var sp = line1.lastIndexOf(' ');
+      if(sp > 0 && line2.length === 0){
+        line2 = line1.slice(sp+1) + (line2?' '+line2:'');
+        line1 = line1.slice(0, sp);
+      } else {
+        line1 = line1.slice(0,-1);
+        if(line2.length === 0) line1 = line1.slice(0,-1) + '…';
+      }
+    }
+    var labelY = PAD_TOP + chartH + 14;
+    ctx.textAlign = 'center';
+    ctx.fillText(line1, bx+barW/2, labelY);
+    if(line2) ctx.fillText(line2, bx+barW/2, labelY+13);
   });
 
-  // left accent
+  // ── Left border accent ──────────────────────────────────
   ctx.fillStyle = '#1a4a2e';
-  ctx.fillRect(0, PAD_TOP, 3, ROW_H * N);
+  ctx.fillRect(0, 0, 3, cssH);
 }
 
 
