@@ -118,6 +118,8 @@ textarea.fc{min-height:70px;resize:vertical;}
 .mh{padding:16px 20px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
 .mh h2{font-family:'Prompt',sans-serif;font-size:16px;font-weight:600;color:var(--gd);}
 .mc{padding:20px;}
+.so-dd-item:hover,.sc-dd-item:hover{background:#f0faf0;}
+.so-dropdown,.sc-dropdown{scrollbar-width:thin;}
 .mf{padding:14px 20px;border-top:1px solid var(--g200);display:flex;gap:10px;justify-content:flex-end;}
 .mx{cursor:pointer;font-size:20px;color:var(--g400);}
 
@@ -569,16 +571,64 @@ textarea.fc{min-height:70px;resize:vertical;}
       <!-- PRINT -->
       <!-- ═══════════════════════════════════════════════════ -->
       <div id="pg-stockcard" class="hidden">
-        <div class="card" style="padding:12px 16px;margin-bottom:0;border-radius:var(--r) var(--r) 0 0">
+        <!-- ── ค้นหา Part ──────────────────────────────────── -->
+        <div class="card" style="padding:14px 16px">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button id="scTabIn"  class="btn bgd bsm" onclick="switchSCTab('in')"  style="min-width:110px">📥 รับเข้า</button>
-            <button id="scTabOut" class="btn bo bsm"  onclick="switchSCTab('out')" style="min-width:110px">📤 จ่ายออก</button>
-            <button id="scTabLog" class="btn bo bsm"  onclick="switchSCTab('log')" style="min-width:110px">📋 ประวัติ</button>
-            <div style="flex:1"></div>
+            <div style="flex:1;min-width:200px;position:relative">
+              <input class="fc" id="scSearch" placeholder="🔍 ค้นหา Part No. หรือชื่ออะไหล่..."
+                oninput="onSCSearch()" autocomplete="off" style="font-size:13px">
+              <div id="scSearchDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--g200);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:300;max-height:260px;overflow-y:auto"></div>
+            </div>
             <button class="btn bp bsm" onclick="openSCForm()">+ บันทึก</button>
           </div>
         </div>
+
+        <!-- ── Part Info Card ─────────────────────────────── -->
+        <div id="scPartInfo" style="display:none">
+          <div class="card" style="margin-top:0;border-radius:0;border-top:2px solid var(--gm);padding:12px 16px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">
+              <div>
+                <div style="font-size:11px;color:var(--g400)">Part No.</div>
+                <div id="scInfoPartNo" style="font-size:18px;font-weight:700;color:var(--gd)">—</div>
+                <div id="scInfoName" style="font-size:13px;color:#333;margin-top:2px">—</div>
+                <div id="scInfoGroup" style="font-size:11px;color:var(--g400)"></div>
+              </div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap">
+                <div style="text-align:center;background:#f0faf5;border-radius:8px;padding:8px 16px">
+                  <div style="font-size:11px;color:var(--g400)">ที่เก็บ</div>
+                  <div id="scInfoLoc" style="font-size:16px;font-weight:700;color:var(--gd)">—</div>
+                </div>
+                <div style="text-align:center;background:#f0faf5;border-radius:8px;padding:8px 16px">
+                  <div style="font-size:11px;color:var(--g400)">คงเหลือปัจจุบัน</div>
+                  <div id="scInfoStock" style="font-size:22px;font-weight:700;color:var(--gm)">—</div>
+                </div>
+                <div style="text-align:center;background:#fff3e0;border-radius:8px;padding:8px 16px">
+                  <div style="font-size:11px;color:var(--g400)">Min Stock</div>
+                  <div id="scInfoMin" style="font-size:16px;font-weight:700;color:#e65100">—</div>
+                </div>
+              </div>
+            </div>
+            <!-- Tab ของ Part นี้ -->
+            <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--g200);padding-top:10px">
+              <button id="scTabAll" class="btn bgd bsm" onclick="switchSCPartTab('all')">📋 ทั้งหมด</button>
+              <button id="scTabIn"  class="btn bo bsm"  onclick="switchSCPartTab('in')">📥 รับเข้า</button>
+              <button id="scTabOut" class="btn bo bsm"  onclick="switchSCPartTab('out')">📤 จ่ายออก</button>
+              <div style="flex:1"></div>
+              <button class="btn bo bsm" onclick="printSCCard()" title="พิมพ์ Stock Card">🖨️ พิมพ์</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── ตาราง Stock Card ───────────────────────────── -->
         <div id="scContent"></div>
+
+        <!-- ── คำแนะนำตอนยังไม่เลือก Part ──────────────── -->
+        <div id="scHint" class="card" style="text-align:center;padding:40px;color:var(--g400)">
+          <div style="font-size:40px;margin-bottom:12px">📦</div>
+          <div style="font-size:15px;font-weight:600;color:var(--g400)">ค้นหาอะไหล่เพื่อดู Stock Card</div>
+          <div style="font-size:13px;margin-top:6px">พิมพ์ Part No. หรือชื่ออะไหล่ในช่องค้นหาด้านบนค่ะ</div>
+          <div style="font-size:12px;margin-top:16px;color:#bbb">มีอะไหล่ทั้งหมด 988 รายการในระบบ</div>
+        </div>
       </div>
 
       <!-- ═══════════════════════════════════════════════════ -->
@@ -1289,8 +1339,9 @@ function mockAPI(action, data){
   if(action==='getStockCardEntries'){
     var now = new Date().toISOString();
     var db = typeof PARTS_DB!=='undefined' ? PARTS_DB : [];
-    // สร้าง entries จาก PARTS_DB ทั้งหมด (ยอดเริ่มต้น)
-    var db50 = db.slice(0, 50); // แสดง 50 รายการล่าสุดเพื่อความเร็ว
+    // ถ้ามี demo entries ที่บันทึกมาให้แสดงด้วย
+    var demoNew = window._scDemoEntries || [];
+    var db50 = db.slice(0, 50);
     var allEntries = db50.map(function(p,i){
       return {
         EntryID:'SC-INIT-'+(i+1),
@@ -1311,7 +1362,7 @@ function mockAPI(action, data){
     var filtered = tab==='log' ? allEntries :
       tab==='in' ? allEntries.filter(function(e){return e.Type==='IN'||e.Type==='ADJUST';}) :
       allEntries.filter(function(e){return e.Type!=='IN'&&e.Type!=='ADJUST';});
-    return {success:true, data:filtered};
+    return {success:true, data:demoNew.concat(filtered)};
   }
   if(action==='saveStockCardEntry'){
     // Demo: เพิ่ม entry ใน PARTS_DB inStock
@@ -1369,7 +1420,7 @@ document.addEventListener('click', function(e){
     return;
   }
   // ปุ่มทั้งหมด
-  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn,.del-req-btn,.del-sc-btn,.del-so-btn,.inv-min-btn');
+  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn,.del-req-btn,.del-sc-btn,.del-so-btn,.inv-min-btn,.so-del-btn');
   if(!btn) return;
   var pn = decodeURIComponent(btn.dataset.pn||'');
   var en = decodeURIComponent(btn.dataset.en||'');
@@ -1424,6 +1475,12 @@ document.addEventListener('click', function(e){
   if(btn.classList.contains('inv-min-btn')){
     var partNo = btn.dataset.partno||'';
     editMinStock(partNo);
+    return;
+  }
+  // ── ลบแถว SO ─────────────────────────────────────────────
+  if(btn.classList.contains('so-del-btn')){
+    var row = btn.closest('.so-row-item');
+    if(row) row.remove();
     return;
   }
 });
@@ -3288,17 +3345,39 @@ function onSCPartInput(){
   var q = document.getElementById('scPartNo').value.trim().toLowerCase();
   var dd = document.getElementById('scPartSuggest');
   if(!dd) return;
-  if(!q || q.length < 2){ dd.style.display='none'; return; }
+  if(!q || q.length < 1){ dd.style.display='none'; return; }
   var res = (typeof PARTS_DB!=='undefined' ? PARTS_DB : [])
-    .filter(function(p){ return p._search && p._search.indexOf(q)>=0; }).slice(0,8);
+    .filter(function(p){ return p._search && p._search.indexOf(q)>=0; }).slice(0,10);
   if(!res.length){ dd.style.display='none'; return; }
   dd.style.display='block';
   dd.innerHTML = res.map(function(p){
-    return '<div style="padding:6px 10px;cursor:pointer;border-bottom:1px solid #eef2ef;font-size:13px" onmousedown="selectSCPart(\''+encodeURIComponent(JSON.stringify(p))+'\')">'
-      +'<strong>'+p.partNo+'</strong> — '+(p.nameEN||p.nameTH||'')+'</div>';
+    return '<div class="sc-dd-item" style="padding:7px 12px;cursor:pointer;border-bottom:1px solid #eef2ef;font-size:13px">'
+      +'<div style="font-weight:700;color:var(--gd)">'+p.partNo+'</div>'
+      +'<div style="color:#333;font-size:12px">'+(p.nameEN||p.nameTH||'-')+'</div>'
+      +'<div style="color:#888;font-size:11px">Stock: '+(p.inStock||0)+' '+(p.unit||'ชิ้น')+' | '+(p.location||'-')+'</div>'
+      +'</div>';
   }).join('');
+  dd.querySelectorAll('.sc-dd-item').forEach(function(el, i){
+    var p = res[i];
+    el.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      selectSCPartObj(p);
+    });
+  });
 }
-
+function selectSCPartObj(p){
+  document.getElementById('scPartNo').value = p.partNo;
+  document.getElementById('scUnit').value   = p.unit||'ชิ้น';
+  var nameEl = document.getElementById('scPartName');
+  if(nameEl) nameEl.value = p.nameEN||p.nameTH||'';
+  // แสดง row ชื่อ
+  var nameRow = document.getElementById('scPartNameRow');
+  if(nameRow) nameRow.style.display = '';
+  var dd = document.getElementById('scPartSuggest');
+  if(dd) dd.style.display='none';
+  _scSelectedPart = p;
+  onSCTypeChange();
+}
 function selectSCPart(encoded){
   var p = JSON.parse(decodeURIComponent(encoded));
   _scSelectedPart = p;
@@ -3334,6 +3413,36 @@ function submitSCForm(){
     reqId:    document.getElementById('scReqId').value.trim(),
     note:     document.getElementById('scNote').value.trim(),
   };
+  // Demo mode: บันทึกใน memory + อัปเดต PARTS_DB
+  if(window._demo){
+    if(typeof PARTS_DB !== 'undefined'){
+      var p = PARTS_DB.find(function(x){ return x.partNo===data.partNo; });
+      if(p){
+        if(data.type==='IN'||data.type==='ADJUST') p.inStock = (p.inStock||0) + data.qty;
+        else p.inStock = Math.max(0, (p.inStock||0) - data.qty);
+      }
+      // เพิ่ม PARTS_DB entry ถ้า partNo ยังไม่มี
+      if(!p && data.type==='IN'){
+        PARTS_DB.unshift({partNo:data.partNo,nameEN:data.nameEN||data.partNo,
+          nameTH:'',group:'อื่นๆ',unit:data.unit||'ชิ้น',inStock:data.qty,location:'',
+          _search:(data.partNo+' '+(data.nameEN||'')).toLowerCase()});
+      }
+    }
+    // เก็บใน _scEntries demo list
+    if(!window._scDemoEntries) window._scDemoEntries = [];
+    window._scDemoEntries.unshift({
+      EntryID:'SC-'+Date.now(), Type:data.type, PartNo:data.partNo,
+      NameEN:data.nameEN||data.partNo, Qty:data.qty, Unit:data.unit||'ชิ้น',
+      SerialNo:data.serialNo||'', RefNo:data.refNo||'', Note:data.note||'',
+      CreatedAt:new Date().toISOString()
+    });
+    toast('บันทึก Stock Card แล้วค่ะ ✅','success');
+    closeModal('scFormModal');
+    loadStockCard();
+    if(typeof _inventoryData !== 'undefined') _inventoryData = null; // force reload
+    loadInventory();
+    return;
+  }
   callAPI('saveStockCardEntry', data).then(function(res){
     if(res.success){
       toast(res.message||'บันทึกแล้วค่ะ','success');
@@ -3341,8 +3450,10 @@ function submitSCForm(){
       loadStockCard();
       loadInventory();
     } else {
-      toast(res.message||'เกิดข้อผิดพลาด','error');
+      toast((res.message||'เกิดข้อผิดพลาด')+' (กรุณา Deploy Apps Script ก่อน)','error');
     }
+  }).catch(function(e){
+    toast('ไม่สามารถบันทึกได้: '+e.message,'error');
   });
 }
 
@@ -3677,6 +3788,7 @@ function renderInventory(data){
     +'<th style="text-align:center">รับเข้า</th>'
     +'<th style="text-align:center">จ่ายออก</th>'
     +'<th style="text-align:center;font-weight:700">คงเหลือ</th>'
+    +'<th style="text-align:center">Min</th>'
     +'<th>ที่เก็บ</th><th>สถานะ</th>'
     +'</tr></thead><tbody>';
   data.forEach(function(item){
@@ -3787,37 +3899,118 @@ function addSORow(){
   if(!wrap) return;
   var i = wrap.children.length;
   var div = document.createElement('div');
-  div.style.cssText = 'background:#f8faf9;border:1px solid var(--g200);border-radius:8px;padding:10px;position:relative;margin-bottom:4px';
-  div.innerHTML = '<button onclick="this.parentElement.remove()" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;color:var(--red);font-size:16px" title="ลบรายการ">✕</button>'
-    +'<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-bottom:6px">'
-    +'<div><label style="font-size:11px;color:var(--g400)">Part No.</label>'
-    +'<input class="fc" placeholder="Part No." id="so_pn_'+i+'" oninput="onSOPartInput('+i+')" autocomplete="off"></div>'
-    +'<div><label style="font-size:11px;color:var(--g400)">ชื่ออะไหล่</label>'
-    +'<input class="fc" placeholder="ชื่ออะไหล่" id="so_name_'+i+'" readonly style="color:var(--g400)"></div>'
+  div.className = 'so-row-item';
+  div.setAttribute('data-idx', i);
+  div.style.cssText = 'background:#f8faf9;border:1px solid var(--g200);border-radius:8px;padding:10px;position:relative;margin-bottom:6px';
+  div.innerHTML =
+    '<button class="so-del-btn" style="position:absolute;top:6px;right:6px;background:none;border:none;cursor:pointer;color:var(--red);font-size:18px" title="ลบรายการ">✕</button>'
+    // ── ช่องค้นหา part ──────────────────────────────────────
+    +'<div style="margin-bottom:8px;position:relative">'
+    +'<label style="font-size:11px;color:var(--g400)">🔍 ค้นหาอะไหล่ (Part No. หรือ ชื่อ)</label>'
+    +'<input class="fc so-part-search" placeholder="พิมพ์เพื่อค้นหา เช่น bushing, battery, 01PGC..." '
+      +'oninput="soPartSearch(this)" autocomplete="off" '
+      +'style="font-size:13px">'
+    +'<div class="so-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--g200);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.12);z-index:500;max-height:220px;overflow-y:auto"></div>'
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr 2fr 2fr;gap:8px">'
+    // ── แสดงอะไหล่ที่เลือกแล้ว ─────────────────────────────
+    +'<div class="so-part-selected" style="display:none;background:#e8f5e9;border:1px solid #74c69d;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:13px">'
+    +'<strong class="so-sel-pno" style="color:var(--gd)"></strong>'
+    +'<span class="so-sel-name" style="color:#333;margin-left:8px"></span>'
+    +'<button onclick="soPartClear(this)" style="float:right;background:none;border:none;cursor:pointer;color:var(--g400);font-size:12px">✕ เปลี่ยน</button>'
+    +'</div>'
+    // ── hidden inputs ───────────────────────────────────────
+    +'<input type="hidden" class="so-pn" id="so_pn_'+i+'">'
+    +'<input type="hidden" class="so-name" id="so_name_'+i+'">'
+    +'<input type="hidden" class="so-unit" id="so_unit_'+i+'" value="ชิ้น">'
+    // ── จำนวน/หน่วย/serial/note ────────────────────────────
+    +'<div style="display:grid;grid-template-columns:80px 80px 1fr 1fr;gap:8px">'
     +'<div><label style="font-size:11px;color:var(--g400)">จำนวน</label>'
-    +'<input class="fc" type="number" id="so_qty_'+i+'" value="1" min="1"></div>'
+    +'<input class="fc" type="number" id="so_qty_'+i+'" value="1" min="1" style="text-align:center;font-weight:700"></div>'
     +'<div><label style="font-size:11px;color:var(--g400)">หน่วย</label>'
-    +'<input class="fc" id="so_unit_'+i+'" value="ชิ้น"></div>'
+    +'<input class="fc" id="so_unit_display_'+i+'" value="ชิ้น" readonly style="color:var(--g400)"></div>'
     +'<div><label style="font-size:11px;color:var(--g400)">Serial No.</label>'
     +'<input class="fc" placeholder="S/N (ถ้ามี)" id="so_sn_'+i+'"></div>'
-    +'<div><label style="font-size:11px;color:var(--g400)">หมายเหตุ/ประกัน</label>'
+    +'<div><label style="font-size:11px;color:var(--g400)">หมายเหตุ</label>'
     +'<input class="fc" placeholder="หมายเหตุ" id="so_note_'+i+'"></div>'
     +'</div>';
   wrap.appendChild(div);
 }
 
-function onSOPartInput(i){
-  var q = (document.getElementById('so_pn_'+i).value||'').trim().toLowerCase();
-  if(!q||q.length<2) return;
-  var res = (typeof PARTS_DB!=='undefined'?PARTS_DB:[])
-    .filter(function(p){return p._search&&p._search.indexOf(q)>=0;}).slice(0,1);
-  if(res.length){
-    document.getElementById('so_name_'+i).value = res[0].nameEN||res[0].nameTH||'';
-    document.getElementById('so_unit_'+i).value = res[0].unit||'ชิ้น';
-  }
+function reindexSORows(){
+  // ไม่ต้อง reindex จริงๆ เพราะ collect จาก .so-pn class แทน
 }
+
+function soPartSearch(input){
+  var q = (input.value||'').trim().toLowerCase();
+  var dropdown = input.nextElementSibling;
+  if(!q || q.length < 1){ dropdown.style.display='none'; return; }
+  var results = (typeof PARTS_DB!=='undefined'?PARTS_DB:[])
+    .filter(function(p){ return p._search && p._search.indexOf(q)>=0; })
+    .slice(0, 12);
+  if(!results.length){ dropdown.style.display='none'; return; }
+  dropdown.innerHTML = results.map(function(p){
+    return '<div class="so-dd-item" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #f0f0f0;font-size:12px">'
+      +'<div style="font-weight:700;color:#1a4a2e">'+p.partNo+'</div>'
+      +'<div style="color:#333">'+(p.nameEN||p.nameTH||'-')+'</div>'
+      +'<div style="color:#888;font-size:11px">Stock: '+(p.inStock||0)+' '+(p.unit||'ชิ้น')+' | '+(p.location||'-')+'</div>'
+      +'</div>';
+  }).join('');
+  dropdown.querySelectorAll('.so-dd-item').forEach(function(el, i){
+    var p = results[i];
+    el.addEventListener('click', function(e){
+      e.stopPropagation();
+      soSelectPartDirect(input.closest('.so-row-item'), p.partNo, p.nameEN||p.nameTH||'', p.unit||'ชิ้น');
+      input.value = p.partNo;
+      dropdown.style.display = 'none';
+    });
+  });
+  dropdown.style.display = 'block';
+}
+function soSelectPartDirect(row, partNo, nameEN, unit){
+  if(!row) return;
+  if(!row.classList || !row.classList.contains('so-row-item')){
+    row = row.closest ? row.closest('.so-row-item') : null;
+    if(!row) return;
+  }
+  // ซ่อน search, แสดง selected
+  var search = row.querySelector('.so-part-search');
+  var dropdown = row.querySelector('.so-dropdown');
+  var selected = row.querySelector('.so-part-selected');
+  var i = row.getAttribute('data-idx');
+  if(search) search.style.display = 'none';
+  if(dropdown) dropdown.style.display = 'none';
+  if(selected){ selected.style.display = ''; }
+  row.querySelector('.so-sel-pno').textContent = partNo;
+  row.querySelector('.so-sel-name').textContent = nameEN;
+  // set hidden inputs
+  var pnInput = row.querySelector('.so-pn');
+  var nameInput = row.querySelector('.so-name');
+  var unitInput = row.querySelector('.so-unit');
+  var unitDisp = row.querySelector('[id^="so_unit_display_"]');
+  if(pnInput) pnInput.value = partNo;
+  if(nameInput) nameInput.value = nameEN;
+  if(unitInput) unitInput.value = unit;
+  if(unitDisp){ unitDisp.value = unit; }
+}
+
+function soSelectPart(el, pnEnc, nameEnc, unitEnc){
+  soSelectPartDirect(el, decodeURIComponent(pnEnc), decodeURIComponent(nameEnc), decodeURIComponent(unitEnc));
+}
+
+function soPartClear(btn){
+  var row = btn.closest('.so-row-item');
+  if(!row) return;
+  var search = row.querySelector('.so-part-search');
+  var selected = row.querySelector('.so-part-selected');
+  var pnInput = row.querySelector('.so-pn');
+  var nameInput = row.querySelector('.so-name');
+  if(search){ search.style.display=''; search.value=''; search.focus(); }
+  if(selected) selected.style.display='none';
+  if(pnInput) pnInput.value='';
+  if(nameInput) nameInput.value='';
+}
+
+// onSOPartInput: replaced by soPartSearch
 
 
 function onSOTypeChange(){
@@ -3837,20 +4030,26 @@ function submitSOForm(){
   if(!quoteNo) return toast('กรุณาระบุเลขที่ใบเสนอราคาค่ะ','error');
   var wrap = document.getElementById('soItemsBody');
   var items = [];
-  var count = wrap ? wrap.children.length : 0;
-  for(var i=0;i<count;i++){
-    var pn = document.getElementById('so_pn_'+i);
-    var qty = document.getElementById('so_qty_'+i);
-    if(!pn||!pn.value.trim()) continue;
+  var rows = wrap ? wrap.querySelectorAll('.so-row-item') : [];
+  rows.forEach(function(row){
+    var pnEl   = row.querySelector('.so-pn');
+    var nameEl = row.querySelector('.so-name');
+    var unitEl = row.querySelector('.so-unit');
+    var idx    = row.getAttribute('data-idx')||'0';
+    var qtyEl  = document.getElementById('so_qty_'+idx);
+    var snEl   = document.getElementById('so_sn_'+idx);
+    var noteEl = document.getElementById('so_note_'+idx);
+    var pn = pnEl ? pnEl.value.trim() : '';
+    if(!pn) return; // ข้ามแถวที่ยังไม่เลือก part
     items.push({
-      partNo: pn.value.trim(),
-      nameEN: (document.getElementById('so_name_'+i)||{}).value||'',
-      qty:    parseFloat((qty||{}).value)||1,
-      unit:   (document.getElementById('so_unit_'+i)||{}).value||'ชิ้น',
-      serialNo:(document.getElementById('so_sn_'+i)||{}).value||'',
-      note:   (document.getElementById('so_note_'+i)||{}).value||'',
+      partNo:   pn,
+      nameEN:   nameEl ? nameEl.value : '',
+      qty:      parseFloat(qtyEl ? qtyEl.value : 1)||1,
+      unit:     unitEl ? unitEl.value : 'ชิ้น',
+      serialNo: snEl ? snEl.value : '',
+      note:     noteEl ? noteEl.value : '',
     });
-  }
+  });
   if(!items.length) return toast('กรุณาเพิ่มรายการอะไหล่อย่างน้อย 1 รายการค่ะ','error');
   callAPI('createSalesOrder',{
     quoteNo:quoteNo,
@@ -4233,6 +4432,292 @@ function printInventory(){
   win.document.close();
 }
 
+
+
+// ปิด SO dropdown เมื่อคลิกข้างนอก
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.so-row-item')){
+    document.querySelectorAll('.so-dropdown').forEach(function(d){ d.style.display='none'; });
+  }
+});
+
+// ── STOCK CARD: ตัวแปร ──────────────────────────────────────
+var _scCurrentPart = null;   // part object ที่เลือกอยู่
+var _scPartTab = 'all';      // all / in / out
+var _scAllEntries = [];      // entries ทั้งหมดของ part นั้น
+
+// ── ค้นหา Part ──────────────────────────────────────────────
+function onSCSearch(){
+  var q = (document.getElementById('scSearch').value||'').trim().toLowerCase();
+  var dd = document.getElementById('scSearchDrop');
+  if(!dd) return;
+  if(!q || q.length < 1){ dd.style.display='none'; return; }
+
+  var res = (typeof PARTS_DB!=='undefined'?PARTS_DB:[])
+    .filter(function(p){ return p._search && p._search.indexOf(q)>=0; })
+    .slice(0, 15);
+
+  if(!res.length){ dd.style.display='none'; return; }
+  dd.innerHTML = res.map(function(p){
+    var stockColor = (p.inStock||0) <= 0 ? 'color:var(--red)' : (p.inStock||0) <= 5 ? 'color:#e65100' : 'color:var(--gm)';
+    return '<div class="sc-search-item" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #f0f0f0">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between">'
+      +'<div>'
+      +'<div style="font-weight:700;font-size:13px;color:var(--gd)">'+p.partNo+'</div>'
+      +'<div style="font-size:12px;color:#333">'+(p.nameEN||p.nameTH||'-')+'</div>'
+      +'<div style="font-size:11px;color:var(--g400)">'+p.group+' | 📍 '+(p.location||'-')+'</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-size:18px;font-weight:700;'+stockColor+'">'+( p.inStock||0)+'</div>'
+      +'<div style="font-size:10px;color:var(--g400)">'+(p.unit||'ชิ้น')+'</div>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  dd.querySelectorAll('.sc-search-item').forEach(function(el, i){
+    var p = res[i];
+    el.addEventListener('click', function(){
+      document.getElementById('scSearch').value = p.partNo + ' — ' + (p.nameEN||p.nameTH||'');
+      dd.style.display = 'none';
+      loadSCForPart(p);
+    });
+    el.addEventListener('mouseenter', function(){ el.style.background='#f0faf5'; });
+    el.addEventListener('mouseleave', function(){ el.style.background=''; });
+  });
+  dd.style.display = 'block';
+}
+
+// ── โหลด Stock Card ของ Part นั้น ───────────────────────────
+function loadSCForPart(p){
+  _scCurrentPart = p;
+  _scPartTab = 'all';
+
+  // แสดง Part Info
+  var infoDiv = document.getElementById('scPartInfo');
+  var hintDiv = document.getElementById('scHint');
+  if(infoDiv) infoDiv.style.display = '';
+  if(hintDiv) hintDiv.style.display = 'none';
+
+  // อัปเดต Part Info
+  document.getElementById('scInfoPartNo').textContent = p.partNo;
+  document.getElementById('scInfoName').textContent = p.nameEN||p.nameTH||'-';
+  document.getElementById('scInfoGroup').textContent = p.group||'';
+  document.getElementById('scInfoLoc').textContent = p.location||'—';
+  document.getElementById('scInfoStock').textContent = (p.inStock||0) + ' ' + (p.unit||'ชิ้น');
+  var minVal = _minStockData[p.partNo] || 0;
+  document.getElementById('scInfoMin').textContent = minVal > 0 ? minVal + ' ' + (p.unit||'ชิ้น') : '—';
+
+  // ตั้ง tab active
+  switchSCPartTab('all');
+}
+
+// ── เปลี่ยน tab (all/in/out) ────────────────────────────────
+function switchSCPartTab(tab){
+  _scPartTab = tab;
+  ['All','In','Out'].forEach(function(t){
+    var btn = document.getElementById('scTab'+t);
+    if(btn) btn.className = 'btn bsm ' + (tab === t.toLowerCase() ? 'bgd' : 'bo');
+  });
+  renderSCForPart();
+}
+
+// ── render ตาราง Stock Card ──────────────────────────────────
+function renderSCForPart(){
+  var el = document.getElementById('scContent');
+  if(!el || !_scCurrentPart) return;
+  el.innerHTML = '<div class="card tc" style="padding:20px">⏳ กำลังโหลด...</div>';
+
+  // ดึง entries ทั้งหมดจาก demo + PARTS_DB
+  var p = _scCurrentPart;
+  var allEntries = [];
+
+  // ยอดยกมา (จาก PARTS_DB)
+  allEntries.push({
+    EntryID: 'INIT-'+p.partNo,
+    Date: '06/06/2569',
+    Type: 'INIT',
+    DocNo: 'STOCK-INIT-06-06-69',
+    Requester: 'ระบบ (ยอดยกมา)',
+    JobNo: '—',
+    Customer: 'Beyond Green Phuket',
+    Purpose: 'ยอดยกมาจากการนับ Stock จริง ณ วันที่ 6/6/69',
+    QtyIn: p.inStock||0,
+    QtyOut: 0,
+    Balance: p.inStock||0,
+    Unit: p.unit||'ชิ้น',
+    Note: 'ยอดเริ่มต้นระบบ'
+  });
+
+  // เพิ่ม demo entries ที่บันทึกมา (จาก _scDemoEntries)
+  var demoNew = (window._scDemoEntries||[]).filter(function(e){ return e.PartNo===p.partNo; });
+  var runBalance = p.inStock||0;
+  // คำนวณ balance ไล่ลำดับ
+  demoNew.forEach(function(e){
+    var isIn = e.Type==='IN'||e.Type==='ADJUST';
+    if(isIn) runBalance += (e.Qty||0);
+    else runBalance -= (e.Qty||0);
+    allEntries.push({
+      EntryID: e.EntryID,
+      Date: new Date(e.CreatedAt).toLocaleDateString('th-TH'),
+      Type: e.Type,
+      DocNo: e.RefNo||'—',
+      Requester: CU ? CU.name||CU.email : '—',
+      JobNo: '—',
+      Customer: '—',
+      Purpose: e.Note||'—',
+      QtyIn:  isIn ? e.Qty : 0,
+      QtyOut: isIn ? 0 : e.Qty,
+      Balance: Math.max(0, runBalance),
+      Unit: e.Unit||p.unit||'ชิ้น',
+      Note: e.Note||''
+    });
+  });
+
+  // เพิ่ม demo requisition entries (การเบิกจาก DEMO_REQS ที่ตรง PartNo)
+  if(typeof DEMO_REQS!=='undefined' && typeof DEMO_ITEMS!=='undefined'){
+    DEMO_REQS.forEach(function(req){
+      DEMO_ITEMS.forEach(function(item){
+        if(item.PartNo !== p.partNo) return;
+        if(req.StatusApproval !== 'APPROVED' && req.StatusStock !== 'CLEARED') return;
+        allEntries.push({
+          EntryID: 'REQ-'+req.ReqID+'-'+item.PartNo,
+          Date: req.OpenDate||'—',
+          Type: 'OUT_REQ',
+          DocNo: req.ReqID,
+          Requester: req.RequesterName||'—',
+          JobNo: req.JobNo||'—',
+          Customer: req.CustomerName||'—',
+          Purpose: req.Purpose||'ซ่อมรถลูกค้า',
+          QtyIn: 0,
+          QtyOut: item.Qty||0,
+          Balance: Math.max(0, (p.inStock||0) - (item.Qty||0)),
+          Unit: item.Unit||p.unit||'ชิ้น',
+          Note: item.Note||''
+        });
+      });
+    });
+  }
+
+  // filter ตาม tab
+  var filtered = allEntries;
+  if(_scPartTab === 'in'){
+    filtered = allEntries.filter(function(e){ return e.Type==='IN'||e.Type==='ADJUST'||e.Type==='INIT'; });
+  } else if(_scPartTab === 'out'){
+    filtered = allEntries.filter(function(e){ return e.Type!=='IN'&&e.Type!=='ADJUST'&&e.Type!=='INIT'; });
+  }
+
+  if(!filtered.length){
+    el.innerHTML = '<div class="card tc tm" style="padding:32px">ไม่มีรายการในช่วงนี้ค่ะ</div>';
+    return;
+  }
+
+  var typeLabel = {
+    'INIT':       '🏁 ยอดยกมา',
+    'IN':         '📥 รับเข้า',
+    'ADJUST':     '⚖️ ปรับยอด',
+    'OUT_SALE':   '🛒 ขาย',
+    'OUT_REQ':    '📋 ใบเบิก',
+    'OUT_RENTAL': '🚗 รถเช่า',
+    'OUT_CONTRACT':'🚌 รถสัมปทาน',
+    'OUT_WARRANTY':'🔧 Warranty',
+    'OUT_BRANCH': '🏢 ส่งสาขา',
+  };
+  var typeChipClass = {
+    'INIT':'chip-grn','IN':'chip-grn','ADJUST':'chip-blu',
+    'OUT_SALE':'chip-red','OUT_REQ':'chip-gld','OUT_RENTAL':'chip-red',
+    'OUT_CONTRACT':'chip-red','OUT_WARRANTY':'chip-red','OUT_BRANCH':'chip-red'
+  };
+
+  var canDel = CU && CU.role === 'MANAGER';
+  var html = '<div class="card" style="padding:0;overflow:hidden;border-radius:0 0 var(--r) var(--r)">'
+    +'<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+    +'<th style="width:80px">วันที่</th>'
+    +'<th>ประเภท</th>'
+    +'<th>เลขเอกสาร</th>'
+    +'<th>ผู้เบิก/บันทึก</th>'
+    +'<th>Job No.</th>'
+    +'<th>ลูกค้า/สาขา</th>'
+    +'<th>วัตถุประสงค์</th>'
+    +'<th style="text-align:center;color:var(--gm)">เข้า</th>'
+    +'<th style="text-align:center;color:var(--red)">ออก</th>'
+    +'<th style="text-align:center;font-weight:700">คงเหลือ</th>'
+    +'<th>หมายเหตุ</th>'
+    +(canDel ? '<th></th>' : '')
+    +'</tr></thead><tbody>';
+
+  filtered.forEach(function(e, i){
+    var isInit = e.Type === 'INIT';
+    var rowStyle = isInit ? 'background:#f0faf5;' : (i%2===0?'':'background:#fafafa;');
+    var balColor = e.Balance <= 0 ? 'color:var(--red);' : e.Balance <= 5 ? 'color:#e65100;' : 'color:var(--gm);';
+    var chip = '<span class="chip '+(typeChipClass[e.Type]||'chip-gry')+'" style="font-size:11px">'+(typeLabel[e.Type]||e.Type)+'</span>';
+    html += '<tr style="'+rowStyle+'">'
+      +'<td style="white-space:nowrap">'+e.Date+'</td>'
+      +'<td>'+chip+'</td>'
+      +'<td style="font-weight:600;color:var(--gd)">'+e.DocNo+'</td>'
+      +'<td>'+e.Requester+'</td>'
+      +'<td>'+e.JobNo+'</td>'
+      +'<td>'+e.Customer+'</td>'
+      +'<td style="max-width:150px;white-space:normal">'+e.Purpose+'</td>'
+      +'<td style="text-align:center;font-weight:700;color:var(--gm)">'+(e.QtyIn>0 ? '+'+e.QtyIn+' '+e.Unit : '—')+'</td>'
+      +'<td style="text-align:center;font-weight:700;color:var(--red)">'+(e.QtyOut>0 ? '-'+e.QtyOut+' '+e.Unit : '—')+'</td>'
+      +'<td style="text-align:center;font-size:15px;font-weight:700;'+balColor+'">'+e.Balance+'</td>'
+      +'<td style="color:var(--g400)">'+( e.Note||'—')+'</td>'
+      +(canDel&&!isInit ? '<td><button class="del-sc-btn btn bd" style="padding:2px 6px;font-size:11px" data-id="'+e.EntryID+'">🗑️</button></td>' : (canDel?'<td></td>':''))
+      +'</tr>';
+  });
+
+  html += '</tbody></table></div></div>';
+  el.innerHTML = html;
+}
+
+// ── พิมพ์ Stock Card ─────────────────────────────────────────
+function printSCCard(){
+  if(!_scCurrentPart){ toast('กรุณาเลือกอะไหล่ก่อนค่ะ','error'); return; }
+  var p = _scCurrentPart;
+  var win = window.open('','_blank','width=900,height=700');
+  if(!win){ toast('กรุณาอนุญาต popup ค่ะ','error'); return; }
+  var tbl = document.getElementById('scContent');
+  var tableHTML = tbl ? tbl.innerHTML : '';
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<style>body{font-family:Sarabun,sans-serif;font-size:12px;margin:10px}'
+    +'table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:5px 7px}'
+    +'th{background:#1a4a2e;color:#fff}.chip{padding:2px 6px;border-radius:10px;font-size:10px}'
+    +'@media print{@page{size:A4 landscape;margin:10mm}}</style>'
+    +'</head><body>'
+    +'<div style="text-align:center;margin-bottom:10px">'
+    +'<h2 style="margin:0;color:#1a4a2e">STOCK BIN CARD — ใบควบคุมอะไหล่</h2>'
+    +'<div style="font-size:13px">Beyond Green — สาขาภูเก็ต</div>'
+    +'</div>'
+    +'<table style="width:100%;margin-bottom:10px;border-collapse:collapse"><tr>'
+    +'<td style="border:1px solid #ccc;padding:6px 10px;width:50%"><strong>Part No.:</strong> '+p.partNo+'</td>'
+    +'<td style="border:1px solid #ccc;padding:6px 10px"><strong>ชื่ออะไหล่:</strong> '+(p.nameEN||p.nameTH||'-')+'</td>'
+    +'</tr><tr>'
+    +'<td style="border:1px solid #ccc;padding:6px 10px"><strong>ที่เก็บ:</strong> '+(p.location||'-')+'</td>'
+    +'<td style="border:1px solid #ccc;padding:6px 10px"><strong>วันที่พิมพ์:</strong> '+new Date().toLocaleDateString('th-TH')+'</td>'
+    +'</tr></table>'
+    +tableHTML
+    +'<script>setTimeout(function(){window.print();},400);<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
+
+// ── Override loadStockCard ให้ใช้ระบบใหม่ ────────────────────
+// (ยังคงเรียกได้ใช้สำหรับ openSCForm)
+var _oldLoadSC = loadStockCard;
+loadStockCard = function(){
+  if(_scCurrentPart){
+    renderSCForPart();
+  }
+  // ถ้ายังไม่เลือก Part ไม่ต้องทำอะไร
+};
+
+// ── ปิด dropdown เมื่อคลิกนอก ───────────────────────────────
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#scSearch') && !e.target.closest('#scSearchDrop')){
+    var dd = document.getElementById('scSearchDrop');
+    if(dd) dd.style.display='none';
+  }
+});
 
 </script>
 
