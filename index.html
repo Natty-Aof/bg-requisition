@@ -214,6 +214,12 @@ textarea.fc{min-height:70px;resize:vertical;}
 @media(min-width:1600px){
   .content{padding:32px 56px;}
 }
+/* Stock Card Part Info Grid — responsive */
+.sc-part-grid { display:grid; grid-template-columns:120px 1fr auto; gap:16px; }
+@media(max-width:600px){
+  .sc-part-grid { grid-template-columns:80px 1fr; }
+  .sc-part-grid > *:last-child { grid-column:1/-1; display:flex; justify-content:center; }
+}
 @media(max-width:768px){
   .sidebar{display:none;} .bn{display:block;} .main{margin-left:0;padding-bottom:90px;}
   .topbar{padding:10px 16px;} .topbar h1{font-size:16px;} .sub{display:none;}
@@ -609,6 +615,8 @@ textarea.fc{min-height:70px;resize:vertical;}
                 <input class="fc" id="scSearch" placeholder="พิมพ์ Part No. หรือชื่ออะไหล่... เช่น battery, bearing, 01PGC..."
                   oninput="onSCSearch()" autocomplete="off"
                   style="font-size:13px;padding-left:34px">
+              <!-- QR scan input (hidden) -->
+              <input type="file" id="scQRInput" accept="image/*" capture="environment" style="display:none" onchange="onSCQRScan(this)">
                 <div id="scSearchDrop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--g200);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:400;max-height:320px;overflow-y:auto"></div>
               </div>
               <!-- Selected Part Badge -->
@@ -620,37 +628,69 @@ textarea.fc{min-height:70px;resize:vertical;}
                 <button onclick="scClearSearch()" style="background:none;border:none;cursor:pointer;color:var(--g400);font-size:18px" title="ล้างการค้นหา">✕</button>
               </div>
             </div>
+            <button class="btn bo" onclick="document.getElementById('scQRInput').click()" style="min-width:44px;padding:10px 12px" title="สแกน QR Code">📷</button>
             <button class="btn bp" onclick="openSCForm()" style="min-width:100px">+ บันทึก</button>
           </div>
         </div>
 
         <!-- ── Part Info Card ─────────────────────────────── -->
         <div id="scPartInfo" style="display:none">
-          <div class="card" style="margin-top:0;border-radius:0;border-top:2px solid var(--gm);padding:12px 16px">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div class="card" style="margin-top:0;border-radius:0;border-top:3px solid var(--gm);padding:14px 16px">
+
+            <!-- Layout หลัก: รูป | ข้อมูล | QR -->
+            <div class="sc-part-grid" style="align-items:start">
+
+              <!-- ── คอลัมน์ 1: รูปอะไหล่ ───────────────────── -->
+              <div>
+                <div id="scPartImgBox" style="width:120px;height:120px;border-radius:10px;background:#f0faf5;border:2px dashed var(--g200);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative" onclick="uploadSCPartImg()" title="คลิกเพื่ออัปโหลดรูปอะไหล่">
+                  <img id="scPartImgEl" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:8px">
+                  <div id="scPartImgPlaceholder" style="text-align:center;padding:8px">
+                    <div style="font-size:28px;color:var(--g200)">📷</div>
+                    <div style="font-size:10px;color:var(--g400);margin-top:4px">คลิกเพิ่มรูป</div>
+                  </div>
+                </div>
+                <input type="file" id="scPartImgInput" accept="image/*" style="display:none" onchange="onSCPartImgChange(this)">
+                <div style="margin-top:6px;text-align:center">
+                  <button class="btn bo bsm" onclick="uploadSCPartImg()" style="font-size:10px;padding:4px 8px;width:100%">🖼️ เปลี่ยนรูป</button>
+                </div>
+              </div>
+
+              <!-- ── คอลัมน์ 2: ข้อมูล Part ────────────────── -->
               <div>
                 <div style="font-size:11px;color:var(--g400)">Part No.</div>
-                <div id="scInfoPartNo" style="font-size:18px;font-weight:700;color:var(--gd)">—</div>
-                <div id="scInfoName" style="font-size:13px;color:#333;margin-top:2px">—</div>
-                <div id="scInfoGroup" style="font-size:11px;color:var(--g400)"></div>
+                <div id="scInfoPartNo" style="font-size:20px;font-weight:700;color:var(--gd);margin-bottom:2px">—</div>
+                <div id="scInfoName" style="font-size:14px;color:#222;font-weight:600;margin-bottom:4px">—</div>
+                <div id="scInfoGroup" style="font-size:11px;color:var(--g400);margin-bottom:10px"></div>
+                <!-- Stats row -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <div style="background:#f0faf5;border-radius:8px;padding:8px 14px;text-align:center;min-width:70px">
+                    <div style="font-size:10px;color:var(--g400)">ที่เก็บ</div>
+                    <div id="scInfoLoc" style="font-size:15px;font-weight:700;color:var(--gd)">—</div>
+                  </div>
+                  <div style="background:#f0faf5;border-radius:8px;padding:8px 14px;text-align:center;min-width:80px">
+                    <div style="font-size:10px;color:var(--g400)">คงเหลือ</div>
+                    <div id="scInfoStock" style="font-size:20px;font-weight:700;color:var(--gm)">—</div>
+                  </div>
+                  <div style="background:#fff3e0;border-radius:8px;padding:8px 14px;text-align:center;min-width:70px">
+                    <div style="font-size:10px;color:var(--g400)">Min Stock</div>
+                    <div id="scInfoMin" style="font-size:15px;font-weight:700;color:#e65100">—</div>
+                  </div>
+                </div>
               </div>
-              <div style="display:flex;gap:12px;flex-wrap:wrap">
-                <div style="text-align:center;background:#f0faf5;border-radius:8px;padding:8px 16px">
-                  <div style="font-size:11px;color:var(--g400)">ที่เก็บ</div>
-                  <div id="scInfoLoc" style="font-size:16px;font-weight:700;color:var(--gd)">—</div>
-                </div>
-                <div style="text-align:center;background:#f0faf5;border-radius:8px;padding:8px 16px">
-                  <div style="font-size:11px;color:var(--g400)">คงเหลือปัจจุบัน</div>
-                  <div id="scInfoStock" style="font-size:22px;font-weight:700;color:var(--gm)">—</div>
-                </div>
-                <div style="text-align:center;background:#fff3e0;border-radius:8px;padding:8px 16px">
-                  <div style="font-size:11px;color:var(--g400)">Min Stock</div>
-                  <div id="scInfoMin" style="font-size:16px;font-weight:700;color:#e65100">—</div>
+
+              <!-- ── คอลัมน์ 3: QR Code ─────────────────────── -->
+              <div style="text-align:center">
+                <div style="font-size:11px;color:var(--g400);margin-bottom:6px">QR Code</div>
+                <canvas id="scPartQRCanvas" width="110" height="110" style="border-radius:8px;border:1px solid var(--g200)"></canvas>
+                <div style="margin-top:6px">
+                  <button class="btn bo bsm" onclick="downloadSCPartQR()" style="font-size:10px;padding:4px 8px">⬇️ บันทึก QR</button>
                 </div>
               </div>
+
             </div>
-            <!-- Tab ของ Part นี้ -->
-            <div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid var(--g200);padding-top:10px">
+
+            <!-- ── Tabs ──────────────────────────────────────── -->
+            <div style="display:flex;gap:6px;margin-top:14px;border-top:1px solid var(--g200);padding-top:10px">
               <button id="scTabAll" class="btn bgd bsm" onclick="switchSCPartTab('all')">📋 ทั้งหมด</button>
               <button id="scTabIn"  class="btn bo bsm"  onclick="switchSCPartTab('in')">📥 รับเข้า</button>
               <button id="scTabOut" class="btn bo bsm"  onclick="switchSCPartTab('out')">📤 จ่ายออก</button>
@@ -6102,6 +6142,121 @@ var _origLoadReportMovement = loadFullReport;
 loadFullReport = function(){
   _origLoadReportMovement();
   setTimeout(renderMovementReport, 600);
+};
+
+
+// ── Stock Card: Part Image ────────────────────────────────────
+function uploadSCPartImg(){
+  document.getElementById('scPartImgInput').click();
+}
+
+function onSCPartImgChange(input){
+  var file = input.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = document.getElementById('scPartImgEl');
+    var ph  = document.getElementById('scPartImgPlaceholder');
+    if(img){ img.src = e.target.result; img.style.display = 'block'; }
+    if(ph)  ph.style.display = 'none';
+    // บันทึกรูปไว้กับ part (localStorage demo)
+    if(_scCurrentPart){
+      try { localStorage.setItem('partImg_'+_scCurrentPart.partNo, e.target.result); } catch(ex){}
+    }
+    toast('บันทึกรูปอะไหล่แล้วค่ะ ✅','success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function loadSCPartImg(partNo){
+  var img = document.getElementById('scPartImgEl');
+  var ph  = document.getElementById('scPartImgPlaceholder');
+  if(!img || !ph) return;
+  try {
+    var saved = localStorage.getItem('partImg_'+partNo);
+    if(saved){
+      img.src = saved; img.style.display = 'block'; ph.style.display = 'none';
+    } else {
+      img.src = ''; img.style.display = 'none'; ph.style.display = 'flex';
+    }
+  } catch(ex){
+    img.style.display = 'none'; ph.style.display = 'flex';
+  }
+}
+
+// ── Stock Card: QR Code ──────────────────────────────────────
+function generateSCPartQR(partNo, nameEN){
+  var canvas = document.getElementById('scPartQRCanvas');
+  if(!canvas) return;
+  var data = partNo + '|' + (nameEN||'') + '|BeyondGreen';
+  if(typeof QRCode !== 'undefined' && QRCode.toCanvas){
+    QRCode.toCanvas(canvas, data, {
+      width: 110, margin: 1,
+      color: { dark: '#1a4a2e', light: '#ffffff' }
+    }, function(err){ if(err) console.warn('QR error:', err); });
+  }
+}
+
+function downloadSCPartQR(){
+  var canvas = document.getElementById('scPartQRCanvas');
+  if(!canvas || !_scCurrentPart){ toast('ยังไม่ได้เลือกอะไหล่ค่ะ','error'); return; }
+  var url = canvas.toDataURL('image/png');
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'QR_'+(_scCurrentPart.partNo||'part')+'.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast('บันทึก QR Code แล้วค่ะ ✅','success');
+}
+
+// ── Scan QR Code ─────────────────────────────────────────────
+function onSCQRScan(input){
+  var file = input.files[0];
+  if(!file){ return; }
+  // ถ้ามี jsQR library ใช้ decode
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var img = new Image();
+    img.onload = function(){
+      var cv = document.createElement('canvas');
+      cv.width = img.width; cv.height = img.height;
+      var ctx2 = cv.getContext('2d');
+      ctx2.drawImage(img, 0, 0);
+      var imageData = ctx2.getImageData(0, 0, cv.width, cv.height);
+      // ลอง decode ด้วย jsQR ถ้ามี
+      if(typeof jsQR !== 'undefined'){
+        var code = jsQR(imageData.data, imageData.width, imageData.height);
+        if(code && code.data){
+          var partNo = code.data.split('|')[0].trim();
+          if(partNo){
+            var p = (typeof PARTS_DB!=='undefined'?PARTS_DB:[]).find(function(x){ return x.partNo===partNo; });
+            if(p){
+              document.getElementById('scSearch').value = p.partNo + ' — ' + (p.nameEN||p.nameTH||'');
+              loadSCForPart(p);
+              toast('พบอะไหล่: '+p.partNo,'success');
+            } else {
+              toast('ไม่พบ Part No. '+partNo+' ในระบบค่ะ','error');
+            }
+            return;
+          }
+        }
+      }
+      // fallback: ขอให้ user กรอก Part No. เอง
+      toast('ไม่สามารถอ่าน QR ได้อัตโนมัติ — กรุณาพิมพ์ Part No. ตรงๆ ค่ะ','info');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ── Override loadSCForPart เพื่อโหลด image และ QR ───────────
+var _origLoadSCForPart = loadSCForPart;
+loadSCForPart = function(p){
+  _origLoadSCForPart(p);
+  // โหลดรูปจาก localStorage
+  loadSCPartImg(p.partNo);
+  // สร้าง QR
+  generateSCPartQR(p.partNo, p.nameEN||p.nameTH||'');
 };
 
 </script>
