@@ -106,7 +106,7 @@ textarea.fc{min-height:70px;resize:vertical;}
 
 /* MODAL */
 .mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;}
-.mo.open,.mo:not(.hidden){display:flex;}
+.mo.open{display:flex;}
 .mow{background:#fff;border-radius:var(--r);width:90%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--shl);}
 .moh{padding:14px 18px;border-bottom:1px solid var(--g200);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
 .mot{font-family:'Prompt',sans-serif;font-size:16px;font-weight:600;color:var(--gd);}
@@ -666,13 +666,13 @@ textarea.fc{min-height:70px;resize:vertical;}
 </div><!-- /app -->
 
 <!-- DETAIL MODAL -->
-<div class="mo" id="detailMo">
+<div class="mo hidden" id="detailMo">
   <div class="md"><div class="mh"><h2 id="moTitle">รายละเอียดใบเบิก</h2><span class="mx" onclick="closeMo()">✕</span></div>
   <div class="mc" id="moBody"></div><div class="mf" id="moFoot"></div></div>
 </div>
 
 <!-- NOTE MODAL -->
-<div class="mo" id="noteMo">
+<div class="mo hidden" id="noteMo" style="z-index:210;">
   <div class="md" style="max-width:420px"><div class="mh"><h2 id="noteMoTitle">ระบุหมายเหตุ</h2><span class="mx" onclick="closeNoteMo()">✕</span></div>
   <div class="mc"><div class="fg" style="margin:0"><label class="fl">หมายเหตุ / เหตุผล</label><textarea class="fc" id="noteIn" placeholder="ระบุหมายเหตุ (ถ้ามี)" style="min-height:80px"></textarea></div></div>
   <div class="mf" id="noteMoFoot"></div></div>
@@ -2115,10 +2115,10 @@ function openDetail(reqId){
     if(canAckRole&&(d.StatusStock==='PENDING'||d.StatusStock==='STOCK_NOTIFIED')) foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
     if(mf) mf.innerHTML=foot;
     var mo=document.getElementById('detailMo');
-    if(mo) mo.classList.add('open');
+    if(mo){ mo.classList.add('open'); mo.classList.remove('hidden'); }
   });
 }
-function closeMo(){var mo=document.getElementById('detailMo');if(mo)mo.classList.remove('open');}
+function closeMo(){var mo=document.getElementById('detailMo');if(mo){mo.classList.remove('open');mo.classList.add('hidden');}}
 
 // ── NOTE MODAL ────────────────────────────────────────────────
 function openNoteMo(action, reqId){
@@ -2130,10 +2130,10 @@ function openNoteMo(action, reqId){
   if(nf) nf.innerHTML='<button class="btn bo" onclick="closeNoteMo()">ยกเลิก</button>'
     +'<button class="btn '+(isAp?'bp':'bd')+'" onclick="confirmNote(\''+action+'\',\''+reqId+'\')">'+(isAp?'✓ ยืนยันอนุมัติ':'✕ ยืนยันปฏิเสธ')+'</button>';
   var mo=document.getElementById('noteMo');
-  if(mo) mo.classList.add('open');
+  if(mo){ mo.classList.add('open'); mo.classList.remove('hidden'); }
 }
 
-function closeNoteMo(){var mo=document.getElementById('noteMo');if(mo)mo.classList.remove('open');}
+function closeNoteMo(){var mo=document.getElementById('noteMo');if(mo){mo.classList.remove('open');mo.classList.add('hidden');}}
 
 function confirmNote(action, reqId){
   var note=document.getElementById('noteIn').value;
