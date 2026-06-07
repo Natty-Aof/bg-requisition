@@ -262,13 +262,13 @@ textarea.fc{min-height:70px;resize:vertical;}
     </div>
     <nav id="snav">
       <div class="ni active" data-pg="dashboard" onclick="go('dashboard')"><span class="ic">📊</span> Dashboard</div>
+      <div class="ni" data-pg="report" onclick="go('report')"><span class="ic">📊</span> รายงาน</div>
       <div class="ni" data-pg="create" onclick="go('create')"><span class="ic">📝</span> เปิดใบเบิก</div>
       <div class="ni" data-pg="list" onclick="go('list')"><span class="ic">📋</span> รายการใบเบิก</div>
       <div class="ni hidden" id="nApproval" data-pg="approval" onclick="go('approval')"><span class="ic">✅</span> รออนุมัติ<span class="badge" id="apBadge">0</span></div>
       <div class="ni hidden" id="nStock" data-pg="stock" onclick="go('stock')"><span class="ic">📦</span> จัดอะไหล่<span class="badge" id="stBadge">0</span></div>
       <div class="ni" data-pg="pickup" onclick="go('pickup')"><span class="ic">📥</span> รับอะไหล่</div>
       <div class="ni" data-pg="close" onclick="go('close')"><span class="ic">🔄</span> เคลียร์ใบเบิก</div>
-      <div class="ni" data-pg="report" onclick="go('report')"><span class="ic">📊</span> รายงาน</div>
       <div class="ni" data-pg="print" onclick="go('print')"><span class="ic">🖨️</span> พิมพ์ใบเบิก</div>
       <div style="height:1px;background:rgba(255,255,255,.15);margin:8px 12px"></div>
       <div class="ni" data-pg="stockcard" onclick="go('stockcard')"><span class="ic">🗂️</span> Stock Card</div>
@@ -789,7 +789,7 @@ textarea.fc{min-height:70px;resize:vertical;}
   <div class="bni">
     <button class="bib active" data-pg="dashboard" onclick="go('dashboard')"><span class="ic2">📊</span><span>หน้าหลัก</span></button>
     <button class="bib" data-pg="create" onclick="go('create')"><span class="ic2">📝</span><span>เปิดใบเบิก</span></button>
-    <button class="bib" data-pg="list" onclick="go('list')"><span class="ic2">📋</span><span>รายการ</span></button>
+    <button class="bib" data-pg="report" onclick="go('report')"><span class="ic2">📊</span><span>รายงาน</span></button>
     <button class="bib hidden" id="bnAp" data-pg="approval" onclick="go('approval')"><span class="ic2">✅</span><span>อนุมัติ</span></button>
     <button class="bib hidden" id="bnSt" data-pg="stock" onclick="go('stock')"><span class="ic2">📦</span><span>Stock</span></button>
     <button class="bib" onclick="openMore()"><span class="ic2">☰</span><span>เพิ่มเติม</span></button>
@@ -800,6 +800,7 @@ textarea.fc{min-height:70px;resize:vertical;}
   <div class="msh"></div>
   <div class="msi" onclick="go('pickup');closeMore()"><span>📥</span> รับอะไหล่</div>
   <div class="msi" onclick="go('close');closeMore()"><span>🔄</span> เคลียร์ใบเบิก</div>
+  <div class="msi" onclick="go('list');closeMore()"><span>📋</span> รายการใบเบิก</div>
   <div class="msi" onclick="go('report');closeMore()"><span>📊</span> รายงาน</div>
   <div class="msi" onclick="go('print');closeMore()"><span>🖨️</span> พิมพ์ใบเบิก</div>
   <div class="msi" onclick="go('profile');closeMore()"><span>✍️</span> ลายเซ็นของฉัน</div>
