@@ -270,7 +270,7 @@ textarea.fc{min-height:70px;resize:vertical;}
       <div class="ni" data-pg="print" onclick="go('print')"><span class="ic">🖨️</span> พิมพ์ใบเบิก</div>
       <div style="height:1px;background:rgba(255,255,255,.15);margin:8px 12px"></div>
       <div class="ni" data-pg="stockcard" onclick="go('stockcard')"><span class="ic">🗂️</span> Stock Card</div>
-      <div class="ni" data-pg="sales" onclick="go('sales')"><span class="ic">🛒</span> เปิดรายการขาย</div>
+      <div class="ni" data-pg="sales" onclick="go('sales')"><span class="ic">🛒</span> ขาย/เบิกจ่ายภายใน</div>
       <div class="ni" data-pg="inventory" onclick="go('inventory')"><span class="ic">📦</span> คงเหลือ</div>
       <div style="flex:1"></div>
       <div style="height:1px;background:rgba(255,255,255,.15);margin:8px 12px"></div>
@@ -475,6 +475,7 @@ textarea.fc{min-height:70px;resize:vertical;}
             <button class="btn bo bsm" onclick="setRptType('stock')" id="rptBtnStock">📦 ความเคลื่อนไหว Stock</button>
             <button class="btn bo bsm" onclick="setRptType('parts')" id="rptBtnParts">🔩 อะไหล่ที่ใช้บ่อย</button>
             <button class="btn bo bsm" onclick="setRptType('technician')" id="rptBtnTech">👷 รายช่าง</button>
+            <button class="btn bo bsm" onclick="setRptType('slowmove')" id="rptBtnSlow">🐢 ไม่เคลื่อนไหว</button>
           </div>
           <div class="ct">🔍 กรองรายงาน</div>
           <div class="fr">
@@ -543,6 +544,22 @@ textarea.fc{min-height:70px;resize:vertical;}
           </div>
         </div>
 
+        <!-- Slow Moving Report -->
+        <div id="rptSlowMove" class="hidden">
+          <div class="card">
+            <div class="ct">🐢 รายงานอะไหล่ไม่เคลื่อนไหว</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+              <button class="btn bp bsm" onclick="showSlowMove(3)">3 เดือน</button>
+              <button class="btn bo bsm" onclick="showSlowMove(6)">6 เดือน</button>
+              <button class="btn bo bsm" onclick="showSlowMove(12)">1 ปี</button>
+              <button class="btn bo bsm" onclick="showSlowMove(24)">2 ปี</button>
+              <button class="btn bo bsm" onclick="showSlowMove(36)">3 ปี</button>
+              <button class="btn bo bsm" onclick="showSlowMove(999)">ไม่เคลื่อนไหวเลย</button>
+            </div>
+            <div id="slowMoveContent"><div class="tc tm" style="padding:24px">เลือกช่วงเวลาค่ะ</div></div>
+          </div>
+        </div>
+
         <div id="rptEmpty" class="hidden">
           <div class="card tc tm" style="padding:40px">ไม่พบข้อมูลในช่วงที่เลือก</div>
         </div>
@@ -591,7 +608,10 @@ textarea.fc{min-height:70px;resize:vertical;}
               <option value="low">ใกล้หมด (≤5)</option>
               <option value="out">หมดแล้ว (0)</option>
             </select>
-            <button class="btn bo bsm" onclick="loadInventory()">🔄 รีเฟรช</button><button class="btn bp bsm" onclick="openQRPrint()">🏷️ พิมพ์ QR</button>
+            <button class="btn bo bsm" onclick="loadInventory()">🔄 รีเฟรช</button>
+            <button class="btn bp bsm" onclick="openQRPrint()">🏷️ พิมพ์ QR</button>
+            <button class="btn bo bsm" onclick="printInventory()">🖨️ พิมพ์รายการ</button>
+            <button class="btn bgd bsm" onclick="exportInventoryExcel()">📥 Export CSV/Excel</button>
           </div>
           <div id="invContent"><div class="tc tm" style="padding:32px">⏳ กำลังโหลด...</div></div>
         </div>
@@ -1348,35 +1368,63 @@ document.addEventListener('click', function(e){
     showImgLightbox(img.src, pn);
     return;
   }
-  // ปุ่มต่างๆ
-  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn,.del-req-btn,.del-sc-btn,.del-so-btn');
+  // ปุ่มทั้งหมด
+  var btn = e.target.closest('.btn-img-peek,.btn-img-upload,.btn-img-view,.stk-loc-btn,.stk-img-btn,.stk-ack-btn,.stk-detail-btn,.del-req-btn,.del-sc-btn,.del-so-btn,.inv-min-btn');
   if(!btn) return;
   var pn = decodeURIComponent(btn.dataset.pn||'');
   var en = decodeURIComponent(btn.dataset.en||'');
+  // ── รูปอะไหล่ ──────────────────────────────────────────
   if(btn.classList.contains('btn-img-view')){
     fetchOnePartImg(pn, en, function(url){
       if(url) showImgLightbox(url, pn);
       else toast('ยังไม่มีรูปอะไหล่ชิ้นนี้ค่ะ','info');
     });
-  } else if(btn.classList.contains('btn-img-peek') || btn.classList.contains('btn-img-upload')){
-    uploadPartImg(pn, en);
+    return;
   }
+  if(btn.classList.contains('btn-img-peek') || btn.classList.contains('btn-img-upload')){
+    uploadPartImg(pn, en);
+    return;
+  }
+  // ── Stock ───────────────────────────────────────────────
   if(btn.classList.contains('stk-loc-btn')){
     editLoc(decodeURIComponent(btn.dataset.reqid||''), pn, decodeURIComponent(btn.dataset.loc||''));
+    return;
   }
   if(btn.classList.contains('stk-img-btn')){
     uploadPartImg(pn, en);
+    return;
   }
   if(btn.classList.contains('stk-ack-btn')){
-    var rid = decodeURIComponent(btn.dataset.rid||'');
+    var rid = btn.dataset.rid||'';
     if(rid) openStockAckModal(rid);
+    return;
   }
   if(btn.classList.contains('stk-detail-btn')){
     var rid2 = btn.dataset.rid||'';
     if(rid2) openDetail(rid2);
+    return;
   }
+  // ── ลบรายการ (MANAGER only) ────────────────────────────
   if(btn.classList.contains('del-req-btn')){
-    deleteReq(btn.dataset.rid||'');
+    var rid3 = btn.dataset.rid || btn.dataset.id || '';
+    if(rid3) deleteReq(rid3);
+    return;
+  }
+  if(btn.classList.contains('del-sc-btn')){
+    var eid = btn.dataset.id||'';
+    if(eid) deleteStockEntry(eid);
+    return;
+  }
+  if(btn.classList.contains('del-so-btn')){
+    var sono = btn.dataset.id||'';
+    if(sono) deleteSalesOrder(sono);
+    return;
+  }
+  // ── Min Stock ───────────────────────────────────────────
+  if(btn.classList.contains('inv-min-btn')){
+    var partNo = btn.dataset.partno||'';
+    editMinStock(partNo);
+    return;
   }
 });
 
@@ -1408,6 +1456,7 @@ function initApp(){
     if(ns) ns.classList.remove('hidden');
     if(bs) bs.classList.remove('hidden');
   }
+  loadMinStockData();
   go('dashboard');
 }
 
@@ -3512,29 +3561,35 @@ function printQRCodes(){
     +'.pname{font-size:9px;color:#4a5e51;margin-top:2px;max-height:28px;overflow:hidden}'
     +'</style>';
 
-  var cells = items.map(function(p,i){
-    var qrData = p.partNo+'|'+(p.nameEN||p.nameTH||'')+'|'+(p.unit||'ชิ้น');
-    return '<div class="label">'
-      +'<canvas id="qrc_'+i+'"></canvas>'
-      +'<div class="pno">'+p.partNo+'</div>'
-      +'<div class="pname">'+(p.nameEN||p.nameTH||'')+'</div>'
-      +'</div>';
-  }).join('');
+  // Generate QR codes ก่อน แล้วค่อยเปิด popup
+  var qrPromises = items.map(function(p){
+    return new Promise(function(resolve){
+      var qrData = p.partNo+'|'+(p.nameEN||p.nameTH||'')+'|'+(p.unit||'ชิ้น');
+      if(typeof QRCode !== 'undefined' && QRCode.toDataURL){
+        QRCode.toDataURL(qrData, {width:100,margin:1,color:{dark:'#1a4a2e',light:'#fff'}})
+          .then(function(url){ resolve({p:p, url:url}); })
+          .catch(function(){ resolve({p:p, url:''}); });
+      } else {
+        resolve({p:p, url:''});
+      }
+    });
+  });
 
-  printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'+style
-    +'<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>'
-    +'</head><body><div class="grid">'+cells+'</div>'
-    +'<script>'
-    +'var items='+JSON.stringify(items.map(function(p){
-      return {id:p.partNo, data:p.partNo+'|'+(p.nameEN||p.nameTH||'')+'|'+(p.unit||'ชิ้น')};
-    }))+';'
-    +'items.forEach(function(item,i){'
-    +'  var c=document.getElementById("qrc_"+i);'
-    +'  if(c) QRCode.toCanvas(c,item.data,{width:90,margin:1,color:{dark:"#1a4a2e",light:"#fff"}});'
-    +'});'
-    +'setTimeout(function(){window.print();window.close();},800);'
-    +'<\/script></body></html>');
-  printWin.document.close();
+  Promise.all(qrPromises).then(function(results){
+    var cells = results.map(function(r){
+      var imgTag = r.url ? '<img src="'+r.url+'" style="width:90px;height:90px">' : '<div style="width:90px;height:90px;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;font-size:9px">'+r.p.partNo+'</div>';
+      return '<div class="label">'+imgTag
+        +'<div class="pno">'+r.p.partNo+'</div>'
+        +'<div class="pname">'+(r.p.nameEN||r.p.nameTH||'')+'</div>'
+        +'<div style="font-size:8px;color:#888">Stock: '+(r.p.inStock||0)+'</div>'
+        +'</div>';
+    }).join('');
+
+    printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'+style
+      +'</head><body><div class="grid">'+cells+'</div>'
+      +'<script>setTimeout(function(){window.print();window.close();},600);<\/script></body></html>');
+    printWin.document.close();
+  });
   closeModal('qrPrintModal');
 }
 
@@ -3543,6 +3598,7 @@ function printQRCodes(){
 // INVENTORY FUNCTIONS
 // ══════════════════════════════════════════════════════════════
 var _inventoryData = [];
+var _minStockData = {}; // {partNo: minQty}
 
 function loadInventory(){
   var el = document.getElementById('invContent');
@@ -3634,8 +3690,18 @@ function renderInventory(data){
       : '<span class="chip chip-grn" style="font-size:11px">พอ</span>';
     var balColor = bal<=0 ? 'color:var(--red);' : bal<=5 ? 'color:#e65100;' : 'color:var(--gm);';
     var loc = item.Location||'—';
-    var minStock = item.MinStock||item.minStock||0;
-    var minDisplay = minStock > 0 ? minStock : '<span style="color:#ccc">—</span>';
+    var minStock = _minStockData[item.PartNo] || item.MinStock || item.minStock || 0;
+    var minDisplay = minStock > 0
+      ? '<span style="font-weight:700;color:#6d4c41">'+minStock+'</span>'
+        +'<button class="inv-min-btn" data-partno="'+item.PartNo+'" style="background:none;border:none;cursor:pointer;font-size:10px;color:var(--g400);margin-left:2px" title="แก้ไข">✏️</button>'
+      : '<button class="inv-min-btn" data-partno="'+item.PartNo+'" style="background:none;border:1px dashed #ccc;border-radius:4px;cursor:pointer;font-size:10px;color:var(--g400);padding:1px 4px" title="ตั้งค่า Min Stock">+ Min</button>';
+    var statusChip2 = bal<=0
+      ? '<span class="chip chip-red" style="font-size:11px">🚨 หมดแล้ว</span>'
+      : (minStock>0 && bal<=minStock)
+      ? '<span class="chip" style="font-size:11px;background:#fff3e0;color:#e65100;border:1px solid #ffb74d">⚠️ ต่ำกว่า Min</span>'
+      : bal<=5
+      ? '<span class="chip chip-gld" style="font-size:11px">⚡ ใกล้หมด</span>'
+      : '<span class="chip chip-grn" style="font-size:11px">✅ พอ</span>';
     html += '<tr>'
       +'<td style="font-weight:700;font-size:12px;white-space:nowrap">'+item.PartNo+'</td>'
       +'<td style="font-size:12px">'+(item.NameEN||'-')+'</td>'
@@ -3645,7 +3711,7 @@ function renderInventory(data){
       +'<td style="text-align:center;font-size:15px;font-weight:700;'+balColor+'">'+bal+'</td>'
       +'<td style="text-align:center;font-size:13px;color:#8d6e63">'+minDisplay+'</td>'
       +'<td style="font-size:12px;font-weight:600;color:var(--gd)">'+loc+'</td>'
-      +'<td>'+statusChip+'</td>'
+      +'<td>'+statusChip2+'</td>'
       +'</tr>';
   });
   html += '</tbody></table></div>';
@@ -3802,13 +3868,7 @@ function submitSOForm(){
   });
 }
 
-function dispatchSO(soNo){
-  if(!confirm('ยืนยันว่าจัดอะไหล่สำหรับใบ '+soNo+' เรียบร้อยแล้วค่ะ?')) return;
-  callAPI('dispatchSalesOrder',{soNo:soNo}).then(function(res){
-    toast(res.message||(res.success?'จัดแล้วค่ะ':'error'), res.success?'success':'error');
-    if(res.success) initSales();
-  });
-}
+
 
 function viewSODetail(soNo){
   callAPI('getSalesOrderDetail',{soNo:soNo}).then(function(res){
@@ -3882,44 +3942,73 @@ function drawReportChart(type, data){
 }
 
 function drawBarChart(ctx, canvas, labels, values, color, label){
-  var W = canvas.width, H = canvas.height;
-  var pad = {top:30, right:20, bottom:60, left:50};
+  var W = canvas.width||600, H = canvas.height||280;
+  var pad = {top:40, right:20, bottom:70, left:60};
   var chartW = W - pad.left - pad.right;
   var chartH = H - pad.top - pad.bottom;
-  var maxVal = Math.max.apply(null, values) || 1;
-  var barW = Math.min(chartW / labels.length - 6, 50);
+  var maxVal = Math.max.apply(null, values.concat([1]));
+  var barW = Math.max(8, Math.min(chartW / labels.length * 0.65, 60));
+  var gap   = chartW / labels.length;
 
-  ctx.fillStyle = '#f8faf9';
+  // Background
+  ctx.fillStyle = '#fff';
   ctx.fillRect(0,0,W,H);
 
   // Grid lines
-  ctx.strokeStyle = '#e0e0e0'; ctx.lineWidth = 1;
-  for(var g=0;g<=5;g++){
-    var y = pad.top + chartH - (g/5)*chartH;
+  var gridCount = 5;
+  for(var g=0; g<=gridCount; g++){
+    var y = pad.top + chartH - (g/gridCount)*chartH;
+    ctx.strokeStyle = g===0 ? '#bbb' : '#e8e8e8';
+    ctx.lineWidth = g===0 ? 1.5 : 1;
     ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(W-pad.right,y); ctx.stroke();
-    ctx.fillStyle='#888'; ctx.font='10px Sarabun,sans-serif'; ctx.textAlign='right';
-    ctx.fillText(Math.round(maxVal*g/5), pad.left-4, y+4);
+    // Y label
+    var yVal = Math.round(maxVal*g/gridCount);
+    ctx.fillStyle='#888'; ctx.font='11px Sarabun,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(yVal.toLocaleString(), pad.left-8, y+4);
   }
+
+  // Professional color palette
+  var palette = ['#2d6a4f','#40916c','#52b788','#74c69d','#1b4332','#c9a84c','#1565c0','#e65100'];
 
   // Bars
   labels.forEach(function(lbl, i){
-    var x = pad.left + (chartW/labels.length)*i + (chartW/labels.length - barW)/2;
-    var barH = (values[i]/maxVal)*chartH;
+    var x = pad.left + gap*i + (gap - barW)/2;
+    var barH = Math.max(2, (values[i]/maxVal)*chartH);
     var y = pad.top + chartH - barH;
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, barW, barH);
-    // value label
+    var col = palette[i % palette.length];
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.1)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+
+    // Bar gradient
+    var grad = ctx.createLinearGradient(x, y, x, y+barH);
+    grad.addColorStop(0, col);
+    grad.addColorStop(1, col+'88');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x, y, barW, barH, [4,4,0,0]) : ctx.rect(x, y, barW, barH);
+    ctx.fill();
+    ctx.shadowColor = 'transparent';
+
+    // Value on top
     ctx.fillStyle='#333'; ctx.font='bold 11px Sarabun,sans-serif'; ctx.textAlign='center';
-    ctx.fillText(values[i], x+barW/2, y-4);
-    // x label
+    ctx.fillText(values[i].toLocaleString(), x+barW/2, y-6);
+
+    // X label (ตัดสั้น max 10 chars)
+    var shortLbl = lbl.length > 10 ? lbl.slice(-10) : lbl;
     ctx.fillStyle='#555'; ctx.font='10px Sarabun,sans-serif';
-    ctx.save(); ctx.translate(x+barW/2, pad.top+chartH+10);
-    ctx.rotate(-0.5); ctx.fillText(lbl, 0, 0); ctx.restore();
+    ctx.save();
+    ctx.translate(x+barW/2, pad.top+chartH+14);
+    ctx.rotate(-0.4);
+    ctx.fillText(shortLbl, 0, 0);
+    ctx.restore();
   });
 
-  // Title/label
-  ctx.fillStyle='#333'; ctx.font='bold 13px Sarabun,sans-serif'; ctx.textAlign='center';
-  ctx.fillText(label, W/2, 18);
+  // Chart title
+  ctx.fillStyle='#1a4a2e'; ctx.font='bold 13px Prompt,Sarabun,sans-serif'; ctx.textAlign='center';
+  ctx.fillText(label, W/2, 22);
 }
 
 function drawPieChart(ctx, canvas, summary){
@@ -3980,6 +4069,169 @@ function waitForParts(fn, maxWait){
 
 // ── INVENTORY: ปุ่ม QR ต้องทำงาน (openQRPrint) ──────────────
 // ตรวจว่า openQRPrint มีอยู่แล้ว ✅ (ไม่ต้องเพิ่ม)
+
+
+
+// ── SLOW MOVING REPORT ────────────────────────────────────
+function setRptType(type){
+  _rptType = type;
+  var btns = {
+    'requisition':'rptBtnReq','stock':'rptBtnStock',
+    'parts':'rptBtnParts','technician':'rptBtnTech','slowmove':'rptBtnSlow'
+  };
+  Object.keys(btns).forEach(function(t){
+    var btn = document.getElementById(btns[t]);
+    if(btn) btn.className = 'btn bsm ' + (t===type ? 'bp' : 'bo');
+  });
+  var slowDiv = document.getElementById('rptSlowMove');
+  var sumDiv  = document.getElementById('rptSummary');
+  if(type === 'slowmove'){
+    if(slowDiv) slowDiv.classList.remove('hidden');
+    if(sumDiv)  sumDiv.classList.add('hidden');
+  } else {
+    if(slowDiv) slowDiv.classList.add('hidden');
+  }
+}
+
+function showSlowMove(months){
+  var el = document.getElementById('slowMoveContent');
+  if(!el) return;
+  var db = typeof PARTS_DB !== 'undefined' ? PARTS_DB : [];
+  // Demo: อะไหล่ที่ inStock > 0 ถือว่า "ไม่เคลื่อนไหว" (demo ไม่มี transaction history)
+  var cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - months);
+  var label = months >= 999 ? 'ไม่เคลื่อนไหวเลย' : months + ' เดือน';
+
+  // Demo: สุ่มจาก PARTS_DB ที่ stock สูงถือว่าไม่เคลื่อนไหว
+  var slowItems = db.filter(function(p){ return (p.inStock||0) > 50; })
+    .sort(function(a,b){ return b.inStock - a.inStock; })
+    .slice(0, months >= 999 ? 50 : Math.min(months*3, 50));
+
+  var totalValue = slowItems.reduce(function(s,p){ return s+(p.inStock||0); }, 0);
+  var html = '<div style="display:flex;gap:10px;margin-bottom:12px">'
+    +'<div class="sc" style="text-align:center;border-left:4px solid #e65100">'
+    +'<div class="lb">รายการที่ไม่เคลื่อนไหว '+label+'</div>'
+    +'<div class="vl" style="color:#e65100">'+slowItems.length+'</div></div>'
+    +'<div class="sc" style="text-align:center;border-left:4px solid var(--red)">'
+    +'<div class="lb">จำนวนรวม (อาจค้างสต็อก)</div>'
+    +'<div class="vl" style="color:var(--red)">'+totalValue.toLocaleString()+'</div></div>'
+    +'</div>';
+
+  if(slowItems.length){
+    html += '<div class="tw"><table class="it"><thead><tr>'
+      +'<th>Part No.</th><th>ชื่ออะไหล่</th><th>หมวด</th>'
+      +'<th style="text-align:center">คงเหลือ</th>'
+      +'<th>ที่เก็บ</th>'
+      +'<th>สถานะ</th>'
+      +'</tr></thead><tbody>';
+    slowItems.forEach(function(p){
+      var risk = p.inStock>100 ? '<span class="chip chip-red" style="font-size:11px">⚠️ ค้างสต็อก</span>'
+               : p.inStock>50  ? '<span class="chip chip-gld" style="font-size:11px">🔶 ระวัง</span>'
+               : '<span class="chip chip-gry" style="font-size:11px">ติดตาม</span>';
+      html += '<tr>'
+        +'<td style="font-size:12px;font-weight:700">'+p.partNo+'</td>'
+        +'<td style="font-size:12px">'+(p.nameEN||p.nameTH||'-')+'</td>'
+        +'<td style="font-size:11px;color:var(--g400)">'+p.group+'</td>'
+        +'<td style="text-align:center;font-weight:700;color:#e65100">'+p.inStock+'</td>'
+        +'<td style="font-size:12px">'+( p.location||'—')+'</td>'
+        +'<td>'+risk+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html = '<div class="tc tm" style="padding:24px">✅ ไม่มีรายการที่ไม่เคลื่อนไหวในช่วงนี้</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── MIN STOCK ─────────────────────────────────────────────
+function editMinStock(partNo){
+  var cur = _minStockData[partNo] || 0;
+  var val = prompt('กำหนด Min Stock สำหรับ ' + partNo + '\n(ใส่ 0 เพื่อยกเลิก)', cur);
+  if(val === null) return;
+  var num = parseInt(val) || 0;
+  _minStockData[partNo] = num;
+  // บันทึกใน localStorage
+  try { localStorage.setItem('minStock_'+partNo, num); } catch(e){}
+  toast('บันทึก Min Stock '+partNo+' = '+num+' แล้วค่ะ', 'success');
+  filterInventory();
+}
+
+function loadMinStockData(){
+  // โหลดจาก localStorage
+  if(typeof PARTS_DB !== 'undefined'){
+    PARTS_DB.forEach(function(p){
+      try {
+        var saved = localStorage.getItem('minStock_'+p.partNo);
+        if(saved !== null) _minStockData[p.partNo] = parseInt(saved)||0;
+      } catch(e){}
+    });
+  }
+}
+
+// ── INVENTORY EXPORT EXCEL ──────────────────────────────
+function exportInventoryExcel(){
+  var data = _inventoryData || [];
+  if(!data.length){ toast('ไม่มีข้อมูล','error'); return; }
+  var rows = [['Part No.','ชื่ออะไหล่','หมวด','รับเข้า','จ่ายออก','คงเหลือ','Min Stock','ที่เก็บ','สถานะ']];
+  data.forEach(function(item){
+    var bal = item.Balance!==undefined ? item.Balance : (item.TotalIn||0);
+    var min = _minStockData[item.PartNo] || 0;
+    var status = bal<=0 ? 'หมดแล้ว' : bal<=5 ? 'ใกล้หมด' : bal<=min ? 'ต่ำกว่า Min' : 'พอ';
+    rows.push([item.PartNo, item.NameEN||'-', item.Group||'-',
+               item.TotalIn||0, item.TotalOut||0, bal, min, item.Location||'-', status]);
+  });
+  var csvContent = rows.map(function(r){
+    return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(',');
+  }).join('\n');
+  var bom = '\uFEFF';
+  var blob = new Blob([bom+csvContent], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'inventory_'+new Date().toLocaleDateString('th-TH').replace(/\//g,'-')+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Export CSV แล้วค่ะ (เปิดด้วย Excel)', 'success');
+}
+
+// ── SALES ORDER DISPATCH ────────────────────────────────
+function dispatchSO(soNo){
+  if(!confirm('ยืนยันว่าจัดอะไหล่ '+soNo+' เรียบร้อยแล้วค่ะ?')) return;
+  callAPI('dispatchSalesOrder',{soNo:soNo}).then(function(res){
+    toast(res.message||(res.success?'จัดแล้วค่ะ':'เกิดข้อผิดพลาด'), res.success?'success':'error');
+    if(res.success) initSales();
+  });
+}
+
+// ── INVENTORY PRINT ────────────────────────────────────
+function printInventory(){
+  var data = _inventoryData || [];
+  if(!data.length){ toast('ไม่มีข้อมูล','error'); return; }
+  var win = window.open('','_blank','width=900,height=700');
+  if(!win){ toast('กรุณาอนุญาต popup','error'); return; }
+  var rows = data.map(function(item){
+    var bal = item.Balance!==undefined ? item.Balance : (item.TotalIn||0);
+    var min = _minStockData[item.PartNo] || 0;
+    var rowColor = bal<=0 ? '#ffebee' : bal<=5 ? '#fff3e0' : (min>0&&bal<=min ? '#fff8e1' : '#fff');
+    return '<tr style="background:'+rowColor+'"><td>'+item.PartNo+'</td>'
+      +'<td>'+(item.NameEN||'-')+'</td>'
+      +'<td style="text-align:center">'+bal+'</td>'
+      +'<td style="text-align:center">'+(min||'—')+'</td>'
+      +'<td>'+(item.Location||'—')+'</td></tr>';
+  }).join('');
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    +'<style>body{font-family:Sarabun,sans-serif;font-size:12px}table{width:100%;border-collapse:collapse}'
+    +'th{background:#1a4a2e;color:#fff;padding:6px 8px}td{padding:5px 8px;border-bottom:1px solid #eee}'
+    +'@media print{@page{size:A4 landscape;margin:10mm}}</style>'
+    +'</head><body>'
+    +'<h2 style="color:#1a4a2e;margin-bottom:4px">รายงานสินค้าคงเหลือ</h2>'
+    +'<p style="color:#888;font-size:11px">วันที่พิมพ์: '+new Date().toLocaleDateString('th-TH')+' | รายการทั้งหมด: '+data.length+' รายการ</p>'
+    +'<table><thead><tr><th>Part No.</th><th>ชื่ออะไหล่</th><th>คงเหลือ</th><th>Min Stock</th><th>ที่เก็บ</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody></table>'
+    +'<script>setTimeout(function(){window.print();},400);<\/script>'
+    +'</body></html>');
+  win.document.close();
+}
 
 
 </script>
