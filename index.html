@@ -536,13 +536,37 @@ textarea.fc{min-height:70px;resize:vertical;}
         <!-- ══ 7. อะไหล่ที่เบิกบ่อย (ล่างสุด) ═══════════════ -->
         <div class="card" style="margin-top:0">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="ct">🔩 อะไหล่ที่เบิกบ่อย Top 10</div>
+            <div class="ct">📊 Top 10 อะไหล่ที่จ่ายออกจริง <span style="font-size:11px;color:var(--g400);font-weight:400">(Issued Qty — ไม่ใช่ Stock คงเหลือ)</span></div>
             <div style="display:flex;gap:6px">
               <button class="btn bo bsm" onclick="setRptType('slowmove')" id="rptBtnSlow">🐢 ไม่เคลื่อนไหว</button>
             </div>
           </div>
-          <canvas id="rptChart" style="max-height:240px"></canvas>
+          <canvas id="rptChart" style="width:100%;min-height:320px"></canvas>
           <div id="rptTopParts" style="margin-top:12px"></div>
+        </div>
+
+        <!-- ══ รายการอะไหล่ค้างจ่าย ════════════════════════ -->
+        <div class="card" style="margin-top:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="font-size:18px">⏳</span>
+            <div>
+              <div class="ct" style="margin:0">รายการอะไหล่ค้างจ่าย / จ่ายไม่ครบ</div>
+              <div style="font-size:11px;color:var(--g400)">กรณีขอเบิก 7 แต่จ่ายจริง 5 — ค้างจ่ายอีก 2</div>
+            </div>
+          </div>
+          <div id="rptPendingIssue"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
+        </div>
+
+        <!-- ══ รายการอะไหล่รอคืน / รอเคลียร์ ══════════════ -->
+        <div class="card" style="margin-top:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="font-size:18px">🔄</span>
+            <div>
+              <div class="ct" style="margin:0">อะไหล่รอคืน / รอเคลียร์</div>
+              <div style="font-size:11px;color:var(--g400)">อะไหล่ที่จ่ายให้ช่างแล้ว แต่ยังไม่ปิดงานหรือยังไม่คืนของเหลือ</div>
+            </div>
+          </div>
+          <div id="rptReturnReport"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
         <!-- Slow moving panel -->
@@ -4402,7 +4426,7 @@ function exportInventoryExcel(){
   });
   var csvContent = rows.map(function(r){
     return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(',');
-  }).join('\n');
+  }).join('\\n');
   var bom = '\uFEFF';
   var blob = new Blob([bom+csvContent], {type:'text/csv;charset=utf-8;'});
   var url = URL.createObjectURL(blob);
@@ -4820,295 +4844,439 @@ document.addEventListener('click', function(e){
 // OPERATIONAL CONTROL DASHBOARD — Report Page
 // ════════════════════════════════════════════════════════════
 
+// ════════════════════════════════════════════════════════════
+// DATA MODEL DEFINITIONS
+// Requested Qty = item.Qty (จำนวนที่ช่างขอเบิก)
+// Issued Qty    = item.IssuedQty ?? item.Qty (จำนวนที่ Stock จ่ายจริง)
+// Returned Qty  = item.ReturnedQty ?? 0 (จำนวนที่ช่างคืนกลับ)
+// Pending       = Requested - Issued
+// Outstanding   = Issued - Returned
+// ════════════════════════════════════════════════════════════
+
+function getPartName(partNo){
+  // ดึงชื่ออะไหล่จาก PARTS_DB
+  if(typeof PARTS_DB !== 'undefined'){
+    var p = PARTS_DB.find(function(x){ return x.partNo === partNo; });
+    if(p && (p.nameEN||p.nameTH)) return p.nameEN||p.nameTH;
+  }
+  // fallback: ดูจาก DEMO_ITEMS
+  var di = (typeof DEMO_ITEMS!=='undefined'?DEMO_ITEMS:[]).find(function(i){return i.PartNo===partNo;});
+  if(di && (di.NameEN||di.NameTH)) return di.NameEN||di.NameTH;
+  console.warn('[Report] ไม่พบชื่ออะไหล่สำหรับ Part No.:', partNo);
+  return '—';
+}
+
 function loadFullReport(){
-  var reqs = typeof DEMO_REQS !== 'undefined' ? DEMO_REQS : [];
+  var reqs  = typeof DEMO_REQS  !== 'undefined' ? DEMO_REQS  : [];
   var items = typeof DEMO_ITEMS !== 'undefined' ? DEMO_ITEMS : [];
-  var now = new Date();
+  var now   = new Date();
 
-  // ── helper: อายุใบเบิก (วัน) ──────────────────────────
-  function getAgeDays(dateStr){
+  // ── helpers ─────────────────────────────────────────────
+  function ageDays(dateStr){
     if(!dateStr) return 0;
-    var p = dateStr.split('/');
-    if(p.length < 3) return 0;
-    var d=parseInt(p[0]), m=parseInt(p[1])-1, y=parseInt(p[2]);
-    if(y > 2500) y -= 543;
-    return Math.floor((now - new Date(y,m,d)) / 86400000);
+    var p=dateStr.split('/'); if(p.length<3) return 0;
+    var y=parseInt(p[2]); if(y>2500) y-=543;
+    return Math.floor((now-new Date(y,parseInt(p[1])-1,parseInt(p[0])))/86400000);
+  }
+  function fmtAge(d){
+    if(d<1)  return '<1 วัน';
+    if(d<30) return d+' วัน';
+    if(d<365){ return Math.floor(d/30)+' เดือน'+(d%30?' '+d%30+' วัน':''); }
+    return Math.floor(d/365)+' ปี '+Math.floor((d%365)/30)+' เดือน';
+  }
+  function ageStyle(days){
+    if(days>=730) return {bg:'#b71c1c',tx:'#fff',lbl:'⚠️ วิกฤต'};
+    if(days>=365) return {bg:'#ffebee',tx:'#b71c1c',lbl:'🔴 >1 ปี'};
+    if(days>=180) return {bg:'#fff3e0',tx:'#e65100',lbl:'🟠 >6 เดือน'};
+    if(days>=90)  return {bg:'#fffde7',tx:'#f57f17',lbl:'🟡 >3 เดือน'};
+    return {bg:'',tx:'',lbl:''};
   }
 
-  function formatAge(days){
-    if(days < 1)  return '< 1 วัน';
-    if(days < 30) return days + ' วัน';
-    if(days < 365){ var mo=Math.floor(days/30),d=days%30; return mo+' เดือน'+(d?' '+d+' วัน':''); }
-    var y=Math.floor(days/365),rem=days%365,mo2=Math.floor(rem/30);
-    return y+' ปี'+(mo2?' '+mo2+' เดือน':'');
-  }
-
-  function getAgeStyle(days){
-    if(days>=730) return {bg:'#b71c1c',text:'#fff',label:'⚠️ วิกฤต'};
-    if(days>=365) return {bg:'#ffebee',text:'#b71c1c',label:'🔴 >1 ปี'};
-    if(days>=180) return {bg:'#fff3e0',text:'#e65100',label:'🟠 >6 เดือน'};
-    if(days>=90)  return {bg:'#fffde7',text:'#f57f17',label:'🟡 >3 เดือน'};
-    return {bg:'',text:'',label:''};
-  }
-
-  // ── ISSUED QTY: ใช้จำนวนจ่ายจริงเท่านั้น ─────────────
-  // ใน demo: _scDemoEntries มี Type=OUT_REQ ที่บันทึกจริง
-  // ถ้าไม่มี ใช้ DEMO_ITEMS Qty แต่ตัด 20% (จำลอง issued < requested)
-  function getIssuedQty(partNo){
-    var demoOut = (window._scDemoEntries||[])
-      .filter(function(e){ return e.PartNo===partNo && e.Type!=='IN' && e.Type!=='ADJUST'; })
-      .reduce(function(s,e){ return s+(e.Qty||0); }, 0);
-    if(demoOut > 0) return demoOut;
-    // fallback demo: คำนวณจาก DEMO_ITEMS โดยสมมติว่าจ่ายจริง = requested (demo)
-    var reqIssued = items.filter(function(i){ return i.PartNo===partNo; })
-      .reduce(function(s,i){ return s+(i.IssuedQty||i.Qty||0); }, 0);
-    return reqIssued;
-  }
+  // ── qty helpers (Requested / Issued / Returned) ──────────
+  function getIssued(item){   return typeof item.IssuedQty !== 'undefined' ? (item.IssuedQty||0) : (item.Qty||0); }
+  function getRequested(item){ return item.Qty||0; }
+  function getReturned(item){ return item.ReturnedQty||0; }
+  function getPending(item){  return Math.max(0, getRequested(item) - getIssued(item)); }
+  function getOutstanding(item){ return Math.max(0, getIssued(item) - getReturned(item)); }
 
   // ── 1. KPI Cards ────────────────────────────────────────
-  var total    = reqs.length;
-  var waitAppr = reqs.filter(function(r){ return r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER'; }).length;
-  var waitStock= reqs.filter(function(r){ return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING'; }).length;
-  var inUse    = reqs.filter(function(r){ return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP'; }).length;
-  var waitClear= reqs.filter(function(r){ return r.StatusStock==='PICKED_UP'; }).length;
-  var closed   = reqs.filter(function(r){ return r.StatusStock==='CLEARED'; }).length;
-  var overdue7 = reqs.filter(function(r){ return getAgeDays(r.OpenDate)>=7 && r.StatusStock!=='CLEARED'; }).length;
+  var total     = reqs.length;
+  var waitAppr  = reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER';}).length;
+  var waitStock = reqs.filter(function(r){return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING';}).length;
+  var partIssued= reqs.filter(function(r){return r.StatusStock==='PARTIAL';}).length; // จ่ายบางส่วน
+  var inUse     = reqs.filter(function(r){return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP';}).length;
+  var waitClear = reqs.filter(function(r){return r.StatusStock==='PICKED_UP';}).length;
+  var closed    = reqs.filter(function(r){return r.StatusStock==='CLEARED';}).length;
+  var overdue7  = reqs.filter(function(r){return ageDays(r.OpenDate)>=7&&r.StatusStock!=='CLEARED';}).length;
 
   var kpiRow = document.getElementById('rptKPIRow');
   if(kpiRow){
-    var kpis = [
-      {label:'ใบเบิกทั้งหมด',  val:total,     color:'var(--gd)',   icon:'📋'},
-      {label:'รออนุมัติ',       val:waitAppr,  color:'#e65100',    icon:'⏳'},
-      {label:'รอจ่ายอะไหล่',   val:waitStock, color:'#1565c0',    icon:'📦'},
-      {label:'กำลังใช้งาน',    val:inUse,     color:'var(--gm)',   icon:'🔧'},
-      {label:'รอเคลียร์',      val:waitClear, color:'#c9a84c',    icon:'📝'},
-      {label:'ปิดงานแล้ว',     val:closed,    color:'#388e3c',    icon:'✅'},
-      {label:'ค้างเกิน 7 วัน', val:overdue7,  color:overdue7>0?'#b71c1c':'var(--g400)', icon:'🚨'},
+    var kpis=[
+      {label:'ใบเบิกทั้งหมด',   val:total,     color:'var(--gd)', icon:'📋'},
+      {label:'รออนุมัติ',        val:waitAppr,  color:'#e65100',   icon:'⏳'},
+      {label:'รอจ่ายอะไหล่',    val:waitStock, color:'#1565c0',   icon:'📦'},
+      {label:'จ่ายบางส่วน',     val:partIssued,color:'#6a1599',   icon:'⚠️'},
+      {label:'กำลังใช้งาน',     val:inUse,     color:'#2d6a4f',   icon:'🔧'},
+      {label:'รอเคลียร์',       val:waitClear, color:'#c9a84c',   icon:'📝'},
+      {label:'ค้างเกิน 7 วัน',  val:overdue7,  color:overdue7>0?'#b71c1c':'#aaa', icon:'🚨'},
     ];
-    kpiRow.innerHTML = kpis.map(function(k){
+    kpiRow.innerHTML=kpis.map(function(k){
       return '<div class="kpi-card" style="cursor:pointer;background:#fff;border:1px solid var(--g200);border-radius:10px;padding:12px 10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)">'
         +'<div style="font-size:20px">'+k.icon+'</div>'
         +'<div style="font-size:26px;font-weight:700;color:'+k.color+';line-height:1.2">'+k.val+'</div>'
         +'<div style="font-size:11px;color:var(--g400);margin-top:4px">'+k.label+'</div>'
         +'</div>';
     }).join('');
-    kpiRow.addEventListener('click', function(e){
-      var card = e.target.closest('.kpi-card');
-      if(card) filterReportBy(card.dataset.filter||'');
-    });
   }
 
-  // ── 2. Workflow Pipeline ────────────────────────────────
+  // ── 2. Workflow Pipeline ─────────────────────────────────
   var pipelineEl = document.getElementById('rptPipeline');
   if(pipelineEl){
-    var steps = [
-      {label:'สร้างใบเบิก',   count:total,    color:'#1a4a2e'},
-      {label:'รอหัวหน้าช่าง', count:reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR';}).length, color:'#e65100'},
-      {label:'รอผู้จัดการ',   count:reqs.filter(function(r){return r.StatusApproval==='PENDING_MANAGER';}).length,    color:'#1565c0'},
-      {label:'รอจ่ายของ',     count:waitStock, color:'#6a1599'},
-      {label:'ใช้งาน',        count:inUse,     color:'#2d6a4f'},
-      {label:'รอเคลียร์',     count:waitClear, color:'#c9a84c'},
-      {label:'ปิดงาน',        count:closed,    color:'#388e3c'},
+    var steps=[
+      {label:'ทั้งหมด',         count:total,     color:'#1a4a2e'},
+      {label:'รอหัวหน้าช่าง',   count:reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR';}).length, color:'#e65100'},
+      {label:'รอผู้จัดการ',     count:reqs.filter(function(r){return r.StatusApproval==='PENDING_MANAGER';}).length,    color:'#1565c0'},
+      {label:'รอจ่ายของ',       count:waitStock, color:'#6a1599'},
+      {label:'จ่ายบางส่วน',     count:partIssued,color:'#8e24aa'},
+      {label:'ใช้งาน',          count:inUse,     color:'#2d6a4f'},
+      {label:'รอเคลียร์',       count:waitClear, color:'#c9a84c'},
+      {label:'ปิดงาน',          count:closed,    color:'#388e3c'},
     ];
-    var maxPending = Math.max.apply(null, steps.slice(1,6).map(function(s){return s.count;}));
-    pipelineEl.innerHTML = steps.map(function(s,i){
-      var isBottleneck = i>0 && i<6 && s.count===maxPending && s.count>0;
-      var arrow = i<steps.length-1 ? '<div style="font-size:16px;color:#bbb;padding:0 3px">▶</div>' : '';
+    var maxP=Math.max.apply(null,steps.slice(1,7).map(function(s){return s.count;}));
+    pipelineEl.innerHTML=steps.map(function(s,i){
+      var isBot=i>0&&i<7&&s.count===maxP&&s.count>0;
+      var arr=i<steps.length-1?'<div style="font-size:14px;color:#bbb;padding:0 2px">▶</div>':'';
       return '<div style="display:flex;align-items:center">'
-        +'<div style="background:'+(isBottleneck?'#fff5f5':'#fff')+';border:'+(isBottleneck?'2px solid #ef5350':'1px solid var(--g200)')+';border-radius:8px;padding:10px 12px;text-align:center;min-width:88px">'
-        +(isBottleneck?'<div style="font-size:9px;color:var(--red);font-weight:700">⚠️ คอขวด</div>':'')
-        +'<div style="font-size:22px;font-weight:700;color:'+s.color+'">'+s.count+'</div>'
-        +'<div style="font-size:10px;color:var(--g400);white-space:nowrap">'+s.label+'</div>'
-        +'</div>'+arrow+'</div>';
+        +'<div style="background:'+(isBot?'#fff5f5':'#fff')+';border:'+(isBot?'2px solid #ef5350':'1px solid var(--g200)')+';border-radius:8px;padding:8px 10px;text-align:center;min-width:80px">'
+        +(isBot?'<div style="font-size:8px;color:var(--red);font-weight:700">⚠️ คอขวด</div>':'')
+        +'<div style="font-size:20px;font-weight:700;color:'+s.color+'">'+s.count+'</div>'
+        +'<div style="font-size:9px;color:var(--g400);white-space:nowrap">'+s.label+'</div>'
+        +'</div>'+arr+'</div>';
     }).join('');
   }
 
   // ── 3. งานค้างนาน (Overdue) ─────────────────────────────
-  var overdueEl = document.getElementById('rptOverdueTable');
+  var overdueEl=document.getElementById('rptOverdueTable');
   if(overdueEl){
-    var tracked = reqs
-      .filter(function(r){ return r.StatusStock!=='CLEARED'; })
-      .map(function(r){ return Object.assign({},r,{_days:getAgeDays(r.OpenDate)}); })
-      .sort(function(a,b){ return b._days-a._days; });
-
+    var tracked=reqs.filter(function(r){return r.StatusStock!=='CLEARED';})
+      .map(function(r){return Object.assign({},r,{_days:ageDays(r.OpenDate)});})
+      .sort(function(a,b){return b._days-a._days;});
     if(!tracked.length){
-      overdueEl.innerHTML = '<div class="tc tm" style="padding:24px;color:var(--gm)">✅ ไม่มีงานค้างค่ะ</div>';
+      overdueEl.innerHTML='<div class="tc tm" style="padding:24px;color:var(--gm)">✅ ไม่มีงานค้างค่ะ</div>';
     } else {
-      var html = '<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
-        +'<th>เลขใบเบิก</th><th>วันที่เบิก</th><th>Job No.</th>'
-        +'<th>ลูกค้า</th><th>ผู้เบิก</th>'
-        +'<th style="text-align:center">อายุใบเบิก</th>'
-        +'<th>สถานะ</th><th></th>'
+      var stMap={'PENDING_SUPERVISOR':'⏳ รอหัวหน้าช่าง','PENDING_MANAGER':'⏳ รอผู้จัดการ',
+        'PENDING':'📦 รอจ่ายอะไหล่','ACKNOWLEDGED':'🔧 จัดของแล้ว','PICKED_UP':'✋ รอเคลียร์','PARTIAL':'⚠️ จ่ายบางส่วน'};
+      var h='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+        +'<th>เลขใบเบิก</th><th>วันที่เบิก</th><th>Job No.</th><th>ลูกค้า</th>'
+        +'<th>ผู้เบิก</th><th style="text-align:center">อายุใบเบิก</th><th>สถานะ</th><th></th>'
         +'</tr></thead><tbody>';
       tracked.forEach(function(r){
-        var ac = getAgeStyle(r._days);
-        var rowBg = ac.bg ? 'background:'+ac.bg+';' : '';
-        var textCol = ac.text ? 'color:'+ac.text+';' : '';
-        var stMap = {
-          'PENDING_SUPERVISOR':'⏳ รอหัวหน้าช่างอนุมัติ',
-          'PENDING_MANAGER':'⏳ รอผู้จัดการอนุมัติ',
-        };
-        var stText = stMap[r.StatusApproval] || ({
-          'PENDING':'📦 รอจ่ายอะไหล่',
-          'ACKNOWLEDGED':'🔧 Stock จัดของแล้ว',
-          'PICKED_UP':'✋ ช่างรับแล้ว / รอเคลียร์',
-        })[r.StatusStock] || r.StatusApproval;
-        html += '<tr style="'+rowBg+textCol+'">'
-          +'<td style="font-weight:700">'+r.ReqID+'</td>'
-          +'<td style="white-space:nowrap">'+r.OpenDate+'</td>'
-          +'<td>'+r.JobNo+'</td>'
-          +'<td>'+r.CustomerName+'</td>'
+        var ac=ageStyle(r._days);
+        var st=stMap[r.StatusApproval!=='APPROVED'?r.StatusApproval:r.StatusStock]||r.StatusApproval;
+        h+='<tr style="'+(ac.bg?'background:'+ac.bg+';color:'+ac.tx+';':'')+'">'
+          +'<td style="font-weight:700">'+r.ReqID+'</td><td style="white-space:nowrap">'+r.OpenDate+'</td>'
+          +'<td>'+r.JobNo+'</td><td>'+r.CustomerName+'</td>'
           +'<td>'+(r.RequesterName||r.RequesterEmail||'—')+'</td>'
-          +'<td style="text-align:center;font-weight:700;white-space:nowrap">'
-          +(ac.label?'<span style="background:rgba(0,0,0,.08);padding:1px 5px;border-radius:3px;font-size:10px;margin-right:4px">'+ac.label+'</span>':'')
-          +formatAge(r._days)+'</td>'
-          +'<td>'+stText+'</td>'
+          +'<td style="text-align:center;font-weight:700">'+(ac.lbl?'<span style="font-size:10px;margin-right:4px">'+ac.lbl+'</span>':'')+fmtAge(r._days)+'</td>'
+          +'<td>'+st+'</td>'
           +'<td><button class="btn bo bsm stk-detail-btn" data-rid="'+r.ReqID+'">ดู</button></td>'
           +'</tr>';
       });
-      html += '</tbody></table></div>';
-      overdueEl.innerHTML = html;
+      h+='</tbody></table></div>';
+      overdueEl.innerHTML=h;
     }
   }
 
   // ── 4. Alert Panel ──────────────────────────────────────
-  var alerts = [];
+  var alerts=[];
   reqs.forEach(function(r){
-    var days = getAgeDays(r.OpenDate);
-    if((r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER') && days>=3)
-      alerts.push('ใบเบิก <strong>'+r.ReqID+'</strong> ('+r.RequesterName+') รออนุมัติมาแล้ว <strong>'+formatAge(days)+'</strong>');
-    if(r.StatusStock==='PICKED_UP' && days>=7)
-      alerts.push('ใบเบิก <strong>'+r.ReqID+'</strong> ('+r.RequesterName+') ยังไม่เคลียร์ มาแล้ว <strong>'+formatAge(days)+'</strong>');
-    if(r.StatusApproval==='APPROVED' && r.StatusStock==='PENDING' && days>=2)
-      alerts.push('ใบเบิก <strong>'+r.ReqID+'</strong> อนุมัติแล้วแต่ Stock ยังไม่จ่ายของ มาแล้ว <strong>'+formatAge(days)+'</strong>');
+    var d=ageDays(r.OpenDate);
+    if((r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER')&&d>=3)
+      alerts.push('ใบเบิก <strong>'+r.ReqID+'</strong> ('+( r.RequesterName||r.RequesterEmail)+') รออนุมัติมาแล้ว <strong>'+fmtAge(d)+'</strong>');
+    if(r.StatusStock==='PICKED_UP'&&d>=7)
+      alerts.push('ใบเบิก <strong>'+r.ReqID+'</strong> ('+( r.RequesterName||r.RequesterEmail)+') ยังไม่เคลียร์ มาแล้ว <strong>'+fmtAge(d)+'</strong>');
+    if(r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING'&&d>=2)
+      alerts.push('ใบเบิก <strong>'+r.ReqID+'</strong> อนุมัติแล้วแต่ยังไม่จ่ายของ มาแล้ว <strong>'+fmtAge(d)+'</strong>');
   });
-  var alertPanel = document.getElementById('rptAlertPanel');
-  var alertList  = document.getElementById('rptAlertList');
-  if(alertPanel&&alertList){
+  var ap=document.getElementById('rptAlertPanel'), al=document.getElementById('rptAlertList');
+  if(ap&&al){
     if(alerts.length){
-      alertList.innerHTML = alerts.map(function(a){
-        return '<div style="padding:6px 10px;margin-bottom:4px;background:rgba(183,28,28,.07);border-radius:6px;font-size:13px">⚠️ '+a+'</div>';
-      }).join('');
-      alertPanel.style.display='';
-    } else { alertPanel.style.display='none'; }
+      al.innerHTML=alerts.map(function(a){return '<div style="padding:6px 10px;margin-bottom:4px;background:rgba(183,28,28,.07);border-radius:6px;font-size:13px">⚠️ '+a+'</div>';}).join('');
+      ap.style.display='';
+    } else { ap.style.display='none'; }
   }
 
   // ── 5. รายงานช่าง ────────────────────────────────────────
-  var techMap = {};
+  var techMap={};
   reqs.forEach(function(r){
-    var name = r.RequesterName||r.RequesterEmail||'ไม่ระบุ';
-    if(!techMap[name]) techMap[name]={name:name,total:0,inProgress:0,waitClear:0,closed:0,closeDays:[]};
-    techMap[name].total++;
-    if(r.StatusStock==='CLEARED'){ techMap[name].closed++; techMap[name].closeDays.push(getAgeDays(r.OpenDate)); }
-    else if(r.StatusStock==='PICKED_UP') techMap[name].waitClear++;
-    else techMap[name].inProgress++;
+    var n=r.RequesterName||r.RequesterEmail||'ไม่ระบุ';
+    if(!techMap[n]) techMap[n]={name:n,total:0,inProgress:0,waitClear:0,closed:0,days:[]};
+    techMap[n].total++;
+    if(r.StatusStock==='CLEARED'){techMap[n].closed++;techMap[n].days.push(ageDays(r.OpenDate));}
+    else if(r.StatusStock==='PICKED_UP') techMap[n].waitClear++;
+    else techMap[n].inProgress++;
   });
-  var techList = Object.values(techMap).sort(function(a,b){
-    return (b.inProgress+b.waitClear)-(a.inProgress+a.waitClear);
-  });
-  var techEl = document.getElementById('rptTechTable');
+  var techList=Object.values(techMap).sort(function(a,b){return (b.inProgress+b.waitClear)-(a.inProgress+a.waitClear);});
+  var techEl=document.getElementById('rptTechTable');
   if(techEl&&techList.length){
-    var h='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+    var h2='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
       +'<th>ชื่อช่าง</th><th style="text-align:center">ทั้งหมด</th>'
-      +'<th style="text-align:center">ดำเนินการ</th>'
-      +'<th style="text-align:center">รอเคลียร์</th>'
-      +'<th style="text-align:center">ปิดแล้ว</th>'
-      +'<th style="text-align:center">เวลาเฉลี่ย</th>'
-      +'<th style="text-align:center">% ปิดงาน</th>'
-      +'</tr></thead><tbody>';
+      +'<th style="text-align:center">ดำเนินการ</th><th style="text-align:center">รอเคลียร์</th>'
+      +'<th style="text-align:center">ปิดแล้ว</th><th style="text-align:center">เวลาเฉลี่ย</th>'
+      +'<th style="text-align:center">% ปิดงาน</th></tr></thead><tbody>';
     techList.forEach(function(t){
-      var avg=t.closeDays.length?Math.round(t.closeDays.reduce(function(a,b){return a+b;},0)/t.closeDays.length):0;
+      var avg=t.days.length?Math.round(t.days.reduce(function(a,b){return a+b;},0)/t.days.length):0;
       var pct=t.total?Math.round(t.closed/t.total*100):0;
-      var pctColor=pct>=80?'#388e3c':pct>=50?'#c9a84c':'#b71c1c';
-      h+='<tr><td style="font-weight:600">'+t.name+'</td>'
+      var pc=pct>=80?'#388e3c':pct>=50?'#c9a84c':'#b71c1c';
+      h2+='<tr><td style="font-weight:600">'+t.name+'</td>'
         +'<td style="text-align:center">'+t.total+'</td>'
         +'<td style="text-align:center;color:#1565c0;font-weight:700">'+t.inProgress+'</td>'
         +'<td style="text-align:center;color:#c9a84c;font-weight:700">'+t.waitClear+'</td>'
         +'<td style="text-align:center;color:#388e3c;font-weight:700">'+t.closed+'</td>'
-        +'<td style="text-align:center;color:var(--g400)">'+( avg?formatAge(avg):'—')+'</td>'
+        +'<td style="text-align:center;color:var(--g400)">'+( avg?fmtAge(avg):'—')+'</td>'
         +'<td><div style="display:flex;align-items:center;gap:6px">'
-        +'<div style="flex:1;height:6px;background:#eee;border-radius:3px">'
-        +'<div style="width:'+pct+'%;height:100%;background:'+pctColor+';border-radius:3px"></div></div>'
-        +'<span style="font-weight:700;color:'+pctColor+';font-size:12px;min-width:32px">'+pct+'%</span>'
+        +'<div style="flex:1;height:6px;background:#eee;border-radius:3px"><div style="width:'+pct+'%;height:100%;background:'+pc+';border-radius:3px"></div></div>'
+        +'<span style="font-weight:700;color:'+pc+';font-size:12px;min-width:32px">'+pct+'%</span>'
         +'</div></td></tr>';
     });
-    h+='</tbody></table></div>';
-    techEl.innerHTML=h;
+    h2+='</tbody></table></div>';
+    techEl.innerHTML=h2;
   }
 
-  // ── 6. Top 10 อะไหล่ที่จ่ายจริงมากสุด (Issued Qty) ──────
-  // รวม Issued Qty จาก DEMO_ITEMS per Part
-  var issuedMap = {};
+  // ── 6. TOP 10 อะไหล่ที่จ่ายออกจริง (Issued Qty ONLY) ───
+  // รวม Issued Qty จาก DEMO_ITEMS (ใช้ IssuedQty ก่อน, fallback Qty)
+  var issuedMap={};
   items.forEach(function(item){
-    var pn = item.PartNo;
-    var qty = item.IssuedQty || item.Qty || 0; // IssuedQty = จ่ายจริง, fallback = Qty
-    issuedMap[pn] = (issuedMap[pn]||0) + qty;
+    var pn=item.PartNo;
+    var qty=getIssued(item);
+    if(qty>0) issuedMap[pn]=(issuedMap[pn]||0)+qty;
   });
-  // รวม _scDemoEntries (OUT transactions)
+  // เพิ่มจาก _scDemoEntries
   (window._scDemoEntries||[]).forEach(function(e){
     if(e.Type!=='IN'&&e.Type!=='ADJUST') issuedMap[e.PartNo]=(issuedMap[e.PartNo]||0)+(e.Qty||0);
   });
-  // ถ้าไม่มี demo entries เลย ให้ใช้ inStock ระดับต่ำสุด 10 รายการ (สมมติว่าเคยเบิกไป)
-  var issuedList = Object.keys(issuedMap).map(function(pn){
-    var p = (typeof PARTS_DB!=='undefined'?PARTS_DB:[]).find(function(x){return x.partNo===pn;})||{};
-    return {partNo:pn, nameEN:p.nameEN||p.nameTH||pn, issuedQty:issuedMap[pn], inStock:p.inStock||0};
+
+  // แปลงเป็น list พร้อมชื่ออะไหล่ที่ถูกต้อง
+  var issuedList=Object.keys(issuedMap).map(function(pn){
+    var name=getPartName(pn); // ← ใช้ getPartName เสมอ
+    return {partNo:pn, nameEN:name, issuedQty:issuedMap[pn]};
   }).sort(function(a,b){return b.issuedQty-a.issuedQty;}).slice(0,10);
 
-  // ถ้า issuedList ว่าง ใช้ PARTS_DB ที่ inStock ต่ำที่สุด (สมมติว่าถูกเบิกออกไป)
-  if(!issuedList.length && typeof PARTS_DB!=='undefined'){
-    issuedList = PARTS_DB.slice().sort(function(a,b){return a.inStock-b.inStock;})
-      .slice(0,10).map(function(p){return {partNo:p.partNo,nameEN:p.nameEN||p.nameTH||p.partNo,issuedQty:Math.max(1,100-p.inStock)||0,inStock:p.inStock};});
-  }
-
-  // วาด Bar Chart — ใช้ชื่ออะไหล่ (ไม่ใช่ Part No.)
-  var canvas = document.getElementById('rptChart');
-  if(canvas && canvas.getContext && issuedList.length){
-    canvas.width = canvas.parentElement ? canvas.parentElement.offsetWidth - 32 : 600;
-    canvas.height = 220;
-    // Beyond Green color palette
-    var bgColors = issuedList.map(function(_,i){
-      if(i===0) return '#1a4a2e'; // อันดับ 1: เขียวเข้มสุด
-      if(i===1) return '#2d6a4f'; // อันดับ 2
-      if(i===2) return '#40916c'; // อันดับ 3
-      return '#74c69d';            // อันดับ 4+: เขียวอ่อน
+  // ถ้าไม่มี issued data เลย (demo ใหม่) — ใช้ DEMO_ITEMS
+  if(!issuedList.length && items.length){
+    var tmpMap={};
+    items.forEach(function(item){
+      var qty=getIssued(item);
+      tmpMap[item.PartNo]=(tmpMap[item.PartNo]||0)+qty;
     });
-    drawBeyondGreenBar(canvas.getContext('2d'), canvas,
-      issuedList.map(function(p){
-        // ตัดชื่ออะไหล่ให้ไม่เกิน 15 ตัวอักษร
-        var name = p.nameEN||'—';
-        return name.length>15 ? name.slice(0,13)+'…' : name;
-      }),
-      issuedList.map(function(p){return p.issuedQty;}),
-      bgColors,
-      'จำนวนที่จ่ายจริง (Issued Qty)'
-    );
+    issuedList=Object.keys(tmpMap).map(function(pn){
+      return {partNo:pn, nameEN:getPartName(pn), issuedQty:tmpMap[pn]};
+    }).sort(function(a,b){return b.issuedQty-a.issuedQty;}).slice(0,10);
   }
 
-  // ตาราง Top 10
-  var topEl = document.getElementById('rptTopParts');
-  if(topEl && issuedList.length){
-    var maxIssued = issuedList[0].issuedQty||1;
-    topEl.innerHTML='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
-      +'<th>#</th><th>Part No.</th><th>ชื่ออะไหล่</th>'
-      +'<th style="text-align:center">จ่ายจริง (Issued)</th>'
-      +'<th>สัดส่วน</th></tr></thead><tbody>'
-      +issuedList.map(function(p,i){
-        var w=Math.round(p.issuedQty/maxIssued*100);
-        var barColor=i<1?'#1a4a2e':i<2?'#2d6a4f':i<3?'#40916c':'#74c69d';
-        var medal=i<3?['🥇','🥈','🥉'][i]:'';
-        return '<tr><td style="color:var(--g400);text-align:center">'+medal+(i+1)+'</td>'
-          +'<td style="font-size:11px;color:var(--g400)">'+p.partNo+'</td>'
-          +'<td style="font-weight:600">'+p.nameEN+'</td>'
-          +'<td style="text-align:center;font-weight:700;color:var(--gm)">'+p.issuedQty+'</td>'
-          +'<td><div style="display:flex;align-items:center;gap:6px">'
-          +'<div style="flex:1;height:8px;background:#e8f5e9;border-radius:4px">'
-          +'<div style="width:'+w+'%;height:100%;background:'+barColor+';border-radius:4px"></div></div>'
-          +'<span style="font-size:11px;color:var(--g400);min-width:28px">'+w+'%</span>'
-          +'</div></td></tr>';
-      }).join('')
-      +'</tbody></table></div>';
+  // วาด Horizontal Bar Chart
+  var canvas=document.getElementById('rptChart');
+  if(canvas&&canvas.getContext&&issuedList.length){
+    var rowH=32, padL=180, padR=70, padTop=40, padBot=20;
+    canvas.width=canvas.parentElement?canvas.parentElement.offsetWidth-32:600;
+    canvas.height=padTop+rowH*issuedList.length+padBot;
+    drawHorizontalBar(canvas.getContext('2d'), canvas, issuedList, padL, padR, padTop, rowH);
+  }
+
+  // ตาราง Top 10 — แสดงชื่ออะไหล่จริง ไม่ใช่ Part No.
+  var topEl=document.getElementById('rptTopParts');
+  if(topEl){
+    if(!issuedList.length){
+      topEl.innerHTML='<div class="tc tm" style="padding:20px">ยังไม่มีข้อมูลการจ่ายจริงค่ะ — บันทึก Stock Card เพื่อดูข้อมูลได้เลย</div>';
+    } else {
+      var maxIssued=issuedList[0].issuedQty||1;
+      topEl.innerHTML='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+        +'<th style="width:30px">#</th><th>ชื่ออะไหล่</th><th style="font-size:10px;color:var(--g400)">Part No.</th>'
+        +'<th style="text-align:center">จ่ายจริง (Issued)</th>'
+        +'<th>สัดส่วน</th></tr></thead><tbody>'
+        +issuedList.map(function(p,i){
+          var w=Math.round(p.issuedQty/maxIssued*100);
+          var c=i===0?'#1a4a2e':i<2?'#2d6a4f':i<3?'#40916c':'#74c69d';
+          var medal=['🥇','🥈','🥉'][i]||'';
+          var nameDisp = p.nameEN && p.nameEN!=='—' ? p.nameEN : '<span style="color:#aaa">ไม่พบชื่ออะไหล่</span>';
+          return '<tr><td style="text-align:center">'+medal+(i+1)+'</td>'
+            +'<td style="font-weight:600">'+nameDisp+'</td>'
+            +'<td style="font-size:10px;color:var(--g400)">'+p.partNo+'</td>'
+            +'<td style="text-align:center;font-weight:700;color:var(--gm)">'+p.issuedQty+'</td>'
+            +'<td><div style="display:flex;align-items:center;gap:6px">'
+            +'<div style="flex:1;height:8px;background:#e8f5e9;border-radius:4px">'
+            +'<div style="width:'+w+'%;height:100%;background:'+c+';border-radius:4px"></div></div>'
+            +'<span style="font-size:11px;color:var(--g400);min-width:30px">'+w+'%</span>'
+            +'</div></td></tr>';
+        }).join('')+'</tbody></table></div>';
+    }
+  }
+
+  // ── 7. รายการอะไหล่ค้างจ่าย / จ่ายไม่ครบ ───────────────
+  var pendingEl=document.getElementById('rptPendingIssue');
+  if(pendingEl){
+    var pendingRows=[];
+    reqs.forEach(function(r){
+      if(r.StatusStock==='CLEARED') return; // ปิดแล้ว ข้ามไป
+      items.forEach(function(item){
+        var pending=getPending(item); // Requested - Issued
+        if(pending<=0) return;
+        var issued=getIssued(item);
+        var status=issued===0?'⏳ รอจัดอะไหล่':'⚠️ จ่ายบางส่วน';
+        pendingRows.push({
+          reqId:r.ReqID, jobNo:r.JobNo, customer:r.CustomerName,
+          requester:r.RequesterName||r.RequesterEmail||'—',
+          partNo:item.PartNo, partName:getPartName(item.PartNo),
+          requested:getRequested(item), issued:issued, pending:pending,
+          status:status, date:r.OpenDate, days:ageDays(r.OpenDate)
+        });
+      });
+    });
+    pendingRows.sort(function(a,b){return b.days-a.days;});
+    if(!pendingRows.length){
+      pendingEl.innerHTML='<div class="tc tm" style="padding:20px;color:var(--gm)">✅ ไม่มีรายการค้างจ่ายค่ะ</div>';
+    } else {
+      var h3='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+        +'<th>เลขใบเบิก</th><th>Job No.</th><th>ลูกค้า</th><th>ผู้เบิก</th>'
+        +'<th>ชื่ออะไหล่</th><th style="font-size:10px;color:var(--g400)">Part No.</th>'
+        +'<th style="text-align:center">ขอเบิก</th>'
+        +'<th style="text-align:center;color:var(--gm)">จ่ายจริง</th>'
+        +'<th style="text-align:center;color:var(--red)">ค้างจ่าย</th>'
+        +'<th>สถานะ</th><th>อายุค้าง</th>'
+        +'</tr></thead><tbody>';
+      pendingRows.forEach(function(row){
+        var ac=ageStyle(row.days);
+        var nameDisp=row.partName&&row.partName!=='—'?row.partName:'<span style="color:#aaa">ไม่พบชื่ออะไหล่</span>';
+        h3+='<tr style="'+(ac.bg?'background:'+ac.bg+';':'')+'">'
+          +'<td style="font-weight:700">'+row.reqId+'</td><td>'+row.jobNo+'</td>'
+          +'<td>'+row.customer+'</td><td>'+row.requester+'</td>'
+          +'<td style="font-weight:600">'+nameDisp+'</td>'
+          +'<td style="font-size:10px;color:var(--g400)">'+row.partNo+'</td>'
+          +'<td style="text-align:center">'+row.requested+'</td>'
+          +'<td style="text-align:center;color:var(--gm);font-weight:700">'+row.issued+'</td>'
+          +'<td style="text-align:center;color:var(--red);font-weight:700">'+row.pending+'</td>'
+          +'<td>'+row.status+'</td>'
+          +'<td style="font-size:11px">'+fmtAge(row.days)+'</td>'
+          +'</tr>';
+      });
+      h3+='</tbody></table></div>';
+      pendingEl.innerHTML=h3;
+    }
+  }
+
+  // ── 8. รายการอะไหล่รอคืน / รอเคลียร์ ───────────────────
+  var returnEl=document.getElementById('rptReturnReport');
+  if(returnEl){
+    var returnRows=[];
+    reqs.forEach(function(r){
+      if(r.StatusStock==='CLEARED') return;
+      items.forEach(function(item){
+        var issued=getIssued(item);
+        if(issued<=0) return;
+        var outstanding=getOutstanding(item);
+        if(outstanding<=0) return;
+        returnRows.push({
+          reqId:r.ReqID, jobNo:r.JobNo, customer:r.CustomerName,
+          requester:r.RequesterName||r.RequesterEmail||'—',
+          partNo:item.PartNo, partName:getPartName(item.PartNo),
+          issued:issued, returned:getReturned(item), outstanding:outstanding,
+          status:r.StatusStock, days:ageDays(r.OpenDate)
+        });
+      });
+    });
+    returnRows.sort(function(a,b){return b.days-a.days;});
+    if(!returnRows.length){
+      returnEl.innerHTML='<div class="tc tm" style="padding:20px;color:var(--gm)">✅ ไม่มีอะไหล่ค้างกับช่างค่ะ</div>';
+    } else {
+      var stLabelMap={'ACKNOWLEDGED':'🔧 Stock จ่ายแล้ว','PICKED_UP':'✋ ช่างรับแล้ว','PARTIAL':'⚠️ บางส่วน'};
+      var h4='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
+        +'<th>เลขใบเบิก</th><th>Job No.</th><th>ลูกค้า</th><th>ผู้เบิก</th>'
+        +'<th>ชื่ออะไหล่</th><th style="font-size:10px">Part No.</th>'
+        +'<th style="text-align:center;color:var(--gm)">จ่ายจริง</th>'
+        +'<th style="text-align:center">คืนแล้ว</th>'
+        +'<th style="text-align:center;color:var(--red)">ค้างกับช่าง</th>'
+        +'<th>สถานะใบเบิก</th><th>อายุใบเบิก</th>'
+        +'</tr></thead><tbody>';
+      returnRows.forEach(function(row){
+        var ac=ageStyle(row.days);
+        var nameDisp=row.partName&&row.partName!=='—'?row.partName:'<span style="color:#aaa">ไม่พบชื่ออะไหล่</span>';
+        h4+='<tr style="'+(ac.bg?'background:'+ac.bg+';':'')+'">'
+          +'<td style="font-weight:700">'+row.reqId+'</td><td>'+row.jobNo+'</td>'
+          +'<td>'+row.customer+'</td><td>'+row.requester+'</td>'
+          +'<td style="font-weight:600">'+nameDisp+'</td>'
+          +'<td style="font-size:10px;color:var(--g400)">'+row.partNo+'</td>'
+          +'<td style="text-align:center;color:var(--gm);font-weight:700">'+row.issued+'</td>'
+          +'<td style="text-align:center;color:var(--g400)">'+row.returned+'</td>'
+          +'<td style="text-align:center;color:var(--red);font-weight:700">'+row.outstanding+'</td>'
+          +'<td>'+(stLabelMap[row.status]||row.status)+'</td>'
+          +'<td style="font-size:11px">'+fmtAge(row.days)+'</td>'
+          +'</tr>';
+      });
+      h4+='</tbody></table></div>';
+      returnEl.innerHTML=h4;
+    }
   }
 }
+
+
+// ── Horizontal Bar Chart (Beyond Green Theme) ──────────────
+function drawHorizontalBar(ctx, canvas, data, padL, padR, padTop, rowH){
+  var W=canvas.width, H=canvas.height;
+  var chartW=W-padL-padR;
+  var maxVal=Math.max.apply(null,data.map(function(d){return d.issuedQty;}));
+  if(maxVal<1) maxVal=1;
+  var colors=['#1a4a2e','#2d6a4f','#40916c','#52b788','#74c69d',
+              '#95d5b2','#b7e4c7','#a8dadc','#90e0ef','#caf0f8'];
+
+  // bg
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+
+  // title
+  ctx.fillStyle='#1a4a2e'; ctx.font='bold 12px Prompt,Sarabun,sans-serif'; ctx.textAlign='center';
+  ctx.fillText('จำนวนจ่ายจริง (Issued Qty)', padL + chartW/2, 22);
+
+  data.forEach(function(item, i){
+    var y = padTop + i*rowH;
+    var barH = Math.round(rowH*0.52);
+    var barY = y + (rowH-barH)/2;
+    var barW = Math.round((item.issuedQty/maxVal)*chartW);
+    var col = colors[i]||'#74c69d';
+
+    // bar bg
+    ctx.fillStyle='#f0faf5';
+    ctx.fillRect(padL, barY, chartW, barH);
+
+    // bar fill with gradient
+    var grad=ctx.createLinearGradient(padL,0,padL+barW,0);
+    grad.addColorStop(0, col);
+    grad.addColorStop(1, col+'cc');
+    ctx.fillStyle=grad;
+    if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(padL, barY, Math.max(4,barW), barH, [0,3,3,0]); ctx.fill(); }
+    else { ctx.fillRect(padL, barY, Math.max(4,barW), barH); }
+
+    // label (ชื่ออะไหล่)
+    var name = item.nameEN && item.nameEN!=='—' ? item.nameEN : item.partNo;
+    var shortName = name.length>24 ? name.slice(0,22)+'…' : name;
+    ctx.fillStyle='#333'; ctx.font=(i<3?'bold ':'')+'11px Sarabun,sans-serif'; ctx.textAlign='right';
+    ctx.fillText(shortName, padL-6, barY+barH/2+4);
+
+    // value ที่ปลายแท่ง
+    ctx.fillStyle= i<3?'#1a4a2e':'#555'; ctx.font='bold 11px Sarabun,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(item.issuedQty, padL+Math.max(4,barW)+5, barY+barH/2+4);
+
+    // rank badge อันดับ 1-3
+    if(i<3){
+      var medal=['🥇','🥈','🥉'][i];
+      ctx.font='13px serif'; ctx.textAlign='right';
+      ctx.fillText(medal, padL-2, barY+barH/2+5);
+    }
+
+    // separator
+    ctx.strokeStyle='#e8f5e9'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(0,y+rowH); ctx.lineTo(W,y+rowH); ctx.stroke();
+  });
+}
+
 
 // ── Bar Chart Beyond Green Theme ─────────────────────────────
 function drawBeyondGreenBar(ctx, canvas, labels, values, colors, label){
@@ -5174,58 +5342,58 @@ function filterReportBy(filter){
 }
 
 function exportReportCSV(){
-  var reqs = typeof DEMO_REQS !== 'undefined' ? DEMO_REQS : [];
-  var now = new Date();
-  function getAgeDays2(ds){
+  var reqs  = typeof DEMO_REQS  !=='undefined' ? DEMO_REQS  : [];
+  var items = typeof DEMO_ITEMS !=='undefined' ? DEMO_ITEMS : [];
+  var now   = new Date();
+  function ageDays3(ds){
     if(!ds) return 0;
     var p=ds.split('/'); if(p.length<3) return 0;
     var y=parseInt(p[2]); if(y>2500) y-=543;
     return Math.floor((now-new Date(y,parseInt(p[1])-1,parseInt(p[0])))/86400000);
   }
-  function fmtAge2(d){ if(d<30) return d+' วัน'; if(d<365) return Math.floor(d/30)+' เดือน'; return Math.floor(d/365)+' ปี '+Math.floor((d%365)/30)+' เดือน'; }
-  var headers = ['เลขใบเบิก','วันที่เบิก','Job No.','ลูกค้า','ผู้เบิก','อายุใบเบิก','จำนวนรายการ','จำนวนที่ขอ','จำนวนที่จ่ายจริง','จำนวนที่คืน','สถานะอนุมัติ','สถานะ Stock','วันที่อนุมัติ','วันที่จ่ายของ','วันที่ปิดงาน','ระยะเวลาปิดงาน'];
-  var rows = [headers];
-  var items2 = typeof DEMO_ITEMS !== 'undefined' ? DEMO_ITEMS : [];
+  function fmtAge3(d){ if(d<30) return d+' วัน'; if(d<365) return Math.floor(d/30)+' เดือน'; return Math.floor(d/365)+' ปี '+Math.floor((d%365)/30)+' เดือน'; }
+
+  var headers=['เลขใบเบิก','วันที่เบิก','Job No.','ลูกค้า','ผู้เบิก','สถานะใบเบิก',
+    'Part No.','ชื่ออะไหล่','จำนวนที่ขอเบิก (Requested)','จำนวนที่จ่ายจริง (Issued)',
+    'จำนวนค้างจ่าย (Pending)','จำนวนคืน (Returned)','จำนวนค้างกับช่าง (Outstanding)',
+    'อายุใบเบิก','หมายเหตุ'];
+  var rows=[headers];
+
+  var stMap={'PENDING_SUPERVISOR':'รอหัวหน้าช่าง','PENDING_MANAGER':'รอผู้จัดการ',
+    'APPROVED':'อนุมัติแล้ว','REJECTED':'ปฏิเสธ','CLEARED':'ปิดงานแล้ว'};
+
   reqs.forEach(function(r){
-    var age = getAgeDays2(r.OpenDate);
-    var reqQty = items2.reduce(function(s,i){return s+(i.Qty||0);},0);
-    var issQty = items2.reduce(function(s,i){return s+(i.IssuedQty||i.Qty||0);},0);
-    rows.push([
-      r.ReqID, r.OpenDate, r.JobNo, r.CustomerName,
-      r.RequesterName||r.RequesterEmail||'',
-      fmtAge2(age),
-      items2.length,
-      reqQty, issQty, 0,
-      r.StatusApproval, r.StatusStock,
-      r.ManagerApprovedAt||'', r.StockAcknowledgedAt||'',
-      r.ClosedAt||'',
-      r.ClosedAt ? fmtAge2(getAgeDays2(r.OpenDate)) : ''
-    ]);
+    var age=ageDays3(r.OpenDate);
+    var stLabel=stMap[r.StatusApproval]||r.StatusApproval;
+    if(items.length){
+      items.forEach(function(item){
+        var req    = item.Qty||0;
+        var iss    = typeof item.IssuedQty!=='undefined'?(item.IssuedQty||0):req;
+        var ret    = item.ReturnedQty||0;
+        var pend   = Math.max(0,req-iss);
+        var outst  = Math.max(0,iss-ret);
+        var pname  = getPartName(item.PartNo);
+        rows.push([r.ReqID,r.OpenDate,r.JobNo,r.CustomerName,
+          r.RequesterName||r.RequesterEmail||'',stLabel,
+          item.PartNo,pname,req,iss,pend,ret,outst,fmtAge3(age),item.Note||'']);
+      });
+    } else {
+      rows.push([r.ReqID,r.OpenDate,r.JobNo,r.CustomerName,
+        r.RequesterName||r.RequesterEmail||'',stLabel,'','',0,0,0,0,0,fmtAge3(age),'']);
+    }
   });
-  var csv='\uFEFF'+rows.map(function(r){return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+
+  var nl = String.fromCharCode(10);
+  var csv='﻿'+rows.map(function(r){
+    return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');
+  }).join(nl);
   var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a'); a.href=url;
   a.download='report_'+new Date().toLocaleDateString('th-TH').replace(/\//g,'-')+'.csv';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('Export CSV แล้วค่ะ (เปิดด้วย Excel)','success');
-  var reqs = typeof DEMO_REQS !== 'undefined' ? DEMO_REQS : [];
-  var rows = [['เลขใบเบิก','วันที่','Job No.','ลูกค้า','ผู้เบิก','สถานะอนุมัติ','สถานะ Stock','หมายเหตุ']];
-  reqs.forEach(function(r){
-    rows.push([r.ReqID, r.OpenDate, r.JobNo, r.CustomerName,
-               r.RequesterName||r.RequesterEmail||'', r.StatusApproval, r.StatusStock, '']);
-  });
-  var csv = '\uFEFF' + rows.map(function(r){
-    return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');
-  }).join('\n');
-  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href=url; a.download='report_'+new Date().toLocaleDateString('th-TH').replace(/\//g,'-')+'.csv';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  toast('Export CSV แล้วค่ะ','success');
+  toast('Export CSV แล้วค่ะ — รวมรายการอะไหล่ทุกชิ้น','success');
 }
 
 // Auto load เมื่อเข้าหน้ารายงาน
