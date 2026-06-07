@@ -540,7 +540,15 @@ textarea.fc{min-height:70px;resize:vertical;}
           <div id="rptReturnReport"><div class="tc tm" style="padding:20px">กด "โหลดรายงาน" ค่ะ</div></div>
         </div>
 
-        <!-- ⑨ รายงานอะไหล่ไม่เคลื่อนไหว ──────────────── -->
+        <!-- ⑨ รายงานการจ่ายแยกตามประเภทงาน ─────────────── -->
+        <div class="card" style="padding:14px 16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:4px">📦 การจ่ายอะไหล่แยกตามประเภทงาน</div>
+          <div style="font-size:11px;color:var(--g400);margin-bottom:12px">วิเคราะห์ว่าอะไหล่ถูกจ่ายออกไปเพื่อกิจกรรมอะไร — ซ่อมรถเช่า / สัมปทาน / ขาย / โอนสาขา / คืน สนญ.</div>
+          <div id="rptMovementChart"></div>
+          <div id="rptMovementTable" style="margin-top:12px"></div>
+        </div>
+
+        <!-- ⑩ รายงานอะไหล่ไม่เคลื่อนไหว ──────────────── -->
         <div id="rptSlowMove" class="card" style="padding:14px 16px">
           <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:10px">🐢 รายงานอะไหล่ไม่เคลื่อนไหว</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px" id="slowMoveBtns">
@@ -553,23 +561,27 @@ textarea.fc{min-height:70px;resize:vertical;}
           <div id="slowMoveContent"><div class="tc tm" style="padding:24px">เลือกช่วงเวลาค่ะ</div></div>
         </div>
 
-        <!-- ⑩ ตัวกรองและโหลด ──────────────────────────── -->
+        <!-- ⑩ Export & Load ──────────────────────────────── -->
         <div class="card" style="padding:14px 16px">
-          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
             <div>
-              <label style="font-size:11px;color:var(--g400)">เดือน</label>
-              <input class="fc" id="rptMonth" placeholder="เช่น 04/2569" style="width:110px;margin-top:4px">
+              <div style="font-size:13px;font-weight:700;color:var(--gd);margin-bottom:4px">📥 Export รายงาน</div>
+              <div style="font-size:11px;color:var(--g400)">เลือกรายงานที่ต้องการ Export เป็น CSV (เปิดด้วย Excel ได้เลย)</div>
             </div>
-            <div>
-              <label style="font-size:11px;color:var(--g400)">Job No.</label>
-              <input class="fc" id="rptJob" placeholder="Job No." style="width:110px;margin-top:4px">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button class="btn bgd" onclick="loadFullReport()" style="font-size:12px">📊 โหลดรายงาน</button>
+              <div style="width:1px;height:28px;background:var(--g200)"></div>
+              <select class="fc" id="exportTypeSelect" style="width:200px;font-size:12px">
+                <option value="requisition">ใบเบิกทั้งหมด</option>
+                <option value="overdue">งานค้าง / ต้องติดตาม</option>
+                <option value="pending">รายการค้างจ่าย</option>
+                <option value="return">รายการรอคืน/เคลียร์</option>
+                <option value="movement">การจ่ายแยกตามประเภท</option>
+                <option value="technician">รายงานตามช่าง</option>
+                <option value="slowmove">อะไหล่ไม่เคลื่อนไหว</option>
+              </select>
+              <button class="btn bp" onclick="exportSelectedReport()" style="font-size:12px">📥 Export</button>
             </div>
-            <div>
-              <label style="font-size:11px;color:var(--g400)">ผู้เบิก</label>
-              <input class="fc" id="rptRequester" placeholder="ชื่อช่าง" style="width:110px;margin-top:4px">
-            </div>
-            <button class="btn bgd" onclick="loadFullReport()" style="margin-top:4px">📊 โหลดรายงาน</button>
-            <button class="btn bo bsm" onclick="exportReportCSV()" style="margin-top:4px">📥 Export CSV</button>
           </div>
         </div>
 
@@ -829,6 +841,8 @@ textarea.fc{min-height:70px;resize:vertical;}
           <option value="IN">📥 รับเข้า (จากฝ่ายพัสดุ สนง.ใหญ่)</option>
           <option value="OUT_SALE">🛒 จ่ายออก — ขาย</option>
           <option value="OUT_RENTAL">🚗 จ่ายออก — รถเช่า</option>
+              <option value="OUT_ACCIDENT">⚠️ จ่ายออก — เคลมอุบัติ</option>
+              <option value="OUT_WARRANTY">🔧 จ่ายออก — เคลม Warranty</option>
           <option value="OUT_CONTRACT">🚌 จ่ายออก — รถสัมปทาน</option>
           <option value="OUT_WARRANTY">🔧 จ่ายออก — Warranty</option>
           <option value="OUT_BRANCH">🏢 จ่ายออก — ส่งสาขา (SAP)</option>
@@ -5641,6 +5655,361 @@ function printSlowMoveReport(){
     +'</body></html>');
   win.document.close();
 }
+
+// ════════════════════════════════════════════════════════════
+// รายงานการจ่ายแยกตามประเภทงาน
+// ════════════════════════════════════════════════════════════
+
+// ประเภทงานและ label
+var MOVEMENT_TYPES = {
+  'OUT_RENTAL':    {label:'🚗 รถเช่า',                  color:'#1565c0'},
+  'OUT_CONTRACT':  {label:'🚌 รถสัมปทาน',               color:'#6a1599'},
+  'OUT_ACCIDENT':  {label:'⚠️ เคลมอุบัติ',               color:'#d84315'},
+  'OUT_WARRANTY':  {label:'🔧 เคลม Warranty',            color:'#5d4037'},
+  'OUT_SALE':      {label:'🛒 เปิดการขาย',               color:'#c9a84c'},
+  'OUT_BRANCH':    {label:'🏢 โอนสาขาใน Area 7',        color:'#00796b'},
+  'OUT_HQ':        {label:'🏛️ คืน สนญ.',                 color:'#37474f'},
+  'OUT_OTHER':     {label:'📌 สาขานอกเขต',              color:'#bf360c'},
+  'IN':            {label:'📥 รับเข้า',                  color:'#388e3c'},
+  'ADJUST':        {label:'⚖️ ปรับยอด',                  color:'#78909c'},
+};
+
+function renderMovementReport(){
+  var chartEl = document.getElementById('rptMovementChart');
+  var tableEl = document.getElementById('rptMovementTable');
+  if(!chartEl || !tableEl) return;
+
+  // รวมข้อมูลจาก DEMO_REQS + DEMO_ITEMS
+  var reqs  = typeof DEMO_REQS  !== 'undefined' ? DEMO_REQS  : [];
+  var items = typeof DEMO_ITEMS !== 'undefined' ? DEMO_ITEMS : [];
+  var scDemo= window._scDemoEntries || [];
+
+  // สร้าง movement summary
+  var typeMap = {};
+
+  // จาก DEMO_REQS — แต่ละใบเบิกจัด type ตาม purpose/job
+  reqs.forEach(function(r){
+    if(r.StatusApproval !== 'APPROVED' && r.StatusStock !== 'CLEARED') return;
+    // detect type จาก Purpose keyword
+    var purpose = (r.Purpose||'').toLowerCase();
+    var type = 'OUT_RENTAL'; // demo default (ถ้าไม่ระบุ)
+    if(purpose.indexOf('อุบัติ')>=0 || purpose.indexOf('accident')>=0 || purpose.indexOf('ชน')>=0) type='OUT_ACCIDENT';
+    else if(purpose.indexOf('warranty')>=0 || purpose.indexOf('ประกัน')>=0 || purpose.indexOf('เคลม')>=0) type='OUT_WARRANTY';
+    else if(purpose.indexOf('เช่า')>=0 || purpose.indexOf('rental')>=0) type='OUT_RENTAL';
+    else if(purpose.indexOf('สัมปทาน')>=0 || purpose.indexOf('contract')>=0) type='OUT_CONTRACT';
+    else if(r.ReqID.indexOf('0001')>=0) type='OUT_RENTAL';
+    else if(r.ReqID.indexOf('0002')>=0) type='OUT_CONTRACT';
+    else if(r.ReqID.indexOf('0003')>=0) type='OUT_ACCIDENT';
+    else if(r.ReqID.indexOf('0004')>=0) type='OUT_WARRANTY';
+
+    items.forEach(function(item){
+      var qty = typeof item.IssuedQty!=='undefined' ? (item.IssuedQty||0) : (item.Qty||0);
+      if(qty <= 0) return;
+      var pn = item.PartNo;
+      if(!typeMap[type]) typeMap[type] = {type:type, totalQty:0, totalReqs:0, parts:{}};
+      typeMap[type].totalQty += qty;
+      typeMap[type].totalReqs++;
+      if(!typeMap[type].parts[pn]) typeMap[type].parts[pn] = {qty:0, name:getPartName(pn)};
+      typeMap[type].parts[pn].qty += qty;
+    });
+  });
+
+  // จาก Sales Orders (demo)
+  // demo: เพิ่ม mock ทุกประเภทให้มีข้อมูล
+  var mockData = [
+    {type:'OUT_SALE',     qty:5,  reqs:1, pn:'01BPB000010396', name:'BATTERY 6V TROJAN T105'},
+    {type:'OUT_ACCIDENT', qty:8,  reqs:2, pn:'05-16U291',       name:'BEARING 6205'},
+    {type:'OUT_WARRANTY', qty:3,  reqs:1, pn:'07-16290250',     name:'SEAL LOWER SHAFT'},
+    {type:'OUT_HQ',       qty:10, reqs:1, pn:'03PGL0000010155836', name:'BUSHING URETHANE 29mm'},
+    {type:'OUT_BRANCH',   qty:6,  reqs:2, pn:'02-23U700014',   name:'O-RING STEERING'},
+    {type:'OUT_OTHER',    qty:4,  reqs:1, pn:'03SPP0000000WS0022','name':'น้ำกลั่น'},
+  ];
+  mockData.forEach(function(m){
+    if(!typeMap[m.type]) typeMap[m.type]={type:m.type,totalQty:0,totalReqs:0,parts:{}};
+    typeMap[m.type].totalQty  += m.qty;
+    typeMap[m.type].totalReqs += m.reqs;
+    if(!typeMap[m.type].parts[m.pn]) typeMap[m.type].parts[m.pn]={qty:0,name:m.name};
+    typeMap[m.type].parts[m.pn].qty += m.qty;
+  });
+
+  // จาก Stock Card entries (ถ้ามี)
+  scDemo.forEach(function(e){
+    var t = e.Type||'';
+    if(t==='IN'||t==='ADJUST') return; // ข้าม IN
+    var mt = MOVEMENT_TYPES[t] ? t : 'OUT_OTHER';
+    if(!typeMap[mt]) typeMap[mt]={type:mt,totalQty:0,totalReqs:0,parts:{}};
+    typeMap[mt].totalQty += (e.Qty||0);
+    typeMap[mt].totalReqs++;
+    if(!typeMap[mt].parts[e.PartNo]) typeMap[mt].parts[e.PartNo]={qty:0,name:getPartName(e.PartNo)};
+    typeMap[mt].parts[e.PartNo].qty += (e.Qty||0);
+  });
+
+  var list = Object.values(typeMap).filter(function(t){ return t.totalQty > 0; })
+    .sort(function(a,b){ return b.totalQty - a.totalQty; });
+
+  if(!list.length){
+    chartEl.innerHTML='<div class="tc tm" style="padding:20px">ยังไม่มีข้อมูลการเคลื่อนไหวค่ะ</div>';
+    return;
+  }
+
+  var totalAll = list.reduce(function(s,t){ return s+t.totalQty; }, 0);
+
+  // ── Canvas Chart ────────────────────────────────────────
+  var cvs = document.createElement('canvas');
+  cvs.style.cssText = 'width:100%;display:block;margin-bottom:12px';
+  chartEl.innerHTML = '';
+  chartEl.appendChild(cvs);
+
+  var dpr  = window.devicePixelRatio || 1;
+  var cssW = chartEl.offsetWidth || 600;
+  var ROW_H = 38, PAD_TOP = 36, PAD_BOT = 8, LABEL_W = 200, VAL_W = 90;
+  var cssH = PAD_TOP + ROW_H * list.length + PAD_BOT;
+  cvs.width  = Math.round(cssW * dpr);
+  cvs.height = Math.round(cssH * dpr);
+  cvs.style.height = cssH + 'px';
+  var ctx = cvs.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  var W    = cssW;
+  var BAR_W = W - LABEL_W - VAL_W - 8;
+  var maxQ = list[0].totalQty || 1;
+
+  // bg
+  ctx.fillStyle = '#f8fbf9'; ctx.fillRect(0, 0, W, cssH);
+
+  // header
+  ctx.fillStyle = '#1a4a2e'; ctx.fillRect(0, 0, W, PAD_TOP - 2);
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Sarabun,Arial,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('การจ่ายอะไหล่แยกตามประเภทงาน (จำนวนจ่ายจริง)', LABEL_W + BAR_W/2, 22);
+
+  list.forEach(function(t, i){
+    var info = MOVEMENT_TYPES[t.type] || {label:t.type, color:'#74c69d'};
+    var y    = PAD_TOP + i * ROW_H;
+    var barH = Math.round(ROW_H * 0.44);
+    var barY = y + (ROW_H - barH) / 2;
+    var bw   = Math.max(3, Math.round(t.totalQty/maxQ * BAR_W));
+    var pct  = Math.round(t.totalQty/totalAll*100);
+
+    // zebra
+    ctx.fillStyle = i%2===0 ? '#fff' : '#f3faf6';
+    ctx.fillRect(0, y, W, ROW_H);
+
+    // separator
+    ctx.strokeStyle = '#e0ede8'; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0,y+ROW_H-0.5); ctx.lineTo(W,y+ROW_H-0.5); ctx.stroke();
+
+    // track
+    ctx.globalAlpha = 0.15; ctx.fillStyle = info.color;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(LABEL_W, barY, BAR_W, barH, 4);
+    else ctx.rect(LABEL_W, barY, BAR_W, barH);
+    ctx.fill(); ctx.globalAlpha = 1;
+
+    // bar
+    ctx.fillStyle = info.color;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(LABEL_W, barY, bw, barH, 4);
+    else ctx.rect(LABEL_W, barY, bw, barH);
+    ctx.fill();
+
+    // label ซ้าย
+    ctx.fillStyle = '#1a3628';
+    ctx.font = 'bold 10.5px Sarabun,Arial,sans-serif';
+    ctx.textAlign = 'left';
+    var lbl = info.label;
+    while(lbl.length > 3 && ctx.measureText(lbl).width > LABEL_W - 8) lbl = lbl.slice(0,-1);
+    if(lbl.length < info.label.length) lbl += '…';
+    ctx.fillText(lbl, 4, barY + barH/2 + 4);
+
+    // value + %
+    ctx.fillStyle = '#1a4a2e';
+    ctx.font = 'bold 10px Sarabun,Arial,sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(t.totalQty + ' ชิ้น (' + pct + '%)', LABEL_W + bw + 6, barY + barH/2 + 4);
+  });
+
+  // left accent
+  ctx.fillStyle = '#1a4a2e'; ctx.fillRect(0, PAD_TOP, 3, ROW_H * list.length);
+
+  // ── ตาราง Summary ─────────────────────────────────────
+  var h = '<div class="tw"><table class="it" style="font-size:13px"><thead>'
+    +'<tr style="font-size:13px;font-weight:700">'
+    +'<th>ประเภทงาน</th>'
+    +'<th style="text-align:center">จ่ายจริง (ชิ้น)</th>'
+    +'<th style="text-align:center">จำนวนใบ/รายการ</th>'
+    +'<th style="text-align:center">สัดส่วน</th>'
+    +'<th>อะไหล่หลักที่ใช้</th>'
+    +'</tr></thead><tbody>';
+
+  list.forEach(function(t, i){
+    var info = MOVEMENT_TYPES[t.type] || {label:t.type, color:'#74c69d'};
+    var pct  = Math.round(t.totalQty/totalAll*100);
+    var w    = pct;
+    // top 3 parts
+    var topParts = Object.values(t.parts)
+      .sort(function(a,b){ return b.qty-a.qty; })
+      .slice(0,3)
+      .map(function(p){ return p.name+' ('+p.qty+')'; })
+      .join(', ');
+    h += '<tr style="height:44px">'
+      +'<td style="padding:8px 10px"><span style="display:inline-flex;align-items:center;gap:6px">'
+      +'<span style="width:12px;height:12px;border-radius:50%;background:'+info.color+';flex-shrink:0;display:inline-block"></span>'
+      +'<strong>'+info.label+'</strong></span></td>'
+      +'<td style="text-align:center;font-weight:700;font-size:16px;color:'+info.color+';padding:8px 10px">'+t.totalQty+'</td>'
+      +'<td style="text-align:center;color:var(--g400);padding:8px 10px">'+t.totalReqs+'</td>'
+      +'<td style="padding:8px 10px">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<div style="flex:1;height:8px;background:#e8f5e9;border-radius:4px">'
+      +'<div style="width:'+w+'%;height:100%;background:'+info.color+';border-radius:4px"></div></div>'
+      +'<span style="font-weight:700;color:'+info.color+';min-width:38px;font-size:12px">'+pct+'%</span>'
+      +'</div></td>'
+      +'<td style="font-size:11px;color:var(--g400);padding:8px 10px">'+( topParts||'—')+'</td>'
+      +'</tr>';
+  });
+
+  // row รวม
+  h += '<tr style="background:#f0faf5;font-weight:700;border-top:2px solid var(--gm)">'
+    +'<td style="padding:8px 10px">✅ รวมทั้งหมด</td>'
+    +'<td style="text-align:center;font-size:16px;color:var(--gm);padding:8px 10px">'+totalAll+'</td>'
+    +'<td colspan="3" style="padding:8px 10px;color:var(--g400);font-size:12px;font-weight:400">'
+    +'ข้อมูลจากใบเบิกที่อนุมัติแล้วและ Stock Card ที่บันทึกไว้</td>'
+    +'</tr>';
+
+  h += '</tbody></table></div>';
+  tableEl.innerHTML = h;
+}
+
+// ── export เลือกประเภท ────────────────────────────────────
+function exportSelectedReport(){
+  var type = (document.getElementById('exportTypeSelect')||{}).value || 'requisition';
+  var reqs  = typeof DEMO_REQS  !=='undefined' ? DEMO_REQS  : [];
+  var items = typeof DEMO_ITEMS !=='undefined' ? DEMO_ITEMS : [];
+  var now   = new Date();
+  var dateStr = now.toLocaleDateString('th-TH').replace(/\//g,'-');
+
+  function ageDays3(ds){
+    if(!ds) return 0;
+    var p=ds.split('/'); if(p.length<3) return 0;
+    var y=parseInt(p[2]); if(y>2500) y-=543;
+    return Math.floor((now-new Date(y,parseInt(p[1])-1,parseInt(p[0])))/86400000);
+  }
+  function fmtAge3(d){ if(d<30) return d+' วัน'; if(d<365) return Math.floor(d/30)+' เดือน'; return Math.floor(d/365)+' ปี '+Math.floor((d%365)/30)+' เดือน'; }
+
+  var rows = [], headers = [], filename = 'report';
+
+  if(type==='overdue'){
+    filename = 'งานค้าง_'+dateStr;
+    headers = ['เลขใบเบิก','วันที่เบิก','Job No.','ลูกค้า','ผู้เบิก','อายุใบเบิก','สถานะ'];
+    reqs.filter(function(r){return r.StatusStock!=='CLEARED';})
+      .sort(function(a,b){return ageDays3(b.OpenDate)-ageDays3(a.OpenDate);})
+      .forEach(function(r){
+        rows.push([r.ReqID,r.OpenDate,r.JobNo,r.CustomerName,r.RequesterName||r.RequesterEmail||'',fmtAge3(ageDays3(r.OpenDate)),r.StatusApproval+'/'+r.StatusStock]);
+      });
+  } else if(type==='pending'){
+    filename = 'รายการค้างจ่าย_'+dateStr;
+    headers = ['เลขใบเบิก','Job No.','ลูกค้า','ผู้เบิก','Part No.','ชื่ออะไหล่','ขอเบิก','จ่ายจริง','ค้างจ่าย','อายุ'];
+    reqs.forEach(function(r){
+      if(r.StatusStock==='CLEARED') return;
+      items.forEach(function(item){
+        var req=item.Qty||0, iss=typeof item.IssuedQty!=='undefined'?(item.IssuedQty||0):req;
+        var pend=Math.max(0,req-iss);
+        if(pend<=0) return;
+        rows.push([r.ReqID,r.JobNo,r.CustomerName,r.RequesterName||'',item.PartNo,getPartName(item.PartNo),req,iss,pend,fmtAge3(ageDays3(r.OpenDate))]);
+      });
+    });
+  } else if(type==='return'){
+    filename = 'รายการรอคืน_'+dateStr;
+    headers = ['เลขใบเบิก','Job No.','ลูกค้า','ผู้เบิก','Part No.','ชื่ออะไหล่','จ่ายจริง','คืนแล้ว','ค้างกับช่าง'];
+    reqs.forEach(function(r){
+      if(r.StatusStock==='CLEARED') return;
+      items.forEach(function(item){
+        var iss=typeof item.IssuedQty!=='undefined'?(item.IssuedQty||0):(item.Qty||0);
+        var ret=item.ReturnedQty||0, out=Math.max(0,iss-ret);
+        if(out<=0) return;
+        rows.push([r.ReqID,r.JobNo,r.CustomerName,r.RequesterName||'',item.PartNo,getPartName(item.PartNo),iss,ret,out]);
+      });
+    });
+  } else if(type==='movement'){
+    filename = 'การจ่ายตามประเภทงาน_'+dateStr;
+    headers = ['ประเภทงาน','เลขใบเบิก','Job No.','ลูกค้า','ผู้เบิก','Part No.','ชื่ออะไหล่','จ่ายจริง'];
+    reqs.forEach(function(r){
+      if(r.StatusApproval!=='APPROVED'&&r.StatusStock!=='CLEARED') return;
+      var purpose=(r.Purpose||'').toLowerCase();
+      var type2='รถเช่า';
+      if(purpose.indexOf('อุบัติ')>=0||purpose.indexOf('accident')>=0||purpose.indexOf('ชน')>=0) type2='เคลมอุบัติ';
+      else if(purpose.indexOf('warranty')>=0||purpose.indexOf('ประกัน')>=0||purpose.indexOf('เคลม')>=0) type2='เคลม Warranty';
+      else if(purpose.indexOf('เช่า')>=0||purpose.indexOf('rental')>=0) type2='รถเช่า';
+      else if(purpose.indexOf('สัมปทาน')>=0||purpose.indexOf('contract')>=0) type2='รถสัมปทาน';
+      else if(r.ReqID.indexOf('0001')>=0) type2='รถเช่า';
+      else if(r.ReqID.indexOf('0002')>=0) type2='รถสัมปทาน';
+      else if(r.ReqID.indexOf('0003')>=0) type2='เคลมอุบัติ';
+      else if(r.ReqID.indexOf('0004')>=0) type2='เคลม Warranty';
+      items.forEach(function(item){
+        var iss=typeof item.IssuedQty!=='undefined'?(item.IssuedQty||0):(item.Qty||0);
+        if(iss<=0) return;
+        rows.push([type2,r.ReqID,r.JobNo,r.CustomerName,r.RequesterName||'',item.PartNo,getPartName(item.PartNo),iss]);
+      });
+    });
+  } else if(type==='technician'){
+    filename = 'รายงานตามช่าง_'+dateStr;
+    headers = ['ชื่อช่าง','ใบเบิกทั้งหมด','ดำเนินการ','รอเคลียร์','ปิดแล้ว','% ปิดงาน'];
+    var techMap={};
+    reqs.forEach(function(r){
+      var n=r.RequesterName||r.RequesterEmail||'ไม่ระบุ';
+      if(!techMap[n]) techMap[n]={name:n,total:0,inProgress:0,waitClear:0,closed:0};
+      techMap[n].total++;
+      if(r.StatusStock==='CLEARED') techMap[n].closed++;
+      else if(r.StatusStock==='PICKED_UP') techMap[n].waitClear++;
+      else techMap[n].inProgress++;
+    });
+    Object.values(techMap).forEach(function(t){
+      var pct=t.total?Math.round(t.closed/t.total*100):0;
+      rows.push([t.name,t.total,t.inProgress,t.waitClear,t.closed,pct+'%']);
+    });
+  } else if(type==='slowmove'){
+    filename = 'อะไหล่ไม่เคลื่อนไหว_'+dateStr;
+    headers = ['Part No.','ชื่ออะไหล่','หมวด','คงเหลือ','ที่เก็บ'];
+    var db=typeof PARTS_DB!=='undefined'?PARTS_DB:[];
+    db.filter(function(p){return p.inStock>50;}).slice(0,50).forEach(function(p){
+      rows.push([p.partNo,p.nameEN||p.nameTH||'-',p.group||'-',p.inStock,p.location||'-']);
+    });
+  } else {
+    // requisition (default)
+    filename = 'ใบเบิกทั้งหมด_'+dateStr;
+    headers = ['เลขใบเบิก','วันที่เบิก','Job No.','ลูกค้า','ผู้เบิก','Part No.','ชื่ออะไหล่','ขอเบิก','จ่ายจริง','ค้างจ่าย','คืน','ค้างกับช่าง','สถานะ','อายุ'];
+    reqs.forEach(function(r){
+      var age=ageDays3(r.OpenDate);
+      items.forEach(function(item){
+        var req=item.Qty||0, iss=typeof item.IssuedQty!=='undefined'?(item.IssuedQty||0):req;
+        var ret=item.ReturnedQty||0;
+        rows.push([r.ReqID,r.OpenDate,r.JobNo,r.CustomerName,r.RequesterName||'',item.PartNo,getPartName(item.PartNo),req,iss,Math.max(0,req-iss),ret,Math.max(0,iss-ret),r.StatusApproval+'/'+r.StatusStock,fmtAge3(age)]);
+      });
+    });
+  }
+
+  if(!rows.length){ toast('ไม่มีข้อมูลสำหรับรายงานนี้ค่ะ','error'); return; }
+  rows.unshift(headers);
+
+  var nl = String.fromCharCode(10);
+  var csv='\uFEFF'+rows.map(function(r){
+    return r.map(function(c){return '"'+String(c||'').replace(/"/g,'""')+'"';}).join(',');
+  }).join(nl);
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download=filename+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Export '+filename+'.csv แล้วค่ะ','success');
+}
+
+// ── เรียก renderMovementReport ตอน loadFullReport ────────────
+var _origLoadReportMovement = loadFullReport;
+loadFullReport = function(){
+  _origLoadReportMovement();
+  setTimeout(renderMovementReport, 600);
+};
+
 </script>
 
 <!-- ── STOCK CARD FORM MODAL ──────────────────────── -->
