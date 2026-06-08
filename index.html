@@ -4019,23 +4019,30 @@ function initSales(){
 
 function openNewSales(){
   _soItems = [];
-  ['soQuoteNo','soPONo','soCustName'].forEach(function(id){
+  // clear ทุก field
+  ['soQuoteNo','soPONo','soCustName','soDeliveryAddr','soNote','soDPANo'].forEach(function(id){
     var el=document.getElementById(id); if(el) el.value='';
   });
-  document.getElementById('soItemsBody').innerHTML='';
+  // clear preview
+  var prev = document.getElementById('soDocPreview');
+  if(prev) prev.textContent = '';
+
+  var body = document.getElementById('soItemsBody');
+  if(body) body.innerHTML = '';
   addSORow();
-  // reset ปุ่มเป็น mode "สร้างใหม่"
+
+  // reset ปุ่มทุกครั้ง — ป้องกัน disabled ค้าง
   var editBtn   = document.getElementById('soEditBtn');
   var submitBtn = document.getElementById('soSubmitBtn');
-  if(editBtn)   editBtn.style.display   = 'none';
-  if(submitBtn) submitBtn.style.display = '';
+  if(editBtn){   editBtn.style.display   = 'none'; }
+  if(submitBtn){ submitBtn.style.display = ''; submitBtn.disabled = false; submitBtn.textContent = '📤 ส่งให้ Stock จัด'; }
+
   var soMo = document.getElementById('soFormModal');
   if(soMo){
     soMo.removeAttribute('data-edit-sono');
     soMo.classList.remove('hidden');
     soMo.classList.add('open');
   }
-  // ตั้ง prefix ตาม type ปัจจุบัน
   onSOTypeChange();
 }
 
@@ -4259,11 +4266,12 @@ function submitSOForm(){
   var delivAddr  = (document.getElementById('soDeliveryAddr')||{}).value.trim()||'';
   var noteVal    = (document.getElementById('soNote')||{}).value.trim()||'';
 
-  if(!custName) return toast('กรุณาระบุชื่อลูกค้า / บริษัทค่ะ','error');
+  if(!custName) return toast('กรุณาระบุชื่อบริษัท / ลูกค้าค่ะ','error');
 
-  var wrap = document.getElementById('soItemsBody');
+  // เก็บ items จาก .so-row-item
+  var wrap  = document.getElementById('soItemsBody');
   var items = [];
-  var rows = wrap ? wrap.querySelectorAll('.so-row-item') : [];
+  var rows  = wrap ? wrap.querySelectorAll('.so-row-item') : [];
   rows.forEach(function(row){
     var pnEl   = row.querySelector('.so-pn');
     var nameEl = row.querySelector('.so-name');
@@ -4271,7 +4279,7 @@ function submitSOForm(){
     var idx3   = row.getAttribute('data-idx')||'0';
     var qtyEl  = document.getElementById('so_qty_'+idx3);
     var snEl   = document.getElementById('so_sn_'+idx3);
-    var noteEl = document.getElementById('so_note_'+idx3);
+    var noteEl2= document.getElementById('so_note_'+idx3);
     var pn = pnEl ? pnEl.value.trim() : '';
     if(!pn) return;
     items.push({
@@ -4280,7 +4288,7 @@ function submitSOForm(){
       qty:      parseFloat(qtyEl ? qtyEl.value : 1)||1,
       unit:     unitEl ? unitEl.value : 'ชิ้น',
       serialNo: snEl ? snEl.value : '',
-      note:     noteEl ? noteEl.value : '',
+      note:     noteEl2 ? noteEl2.value : '',
     });
   });
 
@@ -4298,34 +4306,54 @@ function submitSOForm(){
     status:       'PENDING_STOCK',
   };
 
-  // ถ้า real login แต่ Apps Script ยังไม่มี createSalesOrder → ทำ client-side
-  var soPromise;
-  if(!window._demo){
-    soPromise = callAPI('createSalesOrder', data).then(function(res){
-      if(res && res.message && res.message.indexOf('Unknown action') >= 0){
-        // Apps Script ยังไม่รองรับ — ทำ client-side แทน
-        return _soClientSide(data);
-      }
-      return res;
-    });
-  } else {
-    soPromise = callAPI('createSalesOrder', data);
-  }
-  soPromise.then(function(res){
-    if(res && res.success){
-      toast((res.message||'ส่งให้ Stock จัดแล้วค่ะ ✅'),'success');
+  // แสดง loading state
+  var submitBtn = document.getElementById('soSubmitBtn');
+  if(submitBtn){ submitBtn.disabled=true; submitBtn.textContent='⏳ กำลังบันทึก...'; }
+
+  function doSave(useClientSide){
+    if(useClientSide || window._demo){
+      // บันทึก client-side
+      var res = _soClientSide(data);
+      toast(res.message||'ส่งให้ Stock จัดแล้วค่ะ ✅','success');
       closeModal('soFormModal');
       initSales();
-    } else {
-      toast((res&&res.message)||'เกิดข้อผิดพลาดค่ะ','error');
+      if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent='📤 ส่งให้ Stock จัด'; }
+      return;
     }
-  }).catch(function(e){
-    // fallback client-side ถ้า network error
-    _soClientSide(data);
-    toast('บันทึกแบบออฟไลน์แล้วค่ะ (Apps Script ยังไม่ได้ Deploy)','info');
-    closeModal('soFormModal');
-    initSales();
-  });
+    // ลอง Apps Script
+    fetch(SCRIPT_URL, {
+      method:'POST',
+      body:JSON.stringify({action:'createSalesOrder', data:data, userEmail:CU?CU.email:''})
+    })
+    .then(function(r){
+      // ตรวจว่า response เป็น JSON จริงไหม
+      var ct = r.headers.get('content-type')||'';
+      if(ct.indexOf('application/json')<0) throw new Error('not_json');
+      return r.json();
+    })
+    .then(function(res){
+      if(res && res.success){
+        toast(res.message||'ส่งให้ Stock จัดแล้วค่ะ ✅','success');
+        closeModal('soFormModal');
+        initSales();
+      } else if(res && res.message && (res.message.indexOf('Unknown action')>=0 || res.message.indexOf('Error')>=0)){
+        // Apps Script ยังไม่รองรับ → client-side
+        doSave(true);
+      } else {
+        toast((res&&res.message)||'เกิดข้อผิดพลาดค่ะ','error');
+      }
+    })
+    .catch(function(e){
+      // Apps Script ไม่ตอบ หรือ error → client-side fallback
+      console.warn('SO API error:', e.message, '→ using client-side');
+      doSave(true);
+    })
+    .finally(function(){
+      if(submitBtn){ submitBtn.disabled=false; submitBtn.textContent='📤 ส่งให้ Stock จัด'; }
+    });
+  }
+
+  doSave(false);
 }
 
 
@@ -6432,17 +6460,95 @@ loadSCForPart = function(p){
 
 
 function openSOEdit(soNo){
-  // เปิด modal พร้อมข้อมูลเดิมเพื่อแก้ไข
+  // เปิด modal ว่างก่อน
   openNewSales();
-  document.getElementById('soEditBtn').style.display = '';
-  document.getElementById('soSubmitBtn').style.display = 'none';
-  document.getElementById('soFormModal').setAttribute('data-edit-sono', soNo);
+
+  // ซ่อนปุ่ม submit แสดงปุ่ม edit
+  var editBtn   = document.getElementById('soEditBtn');
+  var submitBtn = document.getElementById('soSubmitBtn');
+  if(editBtn)   editBtn.style.display   = '';
+  if(submitBtn) submitBtn.style.display = 'none';
+
+  var soMo = document.getElementById('soFormModal');
+  if(soMo) soMo.setAttribute('data-edit-sono', soNo);
+
+  // โหลดข้อมูลเดิมมาใส่ form
+  var found = (window._soDemoOrders||[]).find(function(o){ return o.SONo===soNo; });
+  if(!found){
+    // ลอง static demo
+    found = [{SONo:'SO-DEMO-001',docNo:'PTPK69-001',custName:'บริษัท ทดสอบ จำกัด',
+              deliveryAddr:'',note:'',orderType:'SALE',items:[]}]
+             .find(function(o){ return o.SONo===soNo; });
+  }
+
+  if(found){
+    // ตั้ง orderType
+    var typeEl = document.getElementById('soOrderType');
+    if(typeEl && found.orderType){ typeEl.value = found.orderType; onSOTypeChange(); }
+
+    // ใส่ docNo (เอาเฉพาะส่วนหลัง prefix)
+    if(found.docNo){
+      var pfxEl = document.getElementById('soDocPrefix');
+      var pfx   = pfxEl ? pfxEl.textContent : '';
+      var num   = found.docNo.startsWith(pfx) ? found.docNo.slice(pfx.length) : found.docNo;
+      var numEl = document.getElementById('soQuoteNo');
+      if(numEl) numEl.value = num;
+      updateSODocPreview();
+    }
+
+    // ใส่ลูกค้า + สถานที่
+    var custEl = document.getElementById('soCustName');
+    var addrEl = document.getElementById('soDeliveryAddr');
+    var noteEl = document.getElementById('soNote');
+    if(custEl) custEl.value = found.custName||found.CustName||'';
+    if(addrEl) addrEl.value = found.deliveryAddr||found.DeliveryAddr||'';
+    if(noteEl) noteEl.value = found.note||found.Note||'';
+
+    // เพิ่ม items เดิม
+    var items = found.items||found.Items||[];
+    var body  = document.getElementById('soItemsBody');
+    if(body) body.innerHTML = ''; // clear แล้วเพิ่มใหม่
+    if(items.length){
+      items.forEach(function(item){
+        addSORow();
+        var rows = body.querySelectorAll('.so-row-item');
+        var row  = rows[rows.length-1];
+        if(!row) return;
+        var pnInput   = row.querySelector('.so-pn');
+        var nameInput = row.querySelector('.so-name');
+        var unitInput = row.querySelector('.so-unit');
+        var idx3      = row.getAttribute('data-idx')||'0';
+        var qtyEl     = document.getElementById('so_qty_'+idx3);
+        var snEl      = document.getElementById('so_sn_'+idx3);
+        if(pnInput)   pnInput.value   = item.partNo||'';
+        if(nameInput) nameInput.value = item.nameEN||'';
+        if(unitInput) unitInput.value = item.unit||'ชิ้น';
+        if(qtyEl)     qtyEl.value     = item.qty||1;
+        if(snEl)      snEl.value      = item.serialNo||'';
+        // แสดง selected badge
+        var selected = row.querySelector('.so-part-selected');
+        var pno      = row.querySelector('.so-sel-pno');
+        var pname    = row.querySelector('.so-sel-name');
+        var search   = row.querySelector('.so-part-search');
+        if(selected && item.partNo){
+          selected.style.display='flex';
+          if(pno)   pno.textContent   = item.partNo;
+          if(pname) pname.textContent = item.nameEN||'';
+          if(search) search.style.display='none';
+        }
+      });
+    } else {
+      addSORow(); // เพิ่มแถวว่าง 1 แถว
+    }
+  }
+
   toast('แก้ไขข้อมูลแล้วกด "บันทึกแก้ไข" เพื่อส่งขออนุมัติใหม่ค่ะ','info');
 }
 
 function submitSOEdit(){
   var soNo = document.getElementById('soFormModal').getAttribute('data-edit-sono')||'';
   if(!soNo) return toast('ไม่พบเลขที่เอกสารค่ะ','error');
+
   var type    = (document.getElementById('soOrderType')||{}).value||'SALE';
   var pfxEl   = document.getElementById('soDocPrefix');
   var numEl   = document.getElementById('soQuoteNo');
@@ -6451,11 +6557,79 @@ function submitSOEdit(){
   if(!num) return toast('กรุณาระบุเลขที่เอกสารค่ะ','error');
 
   var custName = (document.getElementById('soCustName')||{}).value.trim()||'';
-  if(!custName) return toast('กรุณาระบุชื่อลูกค้าค่ะ','error');
+  if(!custName) return toast('กรุณาระบุชื่อบริษัท / ลูกค้าค่ะ','error');
+
+  var fullDocNo  = pfx + num;
+  var dpaPrefix  = (document.getElementById('soDPAPrefix')||{}).textContent||'';
+  var dpaNum     = (document.getElementById('soDPANo')||{}).value||'';
+  var delivAddr  = (document.getElementById('soDeliveryAddr')||{}).value.trim()||'';
+  var noteVal    = (document.getElementById('soNote')||{}).value.trim()||'';
+
+  // เก็บ items
+  var wrap  = document.getElementById('soItemsBody');
+  var items = [];
+  var rows  = wrap ? wrap.querySelectorAll('.so-row-item') : [];
+  rows.forEach(function(row){
+    var pnEl   = row.querySelector('.so-pn');
+    var nameEl = row.querySelector('.so-name');
+    var unitEl = row.querySelector('.so-unit');
+    var idx3   = row.getAttribute('data-idx')||'0';
+    var qtyEl  = document.getElementById('so_qty_'+idx3);
+    var pn = pnEl ? pnEl.value.trim() : '';
+    if(!pn) return;
+    items.push({
+      partNo: pn,
+      nameEN: nameEl ? nameEl.value : '',
+      qty:    parseFloat(qtyEl ? qtyEl.value : 1)||1,
+      unit:   unitEl ? unitEl.value : 'ชิ้น',
+    });
+  });
+  if(!items.length) return toast('กรุณาเพิ่มรายการอะไหล่อย่างน้อย 1 รายการค่ะ','error');
+
+  // อัปเดตใน _soDemoOrders
+  if(window._soDemoOrders){
+    var idx4 = window._soDemoOrders.findIndex(function(o){ return o.SONo===soNo; });
+    if(idx4 >= 0){
+      window._soDemoOrders[idx4] = Object.assign(window._soDemoOrders[idx4], {
+        orderType:    type,
+        docNo:        fullDocNo,
+        dpaNo:        dpaPrefix + dpaNum,
+        custName:     custName,
+        deliveryAddr: delivAddr,
+        note:         noteVal,
+        items:        items,
+        status:       'PENDING_STOCK', // reset status → ขออนุมัติใหม่
+        updatedAt:    new Date().toISOString(),
+      });
+    }
+  }
+
+  // ส่งไป Apps Script ถ้าทำได้
+  if(!window._demo && typeof SCRIPT_URL !== 'undefined'){
+    fetch(SCRIPT_URL, {
+      method:'POST',
+      body:JSON.stringify({action:'updateSalesOrder',
+        data:{soNo:soNo, docNo:fullDocNo, custName:custName,
+              deliveryAddr:delivAddr, note:noteVal, items:items, status:'PENDING_STOCK'},
+        userEmail: CU?CU.email:''})
+    }).catch(function(){});
+  }
 
   toast('บันทึกการแก้ไขแล้ว ส่งขออนุมัติ ผจก. ใหม่ค่ะ ✅','success');
   closeModal('soFormModal');
   initSales();
+}
+
+function _soClientSide(data){
+  if(!window._soDemoOrders) window._soDemoOrders = [];
+  var yy  = String(new Date().getFullYear() + 543).slice(-2);
+  var seq = String(window._soDemoOrders.length + 1).padStart(4,'0');
+  var soNo = 'SO-PK-'+yy+'-'+seq;
+  window._soDemoOrders.unshift(Object.assign({}, data, {
+    SONo: soNo, Status:'PENDING_STOCK',
+    CreatedAt: new Date().toISOString(),
+  }));
+  return {success:true, message:'บันทึกแล้วค่ะ ('+soNo+')'};
 }
 </script>
 
