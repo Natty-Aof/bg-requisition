@@ -6495,60 +6495,62 @@ function generateSCPartQR(partNo, nameEN, location){
 
   var container = document.getElementById('scQRContainer');
   if(!container) return;
-  container.innerHTML = '<div style="font-size:10px;color:var(--g400);text-align:center;padding:20px">⏳</div>';
+  container.innerHTML = '<div style="font-size:10px;color:#888;text-align:center;padding:20px">⏳</div>';
 
-  function doRender(){
-    // qrcode-generator API: window.qrcode(typeNumber, errorLevel)
-    if(typeof qrcode === 'undefined'){
-      setTimeout(doRender, 300);
-      return;
-    }
+  function drawQR(){
+    if(typeof qrcode === 'undefined'){ setTimeout(drawQR, 250); return; }
     try {
-      var qr = qrcode(0, 'M');
+      // หา type number ที่พอดีกับข้อมูล (auto-detect)
+      var typeNum = 5; // type 5 รองรับ ~64 chars M level
+      var qr = qrcode(typeNum, 'M');
       qr.addData(qrData);
       qr.make();
-      // สร้างเป็น SVG string แล้วแปลงเป็น data URI
-      var svg = qr.createSvgTag({
-        scalable: true,
-        margin: 1,
-        cellColor: '#1a4a2e',
-        bgColor: '#ffffff'
-      });
-      // encode เป็น data URI
-      var svgEncoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-      container.innerHTML =
-        '<img id="scQRImg" src="' + svgEncoded + '" '
-        + 'style="width:120px;height:120px;display:block;border-radius:6px">';
-    } catch(e){
-      // fallback: createImgTag (ใช้ table HTML → canvas)
-      try {
-        var qr2 = qrcode(0, 'M');
-        qr2.addData(qrData);
-        qr2.make();
-        var cellSize = 4;
-        var margin   = 4;
-        var cv = document.createElement('canvas');
-        var size = qr2.getModuleCount() * cellSize + margin * 2;
-        cv.width = cv.height = size;
-        var ctx = cv.getContext('2d');
-        ctx.fillStyle = '#fff'; ctx.fillRect(0,0,size,size);
-        ctx.fillStyle = '#1a4a2e';
-        for(var row=0; row<qr2.getModuleCount(); row++){
-          for(var col=0; col<qr2.getModuleCount(); col++){
-            if(qr2.isDark(row,col)){
-              ctx.fillRect(margin+col*cellSize, margin+row*cellSize, cellSize, cellSize);
-            }
+
+      // วาดลง canvas
+      var n  = qr.getModuleCount();
+      var cs = Math.max(3, Math.floor(116 / n)); // cell size
+      var mg = 4;
+      var sz = n * cs + mg * 2;
+      var cv = document.createElement('canvas');
+      cv.width = cv.height = sz;
+      var ctx = cv.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, sz, sz);
+      ctx.fillStyle = '#1a4a2e';
+      for(var r = 0; r < n; r++){
+        for(var c = 0; c < n; c++){
+          if(qr.isDark(r, c)){
+            ctx.fillRect(mg + c*cs, mg + r*cs, cs, cs);
           }
         }
-        var dataUrl = cv.toDataURL('image/png');
-        container.innerHTML = '<img id="scQRImg" src="'+dataUrl+'" style="width:120px;height:120px;display:block;border-radius:6px">';
+      }
+      var dataUrl = cv.toDataURL('image/png');
+      container.innerHTML =
+        '<img id="scQRImg" src="'+dataUrl+'" '
+        +'style="width:120px;height:120px;display:block;border-radius:6px">';
+      container.style.background = '#fff';
+
+    } catch(e){
+      console.warn('QR error:', e.message);
+      // ลอง type สูงกว่า
+      try {
+        var qr2 = qrcode(10, 'L');
+        qr2.addData(partNo); // ใช้แค่ Part No. ถ้า full data fail
+        qr2.make();
+        var n2=qr2.getModuleCount(), cs2=Math.max(3,Math.floor(116/n2)), mg2=4, sz2=n2*cs2+mg2*2;
+        var cv2=document.createElement('canvas'); cv2.width=cv2.height=sz2;
+        var ctx2=cv2.getContext('2d');
+        ctx2.fillStyle='#fff'; ctx2.fillRect(0,0,sz2,sz2);
+        ctx2.fillStyle='#1a4a2e';
+        for(var r2=0;r2<n2;r2++) for(var c2=0;c2<n2;c2++)
+          if(qr2.isDark(r2,c2)) ctx2.fillRect(mg2+c2*cs2,mg2+r2*cs2,cs2,cs2);
+        container.innerHTML='<img id="scQRImg" src="'+cv2.toDataURL('image/png')+'" style="width:120px;height:120px;display:block;border-radius:6px">';
       } catch(e2){
-        container.innerHTML = '<div style="font-size:9px;color:#888;text-align:center;padding:10px">QR: '+partNo+'</div>';
-        console.warn('QR error:', e2);
+        container.innerHTML='<div style="padding:8px;font-size:9px;color:#888;text-align:center;word-break:break-all">'+partNo+'</div>';
       }
     }
   }
-  doRender();
+  setTimeout(drawQR, 100);
 }
 
 function downloadSCPartQR(){
@@ -6800,7 +6802,7 @@ function printQRLabel(partList){
 
   function makeQRDataUrl(data){
     try {
-      var qr = qrcode(0,'M');
+      var qr = qrcode(5,'M');  // type 5 = รองรับ ~64 chars
       qr.addData(data); qr.make();
       var cs=5, mg=4;
       var sz=qr.getModuleCount()*cs+mg*2;
@@ -6898,7 +6900,7 @@ function getSCQRDataURL(cb){
   // สร้างใหม่ด้วย qrcode-generator
   if(typeof qrcode !== 'undefined' && window._scQRData){
     try {
-      var qr3 = qrcode(0, 'M');
+      var qr3 = qrcode(5, 'M');
       qr3.addData(window._scQRData);
       qr3.make();
       var cv3 = document.createElement('canvas');
