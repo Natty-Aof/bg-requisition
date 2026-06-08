@@ -5291,15 +5291,17 @@ document.addEventListener('click', function(e){
 // Outstanding   = Issued - Returned
 // ════════════════════════════════════════════════════════════
 
+function cleanPartName(s){
+  if(!s) return '';
+  return String(s).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'').replace(/\s+/g,' ').trim();
+}
 function getPartName(partNo){
-  // ดึงชื่ออะไหล่จาก PARTS_DB
   if(typeof PARTS_DB !== 'undefined'){
     var p = PARTS_DB.find(function(x){ return x.partNo === partNo; });
-    if(p && (p.nameEN||p.nameTH)) return p.nameEN||p.nameTH;
+    if(p && (p.nameEN||p.nameTH)) return cleanPartName(p.nameEN||p.nameTH);
   }
-  // fallback: ดูจาก DEMO_ITEMS
   var di = (typeof DEMO_ITEMS!=='undefined'?DEMO_ITEMS:[]).find(function(i){return i.PartNo===partNo;});
-  if(di && (di.NameEN||di.NameTH)) return di.NameEN||di.NameTH;
+  if(di && (di.NameEN||di.NameTH)) return cleanPartName(di.NameEN||di.NameTH);
   console.warn('[Report] ไม่พบชื่ออะไหล่สำหรับ Part No.:', partNo);
   return '—';
 }
@@ -6487,7 +6489,20 @@ function loadSCPartImg(partNo){
 
 // ── Stock Card: QR Code ──────────────────────────────────────
 function generateSCPartQR(partNo, nameEN, location){
-  var qrData = partNo + '|' + (nameEN||'') + '|' + (location||'');
+  // ทำความสะอาด string — ลบ control characters ที่มาจาก SAP/Excel
+  function cleanStr(s){
+    if(!s) return '';
+    return String(s)
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // ลบ control chars
+      .replace(/\s+/g, ' ')   // normalize whitespace
+      .trim();
+  }
+  var cleanPart = cleanStr(partNo);
+  var cleanName = cleanStr(nameEN);
+  var cleanLoc  = cleanStr(location);
+
+  // QR data: PartNo|ชื่ออะไหล่|Location (clean เท่านั้น)
+  var qrData = cleanPart + '|' + cleanName + '|' + cleanLoc;
   window._scQRData   = qrData;
   window._scQRPartNo = partNo;
   window._scQRName   = nameEN||'';
@@ -6819,7 +6834,8 @@ function printQRLabel(partList){
   }
 
   var labels = partList.map(function(p){
-    var qrData = p.partNo+'|'+(p.nameEN||p.nameTH||'')+'|'+(p.location||'');
+    function clean2(s){ return s?String(s).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'').replace(/\s+/g,' ').trim():''; }
+    var qrData = clean2(p.partNo)+'|'+clean2(p.nameEN||p.nameTH||'')+'|'+clean2(p.location||'');
     var url    = makeQRDataUrl(qrData);
     var name   = p.nameEN||p.nameTH||'—';
     var short  = name.length>32 ? name.slice(0,30)+'…' : name;
