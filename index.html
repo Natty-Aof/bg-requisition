@@ -1303,16 +1303,17 @@ var _DEMO_PART_IMGS = {
 (function(){ Object.assign(_partImages, _DEMO_PART_IMGS); })();
 
 var DEMO_ITEMS = [
-  {PartNo:'01BPB000010396',NameTH:'แบตเตอรี่ 6V',NameEN:'BATTERY 6V TROJAN T105',Qty:12,IssuedQty:12,Unit:'ก้อน',SerialNo:'',Note:'48V System'},
-  {PartNo:'05-16U291',NameTH:'ลูกปืน',NameEN:'BEARING 6205',Qty:4,IssuedQty:3,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'07-16290250',NameTH:'ซีลเพลาล่าง',NameEN:'SEAL LOWER SHAFT',Qty:3,IssuedQty:3,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'02-23U700014',NameTH:'ยางโอริง',NameEN:'O-RING STEERING',Qty:2,IssuedQty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'03PGL0000010155836',NameTH:'บูชยูรีเทน',NameEN:'BUSHING URETHANE 29mm',Qty:6,IssuedQty:5,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'01PGC0000000007048',NameTH:'บูชสำริด',NameEN:'BUSHING FLANGED BRONZE',Qty:4,IssuedQty:4,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'03SPP0000000WS0022',NameTH:'น้ำกลั่น',NameEN:'น้ำกลั่น แบบขวด',Qty:8,IssuedQty:8,Unit:'ขวด',SerialNo:'',Note:''},
-  {PartNo:'01PGC0001029562016',NameTH:'บูชยูรีเทนสั้น',NameEN:'BUSHING URETHANE SHORT',Qty:3,IssuedQty:3,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'01PGC0000001012303',NameTH:'บูชเหล็ก',NameEN:'BUSHING STEEL GAS CAR',Qty:2,IssuedQty:2,Unit:'ชิ้น',SerialNo:'',Note:''},
-  {PartNo:'03PGL0000001016346',NameTH:'บูชยูรีเทนสีน้ำเงิน',NameEN:'BUSHING URETHANE BLUE',Qty:5,IssuedQty:4,Unit:'ชิ้น',SerialNo:'',Note:''},
+  // Qty=จำนวนขอเบิก, IssuedQty=จ่ายจริง, ReturnedQty=คืนกลับ
+  {PartNo:'01BPB000010396',  NameTH:'แบตเตอรี่ 6V',    NameEN:'BATTERY 6V TROJAN T105',     Qty:12,IssuedQty:12,ReturnedQty:0, Unit:'ก้อน',  SerialNo:'',Note:'48V System'},
+  {PartNo:'05-16U291',       NameTH:'ลูกปืน',          NameEN:'BEARING 6205',               Qty:4, IssuedQty:3, ReturnedQty:0, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'07-16290250',     NameTH:'ซีลเพลาล่าง',     NameEN:'SEAL LOWER SHAFT',           Qty:3, IssuedQty:3, ReturnedQty:1, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'02-23U700014',    NameTH:'ยางโอริง',         NameEN:'O-RING STEERING',            Qty:2, IssuedQty:2, ReturnedQty:0, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'03PGL0000010155836',NameTH:'บูชยูรีเทน',   NameEN:'BUSHING URETHANE 29mm',      Qty:6, IssuedQty:5, ReturnedQty:0, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'01PGC0000000007048',NameTH:'บูชสำริด',     NameEN:'BUSHING FLANGED BRONZE',     Qty:4, IssuedQty:4, ReturnedQty:2, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'03SPP0000000WS0022',NameTH:'น้ำกลั่น',     NameEN:'น้ำกลั่น แบบขวด',           Qty:8, IssuedQty:8, ReturnedQty:0, Unit:'ขวด',   SerialNo:'',Note:''},
+  {PartNo:'01PGC0001029562016',NameTH:'บูชยูรีเทนสั้น',NameEN:'BUSHING URETHANE SHORT',    Qty:3, IssuedQty:3, ReturnedQty:0, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'01PGC0000001012303',NameTH:'บูชเหล็ก',     NameEN:'BUSHING STEEL GAS CAR',     Qty:2, IssuedQty:2, ReturnedQty:0, Unit:'ชิ้น',  SerialNo:'',Note:''},
+  {PartNo:'03PGL0000001016346',NameTH:'บูชยูรีเทนน้ำเงิน',NameEN:'BUSHING URETHANE BLUE', Qty:5, IssuedQty:4, ReturnedQty:0, Unit:'ชิ้น',  SerialNo:'',Note:''},
 ];
 var DEMO_REQS = [
   {ReqID:'PKT-BR-2569-0001',JobNo:'2569030606',CustomerName:'คัมปัส ยีส',OpenDate:'16/04/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'',SerialNos:'FO-02',Purpose:'รถเช่า, เคลมไม่ได้',StatusApproval:'APPROVED',StatusStock:'CLEARED',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-04-16T10:30:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-04-16T11:00:00Z',ManagerNote:'',StockHandlerEmail:'Hathaichanok@beyond-green.co.th',StockAcknowledgedAt:'2026-04-16T11:30:00Z',ClosedAt:'2026-04-17T09:00:00Z',ClosedNote:'เรียบร้อย',IMNumber:'IM-2569-00099',CreatedAt:'2026-04-16T09:00:00Z',PickedUpAt:'2026-04-16T12:00:00Z'},
@@ -1520,7 +1521,37 @@ function mockAPI(action, data){
   if(action==='approveSupervisor') return {success:true,message:'อนุมัติโดยหัวหน้าช่างแล้ว'};
   if(action==='approveManager') return {success:true,message:'อนุมัติโดยผจก.แล้ว'};
   if(action==='rejectRequisition') return {success:true,message:'ปฏิเสธใบเบิกแล้ว'};
-  if(action==='stockAcknowledge') return {success:true,message:'รับจัดของแล้ว'};
+  if(action==='stockAcknowledge'){
+    var req4 = DEMO_REQS.find(function(r){ return r.ReqID===data.id; });
+    if(req4){
+      req4.StatusStock = 'ACKNOWLEDGED';
+      req4.StockAcknowledgedAt = new Date().toISOString();
+      var items4 = data.dispatchedItems||[];
+      req4.DispatchedItems = items4;
+      // อัปเดต DEMO_ITEMS.IssuedQty
+      items4.forEach(function(it){
+        var di = DEMO_ITEMS.find(function(d){ return d.PartNo===it.partNo; });
+        if(di){ di.IssuedQty = it.actualQty||0; di.ReturnedQty = di.ReturnedQty||0; }
+      });
+      // บันทึก Stock Card — OUT transaction
+      if(!window._scDemoEntries) window._scDemoEntries=[];
+      var today4 = new Date().toLocaleDateString('th-TH');
+      items4.forEach(function(it){
+        if((it.actualQty||0)>0){
+          window._scDemoEntries.push({
+            Date:today4, Type:'OUT_REQ', DocNo:req4.ReqID,
+            PartNo:it.partNo, NameEN:it.nameEN||'',
+            Qty:it.actualQty, Unit:it.unit||'ชิ้น',
+            Requester:req4.RequesterName||req4.RequesterEmail||'',
+            JobNo:req4.JobNo||'', Customer:req4.CustomerName||'',
+            Purpose:req4.Purpose||'',
+            Note:it.shortQty>0?'จ่ายบางส่วน ขาด '+it.shortQty+' '+it.unit:'',
+          });
+        }
+      });
+    }
+    return {success:true, message:(data.dispatchedItems||[]).some(function(it){return(it.shortQty||0)>0;})?'จัดของแล้ว — มีของขาด':'จัดของครบแล้วค่ะ ✅'};
+  }
   if(action==='closeRequisition') return {success:true,message:'ปิดงานเรียบร้อย'};
   if(action==='getJobHistory') return {success:true,data:['2569030606','2569030707']};
   if(action==='savePartToDB') return {success:true,message:'บันทึกแล้ว'};
@@ -1534,7 +1565,36 @@ function mockAPI(action, data){
     if(r2){ r2.StatusStock='PICKED_UP'; r2.PickedUpAt=new Date().toISOString(); }
     return {success:true,message:'ยืนยันรับอะไหล่แล้วค่ะ แจ้ง Stock เรียบร้อย'};
   }
-  if(action==='submitClearance') return {success:true,message:'ส่งเคลียร์ให้ Admin แล้วค่ะ'};
+  if(action==='submitClearance'){
+    var req5 = DEMO_REQS.find(function(r){ return r.ReqID===data.id; });
+    if(req5){
+      req5.StatusStock = 'CLEARED';
+      req5.ClosedAt    = new Date().toISOString();
+      req5.ClosedNote  = data.note||'';
+      req5.IMNumber    = data.imNumber||'';
+      // บันทึก return items
+      var retItems = data.returnedItems||[];
+      if(!window._scDemoEntries) window._scDemoEntries=[];
+      var today5 = new Date().toLocaleDateString('th-TH');
+      retItems.forEach(function(it){
+        var retQty = parseFloat(it.returnedQty)||0;
+        if(retQty>0){
+          window._scDemoEntries.push({
+            Date:today5, Type:'RETURN', DocNo:req5.ReqID,
+            PartNo:it.partNo||it.PartNo, NameEN:it.nameEN||it.NameEN||'',
+            Qty:retQty, Unit:it.unit||'ชิ้น',
+            Requester:req5.RequesterName||req5.RequesterEmail||'',
+            JobNo:req5.JobNo||'', Customer:req5.CustomerName||'',
+            Purpose:'คืนอะไหล่', Note:'คืนจากช่าง',
+          });
+          // อัปเดต ReturnedQty ใน DEMO_ITEMS
+          var di5 = DEMO_ITEMS.find(function(d){ return d.PartNo===(it.partNo||it.PartNo); });
+          if(di5) di5.ReturnedQty = (di5.ReturnedQty||0) + retQty;
+        }
+      });
+    }
+    return {success:true,message:'เคลียร์ใบเบิกแล้วค่ะ ✅'};
+  }
   if(action==='rejectClearance') return {success:true,message:'ส่งกลับช่างแล้วค่ะ'};
   return {success:true,data:[]};
 }
@@ -4945,27 +5005,48 @@ function renderSCForPart(){
   });
 
   // เพิ่ม demo entries ที่บันทึกมา (จาก _scDemoEntries)
-  var demoNew = (window._scDemoEntries||[]).filter(function(e){ return e.PartNo===p.partNo; });
+  // _scDemoEntries: entries จาก mock stockAcknowledge / submitClearance / submitSCForm
+  // fields: {Date, Type, DocNo, PartNo, NameEN, Qty, Unit, Requester, JobNo, Customer, Purpose, Note}
+  var demoNew = (window._scDemoEntries||[])
+    .filter(function(e){ return e.PartNo===p.partNo; })
+    .sort(function(a,b){ return (a.Date||'').localeCompare(b.Date||''); });
+
   var runBalance = p.inStock||0;
-  // คำนวณ balance ไล่ลำดับ
+  // คำนวณ balance ถอยหลังจากยอดปัจจุบัน
+  // ก่อนอื่น: หาว่าตอนนี้ออกไปเท่าไหร่
   demoNew.forEach(function(e){
-    var isIn = e.Type==='IN'||e.Type==='ADJUST';
-    if(isIn) runBalance += (e.Qty||0);
-    else runBalance -= (e.Qty||0);
+    var isIn = e.Type==='IN'||e.Type==='ADJUST'||e.Type==='RETURN';
+    if(!isIn) runBalance += (e.Qty||0); // รวม OUT ที่ออกไปแล้ว = stock ก่อนออก
+  });
+  // แล้ว render ไล่จาก INIT
+  demoNew.forEach(function(e){
+    var isIn = e.Type==='IN'||e.Type==='ADJUST'||e.Type==='RETURN';
+    if(isIn)  runBalance += (e.Qty||0);
+    else       runBalance -= (e.Qty||0);
+    // ใช้ทั้ง DocNo และ RefNo (รองรับ 2 field format)
+    var docNo    = e.DocNo || e.RefNo || '—';
+    var dateStr  = e.Date || (e.CreatedAt ? new Date(e.CreatedAt).toLocaleDateString('th-TH') : '—');
+    var requester= e.Requester || (CU ? CU.name||CU.email : '—');
+    var typeMap2 = {
+      'OUT_REQ':'OUT_REQ','OUT_RENTAL':'OUT_RENTAL','OUT_CONTRACT':'OUT_CONTRACT',
+      'OUT_ACCIDENT':'OUT_ACCIDENT','OUT_WARRANTY':'OUT_WARRANTY',
+      'OUT_SALE':'OUT_SALE','OUT_BRANCH':'OUT_BRANCH','OUT_HQ':'OUT_HQ','OUT_OTHER':'OUT_OTHER',
+      'IN':'IN','ADJUST':'ADJUST','RETURN':'RETURN'
+    };
     allEntries.push({
-      EntryID: e.EntryID,
-      Date: new Date(e.CreatedAt).toLocaleDateString('th-TH'),
-      Type: e.Type,
-      DocNo: e.RefNo||'—',
-      Requester: CU ? CU.name||CU.email : '—',
-      JobNo: '—',
-      Customer: '—',
-      Purpose: e.Note||'—',
-      QtyIn:  isIn ? e.Qty : 0,
-      QtyOut: isIn ? 0 : e.Qty,
-      Balance: Math.max(0, runBalance),
-      Unit: e.Unit||p.unit||'ชิ้น',
-      Note: e.Note||''
+      EntryID:  e.EntryID || ('DEMO-'+Date.now()+Math.random()),
+      Date:     dateStr,
+      Type:     typeMap2[e.Type] || e.Type,
+      DocNo:    docNo,
+      Requester:requester,
+      JobNo:    e.JobNo||'—',
+      Customer: e.Customer||'—',
+      Purpose:  e.Purpose||e.Note||'—',
+      QtyIn:    isIn ? (e.Qty||0) : 0,
+      QtyOut:   isIn ? 0 : (e.Qty||0),
+      Balance:  Math.max(0, runBalance),
+      Unit:     e.Unit||p.unit||'ชิ้น',
+      Note:     e.Note||''
     });
   });
 
@@ -5008,20 +5089,25 @@ function renderSCForPart(){
   }
 
   var typeLabel = {
-    'INIT':       '🏁 ยอดยกมา',
-    'IN':         '📥 รับเข้า',
-    'ADJUST':     '⚖️ ปรับยอด',
-    'OUT_SALE':   '🛒 ขาย',
-    'OUT_REQ':    '📋 ใบเบิก',
-    'OUT_RENTAL': '🚗 รถเช่า',
-    'OUT_CONTRACT':'🚌 รถสัมปทาน',
-    'OUT_WARRANTY':'🔧 Warranty',
-    'OUT_BRANCH': '🏢 ส่งสาขา',
+    'INIT':         '🏁 ยอดยกมา',
+    'IN':           '📥 รับเข้า',
+    'ADJUST':       '⚖️ ปรับยอด',
+    'RETURN':       '↩️ คืนของ',
+    'OUT_SALE':     '🛒 ขาย',
+    'OUT_REQ':      '📋 ใบเบิก',
+    'OUT_RENTAL':   '🚗 รถเช่า',
+    'OUT_CONTRACT': '🚌 รถสัมปทาน',
+    'OUT_ACCIDENT': '⚠️ เคลมอุบัติ',
+    'OUT_WARRANTY': '🔧 Warranty',
+    'OUT_BRANCH':   '🏢 ส่งสาขา',
+    'OUT_HQ':       '🏛️ คืน สนญ.',
+    'OUT_OTHER':    '📌 นอกเขต',
   };
   var typeChipClass = {
-    'INIT':'chip-grn','IN':'chip-grn','ADJUST':'chip-blu',
+    'INIT':'chip-grn','IN':'chip-grn','ADJUST':'chip-blu','RETURN':'chip-grn',
     'OUT_SALE':'chip-red','OUT_REQ':'chip-gld','OUT_RENTAL':'chip-red',
-    'OUT_CONTRACT':'chip-red','OUT_WARRANTY':'chip-red','OUT_BRANCH':'chip-red'
+    'OUT_CONTRACT':'chip-red','OUT_ACCIDENT':'chip-red','OUT_WARRANTY':'chip-red',
+    'OUT_BRANCH':'chip-red','OUT_HQ':'chip-gry','OUT_OTHER':'chip-red'
   };
 
   var canDel = CU && CU.role === 'MANAGER';
@@ -5255,7 +5341,17 @@ function loadFullReport(){
   var total     = reqs.length;
   var waitAppr  = reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER';}).length;
   var waitStock = reqs.filter(function(r){return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING';}).length;
-  var partIssued= reqs.filter(function(r){return r.StatusStock==='PARTIAL';}).length; // จ่ายบางส่วน
+  // จ่ายบางส่วน = ใบเบิกที่อนุมัติแล้ว ยังไม่ปิด และมีอย่างน้อย 1 item ที่ IssuedQty < Qty
+  var items4kpi = typeof DEMO_ITEMS !== 'undefined' ? DEMO_ITEMS : [];
+  var partIssued = reqs.filter(function(r){
+    if(r.StatusStock==='CLEARED') return false;
+    if(r.StatusApproval!=='APPROVED') return false;
+    return items4kpi.some(function(item){
+      var req = item.Qty||0;
+      var iss = typeof item.IssuedQty!=='undefined' ? (item.IssuedQty||0) : req;
+      return req > 0 && iss >= 0 && iss < req; // จ่ายบางส่วน = issued < requested
+    });
+  }).length;
   var inUse     = reqs.filter(function(r){return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP';}).length;
   var waitClear = reqs.filter(function(r){return r.StatusStock==='PICKED_UP';}).length;
   var closed    = reqs.filter(function(r){return r.StatusStock==='CLEARED';}).length;
@@ -6392,8 +6488,6 @@ function loadSCPartImg(partNo){
 // ── Stock Card: QR Code ──────────────────────────────────────
 function generateSCPartQR(partNo, nameEN, location){
   var qrData = partNo + '|' + (nameEN||'') + '|' + (location||'');
-
-  // เก็บ metadata
   window._scQRData   = qrData;
   window._scQRPartNo = partNo;
   window._scQRName   = nameEN||'';
@@ -6402,56 +6496,66 @@ function generateSCPartQR(partNo, nameEN, location){
   var container = document.getElementById('scQRContainer');
   if(!container) return;
 
-  // clear เดิมก่อน
-  container.innerHTML = '';
-  container.style.cssText = 'width:120px;height:120px;display:flex;align-items:center;justify-content:center;background:#f0faf5;border-radius:8px;border:1px solid var(--g200)';
-
-  function tryRender(){
-    if(typeof QRCode === 'undefined'){
-      // ยังไม่โหลด — รอแล้วลองใหม่
-      setTimeout(tryRender, 200);
-      return;
+  // ── วิธีที่ 1: ใช้ qrcodejs (ถ้า library โหลดแล้ว) ──────────
+  function tryQRCodeJS(){
+    if(typeof QRCode !== 'undefined'){
+      try {
+        container.innerHTML = '';
+        container.style.cssText = 'width:120px;height:auto;background:#f0faf5;border-radius:8px;border:1px solid var(--g200);overflow:hidden';
+        new QRCode(container, {
+          text: qrData, width:120, height:120,
+          colorDark:'#1a4a2e', colorLight:'#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        setTimeout(function(){
+          var img = container.querySelector('img');
+          if(img){
+            img.id = 'scQRImg';
+            img.style.cssText = 'width:120px;height:120px;display:block;border-radius:6px';
+            img.onerror = function(){ useGoogleCharts(); };
+          }
+          var cv = container.querySelector('canvas');
+          if(cv) cv.style.display = 'none';
+        }, 150);
+        return true;
+      } catch(e){ console.warn('qrcodejs error:', e); }
     }
-    try {
-      container.innerHTML = '';
-      // qrcodejs: new QRCode(element, options) — สร้าง canvas+img ใน element
-      var qr = new QRCode(container, {
-        text:       qrData,
-        width:      116,
-        height:     116,
-        colorDark:  '#1a4a2e',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-      // รอ render แล้วเพิ่ม label
-      setTimeout(function(){
-        // qrcodejs สร้าง <img> ใน container — เพิ่ม style
-        var img = container.querySelector('img');
-        if(img){
-          img.id = 'scQRImg';
-          img.style.cssText = 'width:116px;height:116px;border-radius:6px;display:block';
-        }
-        // ซ่อน canvas (qrcodejs สร้างทั้ง canvas และ img)
-        var cv = container.querySelector('canvas');
-        if(cv) cv.style.display = 'none';
-      }, 100);
-    } catch(e){
-      console.warn('QR render error:', e);
-      container.innerHTML = '<div style="font-size:9px;color:var(--red);text-align:center;padding:8px">QR Error<br>'+e.message+'</div>';
-    }
+    return false;
   }
-  tryRender();
+
+  // ── วิธีที่ 2: Google Charts API (fallback ที่เชื่อถือได้) ──
+  function useGoogleCharts(){
+    var encoded = encodeURIComponent(qrData);
+    var url = 'https://chart.googleapis.com/chart?cht=qr&chs=120x120&chld=M|1&chl=' + encoded;
+    container.innerHTML =
+      '<img id="scQRImg" src="'+url+'" '
+      +'style="width:120px;height:120px;display:block;border-radius:6px" '
+      +'onerror="this.parentNode.innerHTML=\'<div style=&quot;font-size:9px;color:#888;text-align:center;padding:10px&quot;>QR: '+partNo+'</div>\'">';
+  }
+
+  // ลอง qrcodejs ก่อน
+  container.innerHTML = '<div style="font-size:10px;color:var(--g400);text-align:center;padding:20px">⏳</div>';
+  if(!tryQRCodeJS()){
+    // library ยังไม่โหลด — รอ 1 วินาที แล้วลองอีกครั้ง
+    setTimeout(function(){
+      if(!tryQRCodeJS()){
+        // หมดเวลา → ใช้ Google Charts
+        useGoogleCharts();
+      }
+    }, 1000);
+  }
 }
 
 function downloadSCPartQR(){
-  var canvas = document.getElementById('scPartQRCanvas');
-  if(!canvas || !_scCurrentPart){ toast('ยังไม่ได้เลือกอะไหล่ค่ะ','error'); return; }
-  var url = canvas.toDataURL('image/png');
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'QR_'+(_scCurrentPart.partNo||'part')+'.png';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('บันทึก QR Code แล้วค่ะ ✅','success');
+  if(!_scCurrentPart){ toast('ยังไม่ได้เลือกอะไหล่ค่ะ','error'); return; }
+  getSCQRDataURL(function(url){
+    if(!url){ toast('ยังสร้าง QR ไม่ได้ — รอสักครู่แล้วลองใหม่ค่ะ','error'); return; }
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'QR_'+(_scCurrentPart.partNo||'part')+'.png';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast('บันทึก QR Code แล้วค่ะ ✅','success');
+  });
 }
 
 // ── Scan QR Code ─────────────────────────────────────────────
@@ -6499,10 +6603,9 @@ function onSCQRScan(input){
 var _origLoadSCForPart = loadSCForPart;
 loadSCForPart = function(p){
   _origLoadSCForPart(p);
-  // โหลดรูปจาก localStorage
   loadSCPartImg(p.partNo);
-  // สร้าง QR
-  generateSCPartQR(p.partNo, p.nameEN||p.nameTH||'');
+  // ส่ง location ด้วยเสมอ
+  generateSCPartQR(p.partNo, p.nameEN||p.nameTH||'', p.location||'');
 };
 
 
@@ -6776,39 +6879,39 @@ function printMultiQRLabels(partNos){
 
 
 function getSCQRDataURL(cb){
-  // ดึงจาก img ใน scQRContainer ที่ qrcodejs สร้าง
+  // ลอง img ใน container ก่อน
   var container = document.getElementById('scQRContainer');
   if(container){
-    var img = container.querySelector('img');
-    if(img && img.src && img.src.indexOf('data:') === 0){
-      cb(img.src); return;
-    }
+    var img = container.querySelector('img#scQRImg');
+    if(img && img.src && img.src.indexOf('data:')===0){ cb(img.src); return; }
     // ลอง canvas
     var cv = container.querySelector('canvas');
-    if(cv){
-      try { cb(cv.toDataURL('image/png')); return; } catch(e){}
-    }
+    if(cv){ try{ cb(cv.toDataURL('image/png')); return; }catch(e){} }
   }
-  // fallback: สร้าง QR ใหม่บน canvas ชั่วคราว
+  // fallback: สร้าง QR บน offscreen canvas ด้วย qrcodejs
   if(typeof QRCode !== 'undefined' && window._scQRData){
     var tmpDiv = document.createElement('div');
-    tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:200px;height:200px';
+    tmpDiv.style.cssText = 'position:fixed;left:-9999px;top:0;width:200px;height:200px;background:#fff';
     document.body.appendChild(tmpDiv);
     try {
       new QRCode(tmpDiv, {
-        text: window._scQRData, width:200, height:200,
+        text:window._scQRData, width:200, height:200,
         colorDark:'#1a4a2e', colorLight:'#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
+        correctLevel:QRCode.CorrectLevel.M
       });
-      setTimeout(function(){
-        var cv2 = tmpDiv.querySelector('canvas');
-        var url = '';
-        if(cv2){ try { url = cv2.toDataURL('image/png'); } catch(e){} }
-        if(!url){ var img2=tmpDiv.querySelector('img'); if(img2) url=img2.src; }
-        document.body.removeChild(tmpDiv);
-        cb(url);
-      }, 200);
-    } catch(e){ document.body.removeChild(tmpDiv); cb(''); }
+    } catch(e){}
+    setTimeout(function(){
+      var url = '';
+      var cv2 = tmpDiv.querySelector('canvas');
+      if(cv2){ try{ url=cv2.toDataURL('image/png'); }catch(e){} }
+      if(!url){ var i2=tmpDiv.querySelector('img'); if(i2&&i2.src.indexOf('data:')===0) url=i2.src; }
+      document.body.removeChild(tmpDiv);
+      if(url){ cb(url); return; }
+      // last resort: Google Charts URL (ใช้ได้กับ img src แต่ไม่ใช่ dataURL)
+      cb('https://chart.googleapis.com/chart?cht=qr&chs=200x200&chld=M|1&chl='+encodeURIComponent(window._scQRData||''));
+    }, 300);
+  } else if(window._scQRData){
+    cb('https://chart.googleapis.com/chart?cht=qr&chs=200x200&chld=M|1&chl='+encodeURIComponent(window._scQRData));
   } else { cb(''); }
 }
 </script>
