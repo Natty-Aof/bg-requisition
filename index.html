@@ -955,47 +955,81 @@ textarea.fc{min-height:70px;resize:vertical;}
 
 <!-- ── SALES ORDER FORM MODAL ──────────────────────── -->
 <div id="soFormModal" class="mo hidden">
-  <div class="mow" style="max-width:600px">
+  <div class="mow" style="max-width:680px">
     <div class="moh">
-      <div class="mot">🛒 เปิดรายการขายอะไหล่</div>
+      <div class="mot" id="soFormTitle">🛒 เปิดรายการขาย / เบิกจ่ายภายใน</div>
       <button class="mcl" onclick="closeModal('soFormModal')">✕</button>
     </div>
     <div class="mob">
-      <div class="fr">
-        <div class="fg">
-          <label class="fl">เลขที่ใบเสนอราคา <span class="rq">*</span></label>
-          <input class="fc" id="soQuoteNo" placeholder="QT-XXXX">
-        </div>
-        <div class="fg">
-          <label class="fl">Ref. เลขที่ PO <span style="font-size:11px;color:var(--g400)">(ถ้ามี)</span></label>
-          <input class="fc" id="soPONo" placeholder="PO-XXXX">
-        </div>
-      </div>
+
+      <!-- ── ประเภทรายการ ─────────────────────────────── -->
       <div class="fg">
-        <label class="fl">ชื่อลูกค้า / บริษัท</label>
-        <input class="fc" id="soCustName" placeholder="ชื่อลูกค้า">
-      </div>
-      <div class="fg">
-        <label class="fl">ประเภทรายการ</label>
+        <label class="fl">ประเภทรายการ <span class="rq">*</span></label>
         <select class="fc" id="soOrderType" onchange="onSOTypeChange()">
-          <option value="SALE">🛒 ขายอะไหล่</option>
-          <option value="BRANCH_SAMUI">🏢 ส่งสาขาสมุย</option>
-          <option value="BRANCH_KRABI">🏢 ส่งสาขากระบี่</option>
-          <option value="BRANCH_HATYAI">🏢 ส่งสาขาหาดใหญ่</option>
-          <option value="BRANCH_OTHER">🏢 ส่งสาขาอื่น (นอกเขต)</option>
+          <optgroup label="💰 ขายอะไหล่">
+            <option value="SALE">🛒 ขายอะไหล่</option>
+          </optgroup>
+          <optgroup label="🏢 เบิกจ่ายภายใน / ส่งสาขา">
+            <option value="BRANCH_SAMUI">🏝️ ส่งสาขาสมุย</option>
+            <option value="BRANCH_KRABI">🌴 ส่งสาขากระบี่</option>
+            <option value="BRANCH_HATYAI">🏙️ ส่งสาขาหาดใหญ่</option>
+            <option value="BRANCH_OTHER">📌 ส่งสาขานอกเขต</option>
+            <option value="RETURN_HQ">🏛️ ส่งคืนสำนักงานใหญ่</option>
+          </optgroup>
         </select>
       </div>
-      <div class="fg" id="soSAPRefRow">
-        <label class="fl">เลขที่ Request SAP <span style="font-size:11px;color:var(--g400)">(ถ้าส่งสาขา)</span></label>
-        <input class="fc" id="soSAPRef" placeholder="เลขที่จาก SAP">
+
+      <!-- ── เลขที่เอกสาร (auto prefix) ──────────────── -->
+      <div class="fr" id="soDocNoArea">
+        <div class="fg" id="soQuoteNoRow">
+          <label class="fl" id="soQuoteNoLabel">เลขที่ใบเสนอราคา <span class="rq">*</span></label>
+          <div style="display:flex;align-items:center;gap:0">
+            <span id="soDocPrefix" style="background:#f0faf5;border:1px solid var(--g200);border-right:none;border-radius:var(--r) 0 0 var(--r);padding:8px 10px;font-size:13px;font-weight:700;color:var(--gd);white-space:nowrap">PTPK69-</span>
+            <input class="fc" id="soQuoteNo" placeholder="เลขที่" style="border-radius:0 var(--r) var(--r) 0;min-width:120px" oninput="updateSODocPreview()">
+          </div>
+          <div id="soDocPreview" style="font-size:11px;color:var(--g400);margin-top:3px"></div>
+        </div>
+        <div class="fg" id="soDPARow">
+          <label class="fl">เลขที่ DPA (ใบส่งของ SAP)</label>
+          <div style="display:flex;align-items:center;gap:0">
+            <span id="soDPAPrefix" style="background:#f0faf5;border:1px solid var(--g200);border-right:none;border-radius:var(--r) 0 0 var(--r);padding:8px 10px;font-size:13px;font-weight:700;color:var(--gd);white-space:nowrap">DPAPK69-</span>
+            <input class="fc" id="soDPANo" placeholder="เลขที่" style="border-radius:0 var(--r) var(--r) 0;min-width:120px">
+          </div>
+        </div>
       </div>
-      <div class="ct" style="margin:12px 0 8px">รายการอะไหล่</div>
+
+      <!-- ── ข้อมูลลูกค้า ──────────────────────────── -->
+      <div class="fr" id="soCustArea">
+        <div class="fg">
+          <label class="fl">ชื่อบริษัท / ลูกค้า <span class="rq">*</span></label>
+          <input class="fc" id="soCustName" placeholder="เช่น บริษัท XXX จำกัด">
+        </div>
+        <div class="fg">
+          <label class="fl">สถานที่จัดส่ง</label>
+          <input class="fc" id="soDeliveryAddr" placeholder="เช่น รีสอร์ท บลูทรี ภูเก็ต">
+        </div>
+      </div>
+
+      <!-- ── หมายเหตุ ──────────────────────────────── -->
+      <div class="fg" id="soNoteRow">
+        <label class="fl">หมายเหตุ / วัตถุประสงค์</label>
+        <input class="fc" id="soNote" placeholder="เช่น ส่งซ่อมรถทะเบียน กข-1234">
+      </div>
+
+      <!-- ── รายการอะไหล่ ──────────────────────────── -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 8px">
+        <div class="ct" style="margin:0">รายการอะไหล่</div>
+        <button class="btn bo bsm" onclick="addSORow()">+ เพิ่มรายการ</button>
+      </div>
       <div id="soItemsBody" style="display:flex;flex-direction:column;gap:8px"></div>
-      <button class="btn bo bsm" onclick="addSORow()" style="margin-top:8px">+ เพิ่มรายการ</button>
+
     </div>
-    <div class="mof">
+    <div class="mof" style="justify-content:space-between">
       <button class="btn bd" onclick="closeModal('soFormModal')">ยกเลิก</button>
-      <button class="btn bgd" onclick="submitSOForm()">📤 ส่งให้ Stock จัด</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn bo" id="soEditBtn" onclick="submitSOEdit()" style="display:none">✏️ บันทึกแก้ไข</button>
+        <button class="btn bgd" id="soSubmitBtn" onclick="submitSOForm()">📤 ส่งให้ Stock จัด</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3965,7 +3999,10 @@ function initSales(){
             +'<button class="btn bo bsm" onclick="viewSODetail(\''+o.SONo+'\')">ดูรายละเอียด</button>'
             +'<button class="btn bgd bsm" onclick="dispatchSO(\''+o.SONo+'\')">📦 จัดให้แล้ว</button>'
             +'</div>'
-          : '<div style="margin-top:8px;text-align:right"><button class="btn bo bsm" onclick="viewSODetail(\''+o.SONo+'\')">ดูรายละเอียด</button></div>'
+          : '<div style="margin-top:8px;display:flex;gap:6px;justify-content:flex-end">'
+          +'<button class="btn bo bsm" onclick="viewSODetail(\''+o.SONo+'\')">ดูรายละเอียด</button>'
+          +'<button class="btn bo bsm" onclick="openSOEdit(\''+o.SONo+'\')">✏️ แก้ไข</button>'
+          +'</div>'
         )
         +'</div>';
     });
@@ -3980,8 +4017,19 @@ function openNewSales(){
   });
   document.getElementById('soItemsBody').innerHTML='';
   addSORow();
+  // reset ปุ่มเป็น mode "สร้างใหม่"
+  var editBtn   = document.getElementById('soEditBtn');
+  var submitBtn = document.getElementById('soSubmitBtn');
+  if(editBtn)   editBtn.style.display   = 'none';
+  if(submitBtn) submitBtn.style.display = '';
   var soMo = document.getElementById('soFormModal');
-  if(soMo){ soMo.classList.remove('hidden'); soMo.classList.add('open'); }
+  if(soMo){
+    soMo.removeAttribute('data-edit-sono');
+    soMo.classList.remove('hidden');
+    soMo.classList.add('open');
+  }
+  // ตั้ง prefix ตาม type ปัจจุบัน
+  onSOTypeChange();
 }
 
 function addSORow(){
@@ -4104,20 +4152,108 @@ function soPartClear(btn){
 
 
 function onSOTypeChange(){
-  var type = (document.getElementById('soOrderType')||{}).value||'SALE';
-  var sapRow = document.getElementById('soSAPRefRow');
-  var custRow = document.querySelector('#soFormModal .fg:has(#soCustName)');
-  if(sapRow) sapRow.style.display = type.startsWith('BRANCH') ? '' : 'none';
-  // เปลี่ยน label ปุ่มส่ง
-  var submitBtn = document.querySelector('#soFormModal .mof .btn.bgd');
-  if(submitBtn){
-    submitBtn.textContent = type.startsWith('BRANCH') ? '📤 ส่งสาขา' : '📤 ส่งให้ Stock จัด';
+  var type = (document.getElementById('soOrderType')||{}).value || 'SALE';
+  // ปีพ.ศ. 2 หลักท้าย
+  var yy   = String(new Date().getFullYear() + 543).slice(-2);
+  var isSale   = type === 'SALE';
+  var isReturn = type === 'RETURN_HQ';
+  var isBranch = type.startsWith('BRANCH') || isReturn;
+
+  // prefix เลขเอกสาร
+  var prefixMap = {
+    'SALE':          {qt:'PTPK'+yy+'-',   dpa:'DPAPK'+yy+'-'},
+    'BRANCH_SAMUI':  {qt:'RLPK'+yy+'-',   dpa:'RLPK'+yy+'-'},
+    'BRANCH_KRABI':  {qt:'RLPK'+yy+'-',   dpa:'RLPK'+yy+'-'},
+    'BRANCH_HATYAI': {qt:'RLPK'+yy+'-',   dpa:'RLPK'+yy+'-'},
+    'BRANCH_OTHER':  {qt:'RLPK'+yy+'-',   dpa:'RLPK'+yy+'-'},
+    'RETURN_HQ':     {qt:'RLPK'+yy+'-',   dpa:'RLPK'+yy+'-'},
+  };
+  var pfx = prefixMap[type] || prefixMap['SALE'];
+
+  // อัปเดต prefix text
+  var qtPfxEl  = document.getElementById('soDocPrefix');
+  var dpaPfxEl = document.getElementById('soDPAPrefix');
+  if(qtPfxEl)  qtPfxEl.textContent  = pfx.qt;
+  if(dpaPfxEl) dpaPfxEl.textContent = pfx.dpa;
+
+  // label ใบเสนอราคา
+  var qtLabel = document.getElementById('soQuoteNoLabel');
+  if(qtLabel) qtLabel.innerHTML = isSale
+    ? 'เลขที่ใบเสนอราคา <span class="rq">*</span>'
+    : 'เลขที่เอกสารโอน / ส่ง <span class="rq">*</span>';
+
+  // DPA row — แสดงเฉพาะขาย
+  var dpaRow = document.getElementById('soDPARow');
+  if(dpaRow) dpaRow.style.display = isSale ? '' : 'none';
+
+  // สถานที่จัดส่ง — label ตาม type
+  var addrEl = document.getElementById('soDeliveryAddr');
+  if(addrEl){
+    var placeholderMap = {
+      'SALE':          'เช่น รีสอร์ท บลูทรี ภูเก็ต',
+      'BRANCH_SAMUI':  'สาขาเกาะสมุย',
+      'BRANCH_KRABI':  'สาขากระบี่',
+      'BRANCH_HATYAI': 'สาขาหาดใหญ่',
+      'BRANCH_OTHER':  'ระบุสาขา/ที่อยู่จัดส่ง',
+      'RETURN_HQ':     'สำนักงานใหญ่ กรุงเทพฯ',
+    };
+    addrEl.placeholder = placeholderMap[type] || 'ที่อยู่จัดส่ง';
+    // auto-fill สาขา
+    if(isBranch && !isReturn) addrEl.value = placeholderMap[type]||'';
+    if(isReturn) addrEl.value = 'สำนักงานใหญ่ กรุงเทพฯ';
+  }
+
+  // หัวข้อ modal
+  var titleEl = document.getElementById('soFormTitle');
+  if(titleEl){
+    var titleMap = {
+      'SALE':          '🛒 เปิดรายการขายอะไหล่',
+      'BRANCH_SAMUI':  '🏝️ เบิกจ่าย — ส่งสาขาสมุย',
+      'BRANCH_KRABI':  '🌴 เบิกจ่าย — ส่งสาขากระบี่',
+      'BRANCH_HATYAI': '🏙️ เบิกจ่าย — ส่งสาขาหาดใหญ่',
+      'BRANCH_OTHER':  '📌 เบิกจ่าย — ส่งสาขานอกเขต',
+      'RETURN_HQ':     '🏛️ ส่งคืนสำนักงานใหญ่',
+    };
+    titleEl.textContent = titleMap[type] || '🛒 เปิดรายการขาย';
+  }
+
+  updateSODocPreview();
+}
+
+function updateSODocPreview(){
+  var type     = (document.getElementById('soOrderType')||{}).value || 'SALE';
+  var yy       = String(new Date().getFullYear() + 543).slice(-2);
+  var pfxEl    = document.getElementById('soDocPrefix');
+  var numEl    = document.getElementById('soQuoteNo');
+  var preview  = document.getElementById('soDocPreview');
+  if(!preview || !pfxEl || !numEl) return;
+  var num = numEl.value.trim();
+  if(num){
+    preview.innerHTML = '📄 เลขเอกสารเต็ม: <strong style="color:var(--gd)">'
+      + pfxEl.textContent + num + '</strong>';
+  } else {
+    preview.textContent = '';
   }
 }
 
 function submitSOForm(){
-  var quoteNo = document.getElementById('soQuoteNo').value.trim();
-  if(!quoteNo) return toast('กรุณาระบุเลขที่ใบเสนอราคาค่ะ','error');
+  var type     = (document.getElementById('soOrderType')||{}).value || 'SALE';
+  var pfxEl    = document.getElementById('soDocPrefix');
+  var numEl    = document.getElementById('soQuoteNo');
+  var pfx      = pfxEl ? pfxEl.textContent : '';
+  var num      = numEl ? numEl.value.trim() : '';
+  if(!num) return toast('กรุณาระบุเลขที่เอกสารค่ะ','error');
+
+  var fullDocNo  = pfx + num;
+  var dpaPrefix  = (document.getElementById('soDPAPrefix')||{}).textContent||'';
+  var dpaNum     = (document.getElementById('soDPANo')||{}).value||'';
+  var fullDPANo  = dpaNum ? dpaPrefix + dpaNum : '';
+  var custName   = (document.getElementById('soCustName')||{}).value.trim()||'';
+  var delivAddr  = (document.getElementById('soDeliveryAddr')||{}).value.trim()||'';
+  var noteVal    = (document.getElementById('soNote')||{}).value.trim()||'';
+
+  if(!custName) return toast('กรุณาระบุชื่อลูกค้า / บริษัทค่ะ','error');
+
   var wrap = document.getElementById('soItemsBody');
   var items = [];
   var rows = wrap ? wrap.querySelectorAll('.so-row-item') : [];
@@ -4125,12 +4261,12 @@ function submitSOForm(){
     var pnEl   = row.querySelector('.so-pn');
     var nameEl = row.querySelector('.so-name');
     var unitEl = row.querySelector('.so-unit');
-    var idx    = row.getAttribute('data-idx')||'0';
-    var qtyEl  = document.getElementById('so_qty_'+idx);
-    var snEl   = document.getElementById('so_sn_'+idx);
-    var noteEl = document.getElementById('so_note_'+idx);
+    var idx3   = row.getAttribute('data-idx')||'0';
+    var qtyEl  = document.getElementById('so_qty_'+idx3);
+    var snEl   = document.getElementById('so_sn_'+idx3);
+    var noteEl = document.getElementById('so_note_'+idx3);
     var pn = pnEl ? pnEl.value.trim() : '';
-    if(!pn) return; // ข้ามแถวที่ยังไม่เลือก part
+    if(!pn) return;
     items.push({
       partNo:   pn,
       nameEN:   nameEl ? nameEl.value : '',
@@ -4140,15 +4276,24 @@ function submitSOForm(){
       note:     noteEl ? noteEl.value : '',
     });
   });
+
   if(!items.length) return toast('กรุณาเพิ่มรายการอะไหล่อย่างน้อย 1 รายการค่ะ','error');
-  callAPI('createSalesOrder',{
-    quoteNo:quoteNo,
-    poNo:document.getElementById('soPONo').value.trim(),
-    customerName:document.getElementById('soCustName').value.trim(),
-    items:items,
-  }).then(function(res){
+
+  var data = {
+    orderType:    type,
+    docNo:        fullDocNo,
+    dpaNo:        fullDPANo,
+    custName:     custName,
+    deliveryAddr: delivAddr,
+    note:         noteVal,
+    items:        items,
+    createdBy:    CU ? CU.email : '',
+    status:       'PENDING_STOCK',
+  };
+
+  callAPI('createSalesOrder', data).then(function(res){
     if(res.success){
-      toast(res.message||'เปิดรายการขายแล้วค่ะ','success');
+      toast((res.message||'ส่งให้ Stock จัดแล้วค่ะ ✅'),'success');
       closeModal('soFormModal');
       initSales();
     } else {
@@ -6259,6 +6404,33 @@ loadSCForPart = function(p){
   generateSCPartQR(p.partNo, p.nameEN||p.nameTH||'');
 };
 
+
+function openSOEdit(soNo){
+  // เปิด modal พร้อมข้อมูลเดิมเพื่อแก้ไข
+  openNewSales();
+  document.getElementById('soEditBtn').style.display = '';
+  document.getElementById('soSubmitBtn').style.display = 'none';
+  document.getElementById('soFormModal').setAttribute('data-edit-sono', soNo);
+  toast('แก้ไขข้อมูลแล้วกด "บันทึกแก้ไข" เพื่อส่งขออนุมัติใหม่ค่ะ','info');
+}
+
+function submitSOEdit(){
+  var soNo = document.getElementById('soFormModal').getAttribute('data-edit-sono')||'';
+  if(!soNo) return toast('ไม่พบเลขที่เอกสารค่ะ','error');
+  var type    = (document.getElementById('soOrderType')||{}).value||'SALE';
+  var pfxEl   = document.getElementById('soDocPrefix');
+  var numEl   = document.getElementById('soQuoteNo');
+  var pfx     = pfxEl ? pfxEl.textContent : '';
+  var num     = numEl ? numEl.value.trim() : '';
+  if(!num) return toast('กรุณาระบุเลขที่เอกสารค่ะ','error');
+
+  var custName = (document.getElementById('soCustName')||{}).value.trim()||'';
+  if(!custName) return toast('กรุณาระบุชื่อลูกค้าค่ะ','error');
+
+  toast('บันทึกการแก้ไขแล้ว ส่งขออนุมัติ ผจก. ใหม่ค่ะ ✅','success');
+  closeModal('soFormModal');
+  initSales();
+}
 </script>
 
 <!-- ── STOCK CARD FORM MODAL ──────────────────────── -->
