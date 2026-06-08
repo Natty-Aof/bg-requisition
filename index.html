@@ -7,7 +7,7 @@
 <!-- jsQR: QR Code scanner -->
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <!-- QRCode.js: QR Code generator -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap');
 :root {
@@ -6391,42 +6391,56 @@ function loadSCPartImg(partNo){
 
 // ── Stock Card: QR Code ──────────────────────────────────────
 function generateSCPartQR(partNo, nameEN, location){
-  // QR data: Part No.|ชื่ออะไหล่|Location
-  var qrData = [partNo, nameEN||'', location||''].join('|');
+  var qrData = partNo + '|' + (nameEN||'') + '|' + (location||'');
 
-  var container = document.getElementById('scQRContainer');
-  if(!container){
-    var oldCanvas = document.getElementById('scPartQRCanvas');
-    if(oldCanvas){
-      container = document.createElement('div');
-      container.id = 'scQRContainer';
-      oldCanvas.parentNode.replaceChild(container, oldCanvas);
-    }
-  }
-  if(!container) return;
-
-  container.innerHTML = '<div style="font-size:10px;color:var(--g400);text-align:center;padding:8px">⏳ สร้าง QR...</div>';
-
-  function renderQR(){
-    if(typeof QRCode === 'undefined'){ setTimeout(renderQR, 300); return; }
-    var opts = { width:120, margin:1, color:{dark:'#1a4a2e', light:'#ffffff'} };
-    var doRender = function(url){
-      container.innerHTML =
-        '<img id="scQRImg" src="'+url+'" style="width:120px;height:120px;border-radius:6px;display:block">'
-        +'<div style="font-size:9px;color:var(--g400);text-align:center;margin-top:3px">Scan = ดูข้อมูลอะไหล่</div>';
-    };
-    try {
-      var result = QRCode.toDataURL(qrData, opts);
-      if(result && result.then){ result.then(doRender).catch(function(){ container.innerHTML='<div style="font-size:10px;color:var(--red);padding:8px">QR error</div>'; }); }
-      else if(typeof result === 'string'){ doRender(result); }
-    } catch(e){ console.warn('QR error:', e); }
-  }
-  renderQR();
-
+  // เก็บ metadata
   window._scQRData   = qrData;
   window._scQRPartNo = partNo;
   window._scQRName   = nameEN||'';
   window._scQRLoc    = location||'';
+
+  var container = document.getElementById('scQRContainer');
+  if(!container) return;
+
+  // clear เดิมก่อน
+  container.innerHTML = '';
+  container.style.cssText = 'width:120px;height:120px;display:flex;align-items:center;justify-content:center;background:#f0faf5;border-radius:8px;border:1px solid var(--g200)';
+
+  function tryRender(){
+    if(typeof QRCode === 'undefined'){
+      // ยังไม่โหลด — รอแล้วลองใหม่
+      setTimeout(tryRender, 200);
+      return;
+    }
+    try {
+      container.innerHTML = '';
+      // qrcodejs: new QRCode(element, options) — สร้าง canvas+img ใน element
+      var qr = new QRCode(container, {
+        text:       qrData,
+        width:      116,
+        height:     116,
+        colorDark:  '#1a4a2e',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      // รอ render แล้วเพิ่ม label
+      setTimeout(function(){
+        // qrcodejs สร้าง <img> ใน container — เพิ่ม style
+        var img = container.querySelector('img');
+        if(img){
+          img.id = 'scQRImg';
+          img.style.cssText = 'width:116px;height:116px;border-radius:6px;display:block';
+        }
+        // ซ่อน canvas (qrcodejs สร้างทั้ง canvas และ img)
+        var cv = container.querySelector('canvas');
+        if(cv) cv.style.display = 'none';
+      }, 100);
+    } catch(e){
+      console.warn('QR render error:', e);
+      container.innerHTML = '<div style="font-size:9px;color:var(--red);text-align:center;padding:8px">QR Error<br>'+e.message+'</div>';
+    }
+  }
+  tryRender();
 }
 
 function downloadSCPartQR(){
@@ -6667,48 +6681,59 @@ function _soClientSide(data){
 
 // ── พิมพ์ QR Label สติกเกอร์ 4 ดวง/แถว ─────────────────────
 function printQRLabel(partList){
-  // partList = [{partNo, nameEN, location, inStock, unit}]
-  // ถ้าไม่ส่งมา ใช้ part ปัจจุบันที่เปิดอยู่
   if(!partList || !partList.length){
     if(!_scCurrentPart){ toast('กรุณาเลือกอะไหล่ก่อนค่ะ','error'); return; }
     partList = [_scCurrentPart];
   }
+  if(typeof QRCode === 'undefined'){
+    toast('กำลังโหลด QR Library รอสักครู่แล้วลองใหม่ค่ะ','info');
+    return;
+  }
 
-  // สร้าง QR dataURL สำหรับทุก part ก่อน แล้วค่อยเปิด print
-  var promises = partList.map(function(p){
-    return new Promise(function(resolve){
-      if(typeof QRCode === 'undefined'){
-        resolve({p:p, url:''});
-        return;
-      }
-      var qrData = [p.partNo, p.nameEN||p.nameTH||'', p.location||''].join('|');
-      var opts   = {width:130, margin:1, color:{dark:'#1a4a2e', light:'#ffffff'}};
-      try {
-        var result = QRCode.toDataURL(qrData, opts);
-        if(result && result.then){ result.then(function(url){ resolve({p:p,url:url}); }).catch(function(){ resolve({p:p,url:''}); }); }
-        else if(typeof result === 'string'){ resolve({p:p, url:result}); }
-        else resolve({p:p, url:''});
-      } catch(e){ resolve({p:p, url:''}); }
-    });
-  });
+  // สร้าง QR dataURL สำหรับแต่ละ part ผ่าน hidden div
+  var pending = partList.length;
+  var results = partList.map(function(p){ return {p:p, url:''}; });
 
-  Promise.all(promises).then(function(results){
+  function generateOne(idx4){
+    var r = results[idx4];
+    var p = r.p;
+    var qrData = p.partNo + '|' + (p.nameEN||p.nameTH||'') + '|' + (p.location||'');
+    var tmpDiv = document.createElement('div');
+    tmpDiv.style.cssText = 'position:absolute;left:-9999px;width:160px;height:160px';
+    document.body.appendChild(tmpDiv);
+    try {
+      new QRCode(tmpDiv, {
+        text: qrData, width:150, height:150,
+        colorDark:'#1a4a2e', colorLight:'#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e){}
+    setTimeout(function(){
+      var cv5 = tmpDiv.querySelector('canvas');
+      if(cv5){ try { r.url = cv5.toDataURL('image/png'); } catch(e){} }
+      if(!r.url){ var img5=tmpDiv.querySelector('img'); if(img5&&img5.src.indexOf('data:')===0) r.url=img5.src; }
+      document.body.removeChild(tmpDiv);
+      pending--;
+      if(pending === 0) openLabelWindow(results);
+    }, 200);
+  }
+
+  results.forEach(function(_, idx5){ generateOne(idx5); });
+
+  function openLabelWindow(results){
     var win = window.open('','_blank','width=900,height=700');
     if(!win){ toast('กรุณาอนุญาต popup ค่ะ','error'); return; }
 
     var labels = results.map(function(r){
       var p   = r.p;
       var url = r.url;
-      var qrImg = url
-        ? '<img src="'+url+'" style="width:100px;height:100px;display:block;margin:0 auto">'
-        : '<div style="width:100px;height:100px;background:#e8f5e9;border:1px solid #74c69d;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:9px;color:#888">ไม่มี QR</div>';
-
-      var name = p.nameEN||p.nameTH||'—';
-      // ตัดชื่อถ้ายาวเกิน 2 บรรทัด
-      var shortName = name.length > 30 ? name.slice(0,28)+'…' : name;
-
+      var qrHtml = url
+        ? '<img src="'+url+'" style="width:110px;height:110px;display:block;margin:0 auto">'
+        : '<div style="width:110px;height:110px;background:#e8f5e9;border:1px dashed #74c69d;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;font-size:9px;color:#888;text-align:center">ไม่มี QR</div>';
+      var name = (p.nameEN||p.nameTH||'—');
+      var shortName = name.length>32 ? name.slice(0,30)+'…' : name;
       return '<div class="label">'
-        + qrImg
+        + qrHtml
         + '<div class="pno">'+p.partNo+'</div>'
         + '<div class="pname">'+shortName+'</div>'
         + '<div class="ploc">📍 '+(p.location||'—')+'</div>'
@@ -6719,25 +6744,18 @@ function printQRLabel(partList){
       +'<style>'
       +'*{box-sizing:border-box;margin:0;padding:0}'
       +'body{font-family:Sarabun,Arial,sans-serif;background:#fff;padding:8mm}'
-      +'.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4mm}'
-      +'.label{'
-        +'border:0.5px solid #aaa;border-radius:4px;padding:6px;text-align:center;'
-        +'page-break-inside:avoid;background:#fff;'
-      +'}'
-      +'.pno{font-size:8.5px;font-weight:700;color:#1a4a2e;margin-top:5px;word-break:break-all;line-height:1.3}'
-      +'.pname{font-size:8px;color:#333;margin-top:3px;line-height:1.3;min-height:22px}'
-      +'.ploc{font-size:8px;color:#666;margin-top:3px;font-weight:600}'
-      +'@media print{'
-        +'@page{size:A4 portrait;margin:8mm}'
-        +'body{padding:0}'
-      +'}'
-      +'</style>'
-      +'</head><body>'
+      +'.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3mm}'
+      +'.label{border:0.5px solid #bbb;border-radius:4px;padding:5px;text-align:center;page-break-inside:avoid;background:#fff}'
+      +'.pno{font-size:8px;font-weight:700;color:#1a4a2e;margin-top:4px;word-break:break-all;line-height:1.3}'
+      +'.pname{font-size:7.5px;color:#333;margin-top:2px;line-height:1.3;min-height:20px}'
+      +'.ploc{font-size:8px;color:#555;margin-top:2px;font-weight:600}'
+      +'@media print{@page{size:A4 portrait;margin:8mm}body{padding:0}}'
+      +'</style></head><body>'
       +'<div class="grid">'+labels+'</div>'
-      +'<script>setTimeout(function(){window.print();},600);<\\/script>'
+      +'<script>setTimeout(function(){window.print();},400);<\/script>'
       +'</body></html>');
     win.document.close();
-  });
+  }
 }
 
 // ── พิมพ์ QR Label ของ part ปัจจุบัน (ปุ่มในหน้า Stock Card) ──
@@ -6758,19 +6776,39 @@ function printMultiQRLabels(partNos){
 
 
 function getSCQRDataURL(cb){
-  var img = document.getElementById('scQRImg');
-  if(img && img.src && img.src.startsWith('data:')){
-    cb(img.src); return;
+  // ดึงจาก img ใน scQRContainer ที่ qrcodejs สร้าง
+  var container = document.getElementById('scQRContainer');
+  if(container){
+    var img = container.querySelector('img');
+    if(img && img.src && img.src.indexOf('data:') === 0){
+      cb(img.src); return;
+    }
+    // ลอง canvas
+    var cv = container.querySelector('canvas');
+    if(cv){
+      try { cb(cv.toDataURL('image/png')); return; } catch(e){}
+    }
   }
-  // สร้างใหม่จาก _scQRData
-  if(typeof QRCode !== 'undefined' && QRCode.toDataURL && window._scQRData){
+  // fallback: สร้าง QR ใหม่บน canvas ชั่วคราว
+  if(typeof QRCode !== 'undefined' && window._scQRData){
+    var tmpDiv = document.createElement('div');
+    tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:200px;height:200px';
+    document.body.appendChild(tmpDiv);
     try {
-      var result = QRCode.toDataURL(window._scQRData,
-        {width:200, margin:2, color:{dark:'#1a4a2e', light:'#ffffff'}});
-      if(result && result.then){ result.then(cb).catch(function(){ cb(''); }); }
-      else if(typeof result === 'string'){ cb(result); }
-      else { cb(''); }
-    } catch(e){ cb(''); }
+      new QRCode(tmpDiv, {
+        text: window._scQRData, width:200, height:200,
+        colorDark:'#1a4a2e', colorLight:'#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      setTimeout(function(){
+        var cv2 = tmpDiv.querySelector('canvas');
+        var url = '';
+        if(cv2){ try { url = cv2.toDataURL('image/png'); } catch(e){} }
+        if(!url){ var img2=tmpDiv.querySelector('img'); if(img2) url=img2.src; }
+        document.body.removeChild(tmpDiv);
+        cb(url);
+      }, 200);
+    } catch(e){ document.body.removeChild(tmpDiv); cb(''); }
   } else { cb(''); }
 }
 </script>
