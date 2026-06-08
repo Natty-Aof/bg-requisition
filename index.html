@@ -3345,9 +3345,16 @@ mockAPI = function(action, data) {
   if(action==='deleteStockCardEntry') return{success:true,message:'ลบรายการ Stock Card แล้วค่ะ'};
   if(action==='deleteSalesOrder') return{success:true,message:'ลบใบขาย '+data.soNo+' แล้วค่ะ'};
   if(action==='getSalesOrders'){
-    var pending = [{SONo:'SO-DEMO-001',QuoteNo:'QT-001',PONo:'PO-001',CustomerName:'บริษัท ทดสอบ จำกัด',Status:'PENDING',CreatedAt:new Date().toISOString()}];
-    var done = [{SONo:'SO-DEMO-002',QuoteNo:'QT-002',PONo:'',CustomerName:'ลูกค้า ทดสอบ 2',Status:'DISPATCHED',CreatedAt:new Date().toISOString()}];
-    return {success:true, data:data&&data.status==='done' ? done : pending};
+    var newOrders = (window._soDemoOrders||[]).map(function(o){
+      return {SONo:o.SONo, DocNo:o.docNo, CustName:o.custName,
+              DeliveryAddr:o.deliveryAddr, OrderType:o.orderType,
+              Status:'PENDING_STOCK', CreatedAt:o.CreatedAt,
+              Items:o.items, Note:o.note};
+    });
+    var staticPending = [{SONo:'SO-DEMO-001',DocNo:'PTPK69-001',CustName:'บริษัท ทดสอบ จำกัด',OrderType:'SALE',Status:'PENDING_STOCK',CreatedAt:new Date().toISOString(),Items:[]}];
+    var staticDone = [{SONo:'SO-DEMO-002',DocNo:'PTPK69-002',CustName:'ลูกค้า ทดสอบ 2',OrderType:'SALE',Status:'DISPATCHED',CreatedAt:new Date().toISOString(),Items:[]}];
+    var allPending = newOrders.concat(staticPending);
+    return {success:true, data:data&&data.status==='done' ? staticDone : allPending};
   }
   if(action==='getSalesOrderDetail'){
     return {success:true, data:{SONo:data.soNo,QuoteNo:'QT-001',PONo:'PO-001',CustomerName:'บริษัท ทดสอบ',Status:'PENDING',CreatedAt:new Date().toISOString(),
@@ -3990,9 +3997,9 @@ function initSales(){
       html += '<div class="qc">'
         +'<div class="fb2"><div><strong>'+o.SONo+'</strong> '+statusChip+'</div><span class="tm" style="font-size:13px">'+new Date(o.CreatedAt).toLocaleDateString('th-TH')+'</span></div>'
         +'<div class="dg" style="grid-template-columns:repeat(3,1fr);gap:8px 16px;margin-top:8px">'
-        +'<div class="di"><div class="dl">ใบเสนอราคา</div><div class="dv">'+o.QuoteNo+'</div></div>'
+        +'<div class="di"><div class="dl">ใบเสนอราคา</div><div class="dv">'+(o.DocNo||o.QuoteNo||'—')+'</div></div>'
         +'<div class="di"><div class="dl">PO</div><div class="dv">'+(o.PONo||'-')+'</div></div>'
-        +'<div class="di"><div class="dl">ลูกค้า</div><div class="dv">'+(o.CustomerName||'-')+'</div></div>'
+        +'<div class="di"><div class="dl">ลูกค้า</div><div class="dv">'+((o.CustName||o.CustomerName||'—')||'-')+'</div></div>'
         +'</div>'
         +(o.Status==='PENDING' && (CU.role==='STOCK'||CU.role==='MANAGER')
           ? '<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">'
@@ -4291,14 +4298,33 @@ function submitSOForm(){
     status:       'PENDING_STOCK',
   };
 
-  callAPI('createSalesOrder', data).then(function(res){
-    if(res.success){
+  // ถ้า real login แต่ Apps Script ยังไม่มี createSalesOrder → ทำ client-side
+  var soPromise;
+  if(!window._demo){
+    soPromise = callAPI('createSalesOrder', data).then(function(res){
+      if(res && res.message && res.message.indexOf('Unknown action') >= 0){
+        // Apps Script ยังไม่รองรับ — ทำ client-side แทน
+        return _soClientSide(data);
+      }
+      return res;
+    });
+  } else {
+    soPromise = callAPI('createSalesOrder', data);
+  }
+  soPromise.then(function(res){
+    if(res && res.success){
       toast((res.message||'ส่งให้ Stock จัดแล้วค่ะ ✅'),'success');
       closeModal('soFormModal');
       initSales();
     } else {
-      toast(res.message||'เกิดข้อผิดพลาด','error');
+      toast((res&&res.message)||'เกิดข้อผิดพลาดค่ะ','error');
     }
+  }).catch(function(e){
+    // fallback client-side ถ้า network error
+    _soClientSide(data);
+    toast('บันทึกแบบออฟไลน์แล้วค่ะ (Apps Script ยังไม่ได้ Deploy)','info');
+    closeModal('soFormModal');
+    initSales();
   });
 }
 
@@ -4313,7 +4339,7 @@ function viewSODetail(soNo){
         +'<td style="text-align:center">'+it.Qty+' '+(it.Unit||'ชิ้น')+'</td>'
         +'<td>'+(it.SerialNo||'-')+'</td><td>'+(it.Note||'-')+'</td></tr>';
     }).join('');
-    alert('ใบ '+soNo+'\nใบเสนอราคา: '+o.QuoteNo+'\nPO: '+(o.PONo||'-')+'\nลูกค้า: '+(o.CustomerName||'-')+'\nรายการ: '+o.items.length+' รายการ');
+    alert('ใบ '+soNo+'\nใบเสนอราคา: '+(o.DocNo||o.QuoteNo||'—')+'\nPO: '+(o.PONo||'-')+'\nลูกค้า: '+((o.CustName||o.CustomerName||'—')||'-')+'\nรายการ: '+o.items.length+' รายการ');
   });
 }
 
