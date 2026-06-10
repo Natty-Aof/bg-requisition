@@ -1638,6 +1638,14 @@ function mockAPI(action, data){
     return {success:true,message:'เคลียร์ใบเบิกแล้วค่ะ ✅'};
   }
   if(action==='rejectClearance') return {success:true,message:'ส่งกลับช่างแล้วค่ะ'};
+  if(action==='getReport'){
+    var rItems = typeof DEMO_ITEMS!=='undefined'?DEMO_ITEMS:[];
+    var rReqs  = typeof DEMO_REQS!=='undefined'?DEMO_REQS:[];
+    return {success:true, data:rReqs, items:rItems,
+      summary:{total:rReqs.length, approved:rReqs.filter(function(r){return r.StatusApproval==='APPROVED';}).length,
+        pending:rReqs.filter(function(r){return r.StatusApproval!=='APPROVED'&&r.StatusApproval!=='REJECTED';}).length,
+        cleared:rReqs.filter(function(r){return r.StatusStock==='CLEARED';}).length}};
+  }
   return {success:true,data:[]};
 }
 
@@ -3324,6 +3332,8 @@ function loadReport() {
     if (rptEmpty) rptEmpty.classList.add('hidden');
     if (rptSummary) rptSummary.classList.remove('hidden');
 
+    var reqs  = res.data   || (typeof DEMO_REQS!=='undefined'  ? DEMO_REQS  : []);
+    var items = res.items  || (typeof DEMO_ITEMS!=='undefined' ? DEMO_ITEMS : []);
     var s = res.summary || {};
 
     // Stats
@@ -5433,14 +5443,15 @@ function loadFullReport(){
   var waitStock = reqs.filter(function(r){return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING';}).length;
   // รายการขาดจ่าย: ดูจาก DispatchedItems ของแต่ละ req (บันทึกตอน stockAcknowledge)
   var partIssued = 0;
+  var _items4pi = typeof DEMO_ITEMS!=='undefined' ? DEMO_ITEMS : [];
   reqs.forEach(function(r){
     if(r.StatusStock==='CLEARED') return;
     if(r.StatusApproval!=='APPROVED') return;
-    if(r.DispatchedItems && r.DispatchedItems.length){
-      r.DispatchedItems.forEach(function(it){
-        if((it.shortQty||0) > 0) partIssued++;
-      });
-    }
+    // นับแบบเดียวกับตารางค้างจ่าย: reqs × items
+    _items4pi.forEach(function(item){
+      var pending = Math.max(0, (item.Qty||0) - (typeof item.IssuedQty!=='undefined' ? (item.IssuedQty||0) : (item.Qty||0)));
+      if(pending > 0) partIssued++;
+    });
   });
   var inUse     = reqs.filter(function(r){return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP';}).length;
   var waitClear = reqs.filter(function(r){return r.StatusStock==='PICKED_UP';}).length;
