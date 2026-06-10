@@ -902,15 +902,24 @@ textarea.fc{min-height:70px;resize:vertical;}
       <div class="fg">
         <label class="fl">ประเภทรายการ <span class="rq">*</span></label>
         <select class="fc" id="scType" onchange="onSCTypeChange()">
-          <option value="IN">📥 รับเข้า (จากฝ่ายพัสดุ สนง.ใหญ่)</option>
-          <option value="OUT_SALE">🛒 จ่ายออก — ขาย</option>
-          <option value="OUT_RENTAL">🚗 จ่ายออก — รถเช่า</option>
-              <option value="OUT_ACCIDENT">⚠️ จ่ายออก — เคลมอุบัติ</option>
-              <option value="OUT_WARRANTY">🔧 จ่ายออก — เคลม Warranty</option>
-          <option value="OUT_CONTRACT">🚌 จ่ายออก — รถสัมปทาน</option>
-          <option value="OUT_WARRANTY">🔧 จ่ายออก — Warranty</option>
-          <option value="OUT_BRANCH">🏢 จ่ายออก — ส่งสาขา (SAP)</option>
-          <option value="ADJUST">⚖️ ปรับยอด (นับ Stock จริง)</option>
+          <optgroup label="📥 รับเข้า Stock">
+            <option value="IN">📥 รับเข้า — จากฝ่ายพัสดุ / สนญ.</option>
+            <option value="RETURN_GOOD">↩️ รับคืน — ของดี (ช่างคืนกลับ)</option>
+          </optgroup>
+          <optgroup label="📤 จ่ายออก Stock">
+            <option value="OUT_RENTAL">🚗 จ่ายออก — รถเช่า</option>
+            <option value="OUT_CONTRACT">🚌 จ่ายออก — รถสัมปทาน</option>
+            <option value="OUT_ACCIDENT">⚠️ จ่ายออก — เคลมอุบัติ</option>
+            <option value="OUT_WARRANTY">🔧 จ่ายออก — เคลม Warranty</option>
+            <option value="OUT_SALE">🛒 จ่ายออก — ขาย</option>
+            <option value="OUT_BRANCH">🏢 จ่ายออก — ส่งสาขา (SAP)</option>
+            <option value="OUT_HQ">🏛️ จ่ายออก — คืน สนญ.</option>
+          </optgroup>
+          <optgroup label="⚠️ ของเสีย / ปรับยอด">
+            <option value="DEFECT">🔴 ของเสีย/ชำรุด — ไม่เข้า Stock</option>
+            <option value="DEFECT_RETURN">🔴 ช่างคืนของเสีย — ไม่เข้า Stock</option>
+            <option value="ADJUST">⚖️ ปรับยอด — นับ Stock จริง</option>
+          </optgroup>
         </select>
       </div>
       <div class="fg">
@@ -1256,7 +1265,7 @@ function refreshPartImgUI(partNo){
   });
 }
 
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz7UGDdi5sJ4pM_sX1CkUvD39R7BQp3ES0LFP2eSWVnJBPyW19h6RmZ1BKuC_vow8TSbQ/exec';
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-pao1xDmBd5C_aDXyjLKurrZL3obaDLXmFjzBjyYVGyhlCY1SnBoeU_aOil6SZ-4r6w/exec';
 var GOOGLE_CLIENT_ID = '869824889081-n11nu7d53fso299hpr58ch4n6tmfal4t.apps.googleusercontent.com';
 
 // ── BEYOND GREEN EMAIL → ROLE MAP ────────────────────────────
@@ -1319,7 +1328,7 @@ var DEMO_REQS = [
   {ReqID:'PKT-BR-2569-0001',JobNo:'2569030606',CustomerName:'คัมปัส ยีส',OpenDate:'16/04/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'',SerialNos:'FO-02',Purpose:'รถเช่า, เคลมไม่ได้',StatusApproval:'APPROVED',StatusStock:'CLEARED',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-04-16T10:30:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-04-16T11:00:00Z',ManagerNote:'',StockHandlerEmail:'Hathaichanok@beyond-green.co.th',StockAcknowledgedAt:'2026-04-16T11:30:00Z',ClosedAt:'2026-04-17T09:00:00Z',ClosedNote:'เรียบร้อย',IMNumber:'IM-2569-00099',CreatedAt:'2026-04-16T09:00:00Z',PickedUpAt:'2026-04-16T12:00:00Z'},
   {ReqID:'PKT-BR-2569-0002',JobNo:'2569030707',CustomerName:'บลูทรี ภูเก็ต',OpenDate:'18/04/2569',RequesterName:'สมชาย',RequesterEmail:'tech2@demo.local',CoWorkers:'',SerialNos:'FO-13',Purpose:'WARRANTY ในระยะประกัน',StatusApproval:'PENDING_SUPERVISOR',StatusStock:'PENDING',SupervisorEmail:'',SupervisorApprovedAt:'',SupervisorNote:'',ManagerEmail:'',ManagerApprovedAt:'',ManagerNote:'',StockHandlerEmail:'',StockAcknowledgedAt:'',ClosedAt:'',ClosedNote:'',IMNumber:'',CreatedAt:'2026-04-18T09:00:00Z',PickedUpAt:''},
   {ReqID:'PKT-BR-2569-0003',JobNo:'2569030606',CustomerName:'คัมปัส ยีส',OpenDate:'20/04/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'สมชาย',SerialNos:'FO-05',Purpose:'ประกอบใหม่',StatusApproval:'APPROVED',StatusStock:'ACKNOWLEDGED',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-04-20T10:00:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-04-20T11:00:00Z',ManagerNote:'',StockHandlerEmail:'anuwit@beyond-green.co.th',StockAcknowledgedAt:'2026-04-20T12:00:00Z',ClosedAt:'',ClosedNote:'',IMNumber:'',CreatedAt:'2026-04-20T09:00:00Z',PickedUpAt:''},
-  {ReqID:'PKT-BR-2569-0005',JobNo:'2569040101',CustomerName:'โรงแรม บลูทรี',OpenDate:'01/05/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'',SerialNos:'FO-07',Purpose:'ซ่อมรถลูกค้า',StatusApproval:'APPROVED',StatusStock:'PENDING',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-05-01T10:00:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-05-01T11:00:00Z',ManagerNote:'',StockHandlerEmail:'',StockAcknowledgedAt:'',ClosedAt:'',ClosedNote:'',IMNumber:'',CreatedAt:'2026-05-01T09:00:00Z',PickedUpAt:''},
+  {ReqID:'PKT-BR-2569-0005',JobNo:'2569040101',CustomerName:'โรงแรม บลูทรี',OpenDate:'01/05/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'',SerialNos:'FO-07',Purpose:'ซ่อมรถลูกค้า',StatusApproval:'APPROVED',StatusStock:'ACKNOWLEDGED',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-05-01T10:00:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-05-01T11:00:00Z',ManagerNote:'',StockHandlerEmail:'anuwit@beyond-green.co.th',StockAcknowledgedAt:'2026-05-01T13:00:00Z',ClosedAt:'',ClosedNote:'',IMNumber:'',CreatedAt:'2026-05-01T09:00:00Z',PickedUpAt:'',DispatchedItems:[{partNo:'05-16U291',nameEN:'BEARING 6205',requestedQty:4,actualQty:3,shortQty:1,unit:'ชิ้น'},{partNo:'03PGL0000010155836',nameEN:'BUSHING URETHANE 29mm',requestedQty:6,actualQty:5,shortQty:1,unit:'ชิ้น'}]},
   {ReqID:'PKT-BR-2569-0004',JobNo:'2569030606',CustomerName:'คัมปัส ยีส',OpenDate:'25/04/2569',RequesterName:'กิตติศักดิ์',RequesterEmail:'tech@demo.local',CoWorkers:'',SerialNos:'FO-09',Purpose:'ซ่อมรถลูกค้าชั่วคราว',StatusApproval:'APPROVED',StatusStock:'ACKNOWLEDGED',SupervisorEmail:'artitry@beyond-green.co.th',SupervisorApprovedAt:'2026-04-25T10:00:00Z',SupervisorNote:'',ManagerEmail:'natthareeya@beyond-green.co.th',ManagerApprovedAt:'2026-04-25T11:00:00Z',ManagerNote:'',StockHandlerEmail:'sittinan@beyond-green.co.th',StockAcknowledgedAt:'2026-04-25T12:00:00Z',ClosedAt:'',ClosedNote:'',IMNumber:'',CreatedAt:'2026-04-25T09:00:00Z',PickedUpAt:''},
 ];
 var DEMO_LOCS = {'05-16U291':'A-01-02','07-16290250':'A-01-05','01BPB000010396':'D-01-02'};
@@ -1496,15 +1505,48 @@ function mockAPI(action, data){
     return {success:true, data:demoNew.concat(filtered)};
   }
   if(action==='saveStockCardEntry'){
-    // Demo: เพิ่ม entry ใน PARTS_DB inStock
+    var entryType = data.type||data.Type||'';
+    var qty       = parseFloat(data.qty||data.Qty||0);
+    var isInType  = entryType==='IN' || entryType==='RETURN_GOOD' || entryType==='RETURN';
+    var isOutType = entryType.startsWith('OUT_');
+    var isDefect  = entryType==='DEFECT' || entryType==='DEFECT_RETURN';
+    var isAdjust  = entryType==='ADJUST';
+
+    // อัปเดต PARTS_DB inStock
     if(typeof PARTS_DB !== 'undefined'){
-      var p = PARTS_DB.find(function(x){return x.partNo===data.partNo;});
+      var p = PARTS_DB.find(function(x){ return x.partNo===data.partNo; });
       if(p){
-        if(data.type==='IN'||data.type==='ADJUST') p.inStock = (p.inStock||0) + (data.qty||0);
-        else p.inStock = Math.max(0, (p.inStock||0) - (data.qty||0));
+        if(isAdjust)      p.inStock = data.newBalance !== undefined ? data.newBalance : Math.max(0,(p.inStock||0)+qty);
+        else if(isInType) p.inStock = (p.inStock||0) + qty;
+        else if(isOutType)p.inStock = Math.max(0,(p.inStock||0) - qty);
+        // isDefect → ไม่เปลี่ยน inStock
       }
     }
-    return {success:true, message:'บันทึก Stock Card แล้วค่ะ ✅'};
+    // บันทึกใน _scDemoEntries
+    if(!window._scDemoEntries) window._scDemoEntries = [];
+    var today = new Date().toLocaleDateString('th-TH');
+    window._scDemoEntries.push({
+      EntryID:   'SC-'+Date.now(),
+      Date:      today,
+      Type:      entryType,
+      DocNo:     data.docNo||data.DocNo||'—',
+      PartNo:    data.partNo||data.PartNo||'',
+      NameEN:    data.nameEN||data.NameEN||'',
+      Qty:       qty,
+      Unit:      data.unit||data.Unit||'ชิ้น',
+      Requester: data.recordedBy||(CU?CU.name||CU.email:''),
+      JobNo:     data.jobNo||'—',
+      Customer:  data.customerName||'—',
+      Purpose:   data.purpose||entryType,
+      Note:      data.note||(isDefect?'ของเสีย/ชำรุด — ไม่กระทบ Stock':''),
+      NoBalanceEffect: isDefect,
+    });
+    var typeMsg = {
+      'IN':'รับเข้า Stock','RETURN_GOOD':'รับคืนของดี','ADJUST':'ปรับยอด Stock',
+      'DEFECT':'บันทึกของเสีย (ไม่กระทบ Stock)','DEFECT_RETURN':'บันทึกช่างคืนของเสีย',
+    };
+    var msg = (typeMsg[entryType]||'บันทึก') + ' แล้วค่ะ ✅';
+    return {success:true, message:msg};
   }
   
   if(action==='getPartLocations') return {success:true,data:partLocs};
@@ -2228,11 +2270,17 @@ function deleteReq(reqId){
 }
 
 function deleteStockEntry(entryId){
-  if(!CU||CU.role!=='MANAGER') return toast('ไม่มีสิทธิ์ค่ะ','error');
-  if(!confirm('ยืนยันลบรายการ Stock Card '+entryId+' ?')) return;
+  if(!CU||CU.role!=='MANAGER') return toast('เฉพาะผู้จัดการเท่านั้นค่ะ','error');
+  if(!confirm('ยืนยันลบรายการ '+entryId+' ?')) return;
+  // ลบออกจาก _scDemoEntries ทันที
+  if(window._scDemoEntries){
+    window._scDemoEntries = window._scDemoEntries.filter(function(e){
+      return e.EntryID !== entryId;
+    });
+  }
   callAPI('deleteStockCardEntry',{id:entryId}).then(function(res){
-    toast(res.message, res.success?'success':'error');
-    if(res.success){ loadStockCard(); loadInventory(); }
+    toast(res.success?'ลบแล้วค่ะ ✅':(res.message||'error'), res.success?'success':'error');
+    if(res.success) renderSCForPart();
   });
 }
 
@@ -2476,7 +2524,14 @@ function openDetail(reqId){
     if(isSup||isMgr) foot='<button class="btn bd" onclick="openNoteMo(\'reject\',\''+d.ReqID+'\');closeMo()">✕ ปฏิเสธ</button><button class="btn bp" onclick="openNoteMo(\'approve\',\''+d.ReqID+'\');closeMo()">✓ อนุมัติ</button>';
     var canAckRole = ['STOCK','MANAGER'].indexOf(CU.role)>=0;
     if(canAckRole&&(d.StatusStock==='PENDING'||d.StatusStock==='STOCK_NOTIFIED')) foot='<button class="btn bgd" onclick="doStockAck(\''+d.ReqID+'\');closeMo()">📦 รับจัดของ</button>';
-    if(mf) mf.innerHTML=foot;
+    // เพิ่มปุ่มแก้ไข/ลบสำหรับ MANAGER เสมอ (ต่อจาก foot ปกติ)
+    if(CU.role==='MANAGER'||CU.role==='ADMIN'){
+      var managerBtns = '<button class="btn bd bsm" style="margin-left:auto" '
+        +'onclick="if(confirm(\'ยืนยันลบใบเบิก '+d.ReqID+' ?\')){ deleteReq(\''+d.ReqID+'\'); closeMo(); }">🗑️ ลบ</button>';
+      foot = foot + managerBtns;
+    }
+    if(mf) mf.innerHTML = foot
+      +'<button class="btn bo bsm" onclick="closeMo()" style="margin-left:4px">ปิด</button>';
     var mo=document.getElementById('detailMo');
     if(mo){ mo.classList.add('open'); mo.classList.remove('hidden'); }
   });
@@ -3408,7 +3463,7 @@ mockAPI = function(action, data) {
     if(idx2>=0){DEMO_REQS.splice(idx2,1);return{success:true,message:'ลบใบเบิก '+data.id+' แล้วค่ะ'};}
     return{success:false,message:'ไม่พบใบเบิก'};
   }
-  if(action==='deleteStockCardEntry') return{success:true,message:'ลบรายการ Stock Card แล้วค่ะ'};
+  if(action==='deleteStockCardEntry') return{success:true,message:'ลบรายการ Stock Card แล้วค่ะ ✅'};
   if(action==='deleteSalesOrder') return{success:true,message:'ลบใบขาย '+data.soNo+' แล้วค่ะ'};
   if(action==='getSalesOrders'){
     var newOrders = (window._soDemoOrders||[]).map(function(o){
@@ -3524,18 +3579,27 @@ function openSCForm(){
 }
 
 function onSCTypeChange(){
-  var type = document.getElementById('scType').value;
-  var refLabel = document.getElementById('scRefLabel');
-  var refRow   = document.getElementById('scRefRow');
-  var reqRow   = document.getElementById('scReqIdRow');
-  var labels = {
-    IN:'เลขที่ใบส่งของ / เลข SAP', OUT_SALE:'เลขที่ใบเสนอราคา',
-    OUT_RENTAL:'เลขที่ Job / ใบเบิก', OUT_CONTRACT:'เลขที่ Job / ใบเบิก',
-    OUT_WARRANTY:'เลขที่ใบเบิก', OUT_BRANCH:'เลขที่ Request SAP', ADJUST:'เหตุผลการปรับ'
-  };
-  if(refLabel) refLabel.textContent = labels[type] || 'เลขที่อ้างอิง';
-  var t = document.getElementById('scFormTitle');
-  if(t) t.textContent = type==='IN' ? '📥 บันทึกรับเข้า' : type==='ADJUST' ? '⚖️ ปรับยอด Stock' : '📤 บันทึกจ่ายออก';
+  var type = (document.getElementById('scType')||{}).value||'IN';
+  var isIn       = type==='IN' || type==='RETURN_GOOD' || type==='ADJUST';
+  var isOut      = type.startsWith('OUT_');
+  var isDefect   = type==='DEFECT' || type==='DEFECT_RETURN';
+
+  // QtyIn / QtyOut label
+  var qtyLabel = document.getElementById('scQtyLabel');
+  if(qtyLabel){
+    if(isIn)     qtyLabel.textContent = 'จำนวน (เข้า Stock)';
+    else if(isOut) qtyLabel.textContent = 'จำนวน (ออก Stock)';
+    else if(isDefect) qtyLabel.textContent = 'จำนวน (บันทึกเท่านั้น ไม่กระทบ Stock)';
+    else qtyLabel.textContent = 'จำนวน';
+  }
+
+  // แสดง warning สำหรับของเสีย
+  var defectWarn = document.getElementById('scDefectWarn');
+  if(defectWarn) defectWarn.style.display = isDefect ? '' : 'none';
+
+  // adjust: แสดงช่อง "ยอดจริงที่นับได้"
+  var adjRow = document.getElementById('scAdjRow');
+  if(adjRow) adjRow.style.display = type==='ADJUST' ? '' : 'none';
 }
 
 function onSCPartInput(){
@@ -3640,6 +3704,9 @@ function submitSCForm(){
     loadInventory();
     return;
   }
+  // DEFECT types — บันทึกหลักฐาน ไม่กระทบ balance
+  var isDefectType = (data.Type==='DEFECT'||data.Type==='DEFECT_RETURN');
+  if(isDefectType) data.NoBalanceEffect = true;
   callAPI('saveStockCardEntry', data).then(function(res){
     if(res.success){
       toast(res.message||'บันทึกแล้วค่ะ','success');
@@ -5020,9 +5087,17 @@ function renderSCForPart(){
   });
   // แล้ว render ไล่จาก INIT
   demoNew.forEach(function(e){
-    var isIn = e.Type==='IN'||e.Type==='ADJUST'||e.Type==='RETURN';
-    if(isIn)  runBalance += (e.Qty||0);
-    else       runBalance -= (e.Qty||0);
+    var isIn    = e.Type==='IN'||e.Type==='RETURN_GOOD'||e.Type==='RETURN';
+    var isOut   = e.Type.startsWith('OUT_');
+    var isDefect= e.Type==='DEFECT'||e.Type==='DEFECT_RETURN';
+    var isAdj   = e.Type==='ADJUST';
+    if(isAdj){
+      // ADJUST: set balance เป็นค่าที่นับจริง
+      if(e.NewBalance !== undefined) runBalance = e.NewBalance;
+      else { runBalance += (e.Qty||0) > 0 ? (e.Qty||0) : -(e.Qty||0); }
+    } else if(isIn)    { runBalance += (e.Qty||0); }
+    else if(isOut)     { runBalance -= (e.Qty||0); }
+    // isDefect → ไม่เปลี่ยน balance
     // ใช้ทั้ง DocNo และ RefNo (รองรับ 2 field format)
     var docNo    = e.DocNo || e.RefNo || '—';
     var dateStr  = e.Date || (e.CreatedAt ? new Date(e.CreatedAt).toLocaleDateString('th-TH') : '—');
@@ -5033,6 +5108,8 @@ function renderSCForPart(){
       'OUT_SALE':'OUT_SALE','OUT_BRANCH':'OUT_BRANCH','OUT_HQ':'OUT_HQ','OUT_OTHER':'OUT_OTHER',
       'IN':'IN','ADJUST':'ADJUST','RETURN':'RETURN'
     };
+    var eIsIn    = isIn;
+    var eIsDefect= isDefect;
     allEntries.push({
       EntryID:  e.EntryID || ('DEMO-'+Date.now()+Math.random()),
       Date:     dateStr,
@@ -5042,11 +5119,12 @@ function renderSCForPart(){
       JobNo:    e.JobNo||'—',
       Customer: e.Customer||'—',
       Purpose:  e.Purpose||e.Note||'—',
-      QtyIn:    isIn ? (e.Qty||0) : 0,
-      QtyOut:   isIn ? 0 : (e.Qty||0),
+      QtyIn:    eIsDefect ? 0 : (eIsIn ? (e.Qty||0) : 0),
+      QtyOut:   eIsDefect ? 0 : (eIsIn ? 0 : (e.Qty||0)),
+      QtyDefect:eIsDefect ? (e.Qty||0) : 0,
       Balance:  Math.max(0, runBalance),
       Unit:     e.Unit||p.unit||'ชิ้น',
-      Note:     e.Note||''
+      Note:     e.Note||(eIsDefect?'⚠️ ไม่กระทบยอด Stock':'')
     });
   });
 
@@ -5089,22 +5167,27 @@ function renderSCForPart(){
   }
 
   var typeLabel = {
-    'INIT':         '🏁 ยอดยกมา',
-    'IN':           '📥 รับเข้า',
-    'ADJUST':       '⚖️ ปรับยอด',
-    'RETURN':       '↩️ คืนของ',
-    'OUT_SALE':     '🛒 ขาย',
-    'OUT_REQ':      '📋 ใบเบิก',
-    'OUT_RENTAL':   '🚗 รถเช่า',
-    'OUT_CONTRACT': '🚌 รถสัมปทาน',
-    'OUT_ACCIDENT': '⚠️ เคลมอุบัติ',
-    'OUT_WARRANTY': '🔧 Warranty',
-    'OUT_BRANCH':   '🏢 ส่งสาขา',
-    'OUT_HQ':       '🏛️ คืน สนญ.',
-    'OUT_OTHER':    '📌 นอกเขต',
+    'INIT':          '🏁 ยอดยกมา',
+    'IN':            '📥 รับเข้า',
+    'RETURN_GOOD':   '↩️ รับคืน (ของดี)',
+    'RETURN':        '↩️ รับคืน',
+    'ADJUST':        '⚖️ ปรับยอด',
+    'DEFECT':        '🔴 ของเสีย/ชำรุด',
+    'DEFECT_RETURN': '🔴 ช่างคืนของเสีย',
+    'OUT_SALE':      '🛒 ขาย',
+    'OUT_REQ':       '📋 ใบเบิก',
+    'OUT_RENTAL':    '🚗 รถเช่า',
+    'OUT_CONTRACT':  '🚌 รถสัมปทาน',
+    'OUT_ACCIDENT':  '⚠️ เคลมอุบัติ',
+    'OUT_WARRANTY':  '🔧 Warranty',
+    'OUT_BRANCH':    '🏢 ส่งสาขา',
+    'OUT_HQ':        '🏛️ คืน สนญ.',
+    'OUT_OTHER':     '📌 นอกเขต',
   };
   var typeChipClass = {
-    'INIT':'chip-grn','IN':'chip-grn','ADJUST':'chip-blu','RETURN':'chip-grn',
+    'INIT':'chip-grn','IN':'chip-grn','RETURN_GOOD':'chip-grn','RETURN':'chip-grn',
+    'ADJUST':'chip-blu',
+    'DEFECT':'chip-red','DEFECT_RETURN':'chip-red',
     'OUT_SALE':'chip-red','OUT_REQ':'chip-gld','OUT_RENTAL':'chip-red',
     'OUT_CONTRACT':'chip-red','OUT_ACCIDENT':'chip-red','OUT_WARRANTY':'chip-red',
     'OUT_BRANCH':'chip-red','OUT_HQ':'chip-gry','OUT_OTHER':'chip-red'
@@ -5343,16 +5426,16 @@ function loadFullReport(){
   var total     = reqs.length;
   var waitAppr  = reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER';}).length;
   var waitStock = reqs.filter(function(r){return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING';}).length;
-  // จ่ายบางส่วน = ใบเบิกที่อนุมัติแล้ว ยังไม่ปิด และมีอย่างน้อย 1 item ที่ IssuedQty < Qty
-  var items4kpi = typeof DEMO_ITEMS !== 'undefined' ? DEMO_ITEMS : [];
+  // จ่ายบางส่วน: ดูจาก DispatchedItems ของแต่ละ req (บันทึกตอน stockAcknowledge)
   var partIssued = reqs.filter(function(r){
     if(r.StatusStock==='CLEARED') return false;
     if(r.StatusApproval!=='APPROVED') return false;
-    return items4kpi.some(function(item){
-      var req = item.Qty||0;
-      var iss = typeof item.IssuedQty!=='undefined' ? (item.IssuedQty||0) : req;
-      return req > 0 && iss >= 0 && iss < req; // จ่ายบางส่วน = issued < requested
-    });
+    // ถ้ามี DispatchedItems → ตรวจ shortQty
+    if(r.DispatchedItems && r.DispatchedItems.length){
+      return r.DispatchedItems.some(function(it){ return (it.shortQty||0) > 0; });
+    }
+    // fallback: ถ้า StatusStock=PENDING หลัง APPROVED → ยังไม่จ่ายเลย (ไม่ใช่บางส่วน)
+    return false;
   }).length;
   var inUse     = reqs.filter(function(r){return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP';}).length;
   var waitClear = reqs.filter(function(r){return r.StatusStock==='PICKED_UP';}).length;
@@ -6489,19 +6572,23 @@ function loadSCPartImg(partNo){
 
 // ── Stock Card: QR Code ──────────────────────────────────────
 function generateSCPartQR(partNo, nameEN, location){
-  // ทำความสะอาด string — ลบ control characters ที่มาจาก SAP/Excel
-  function cleanStr(s){
+  // ทำความสะอาด string สำหรับ QR — เก็บเฉพาะ printable ASCII (0x20-0x7E)
+  // Thai chars จะถูกกรองออกเพราะ QR scanner หลายตัว decode ผิด
+  function cleanForQR(s){
     if(!s) return '';
     return String(s)
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // ลบ control chars
-      .replace(/\s+/g, ' ')   // normalize whitespace
+      .replace(/[^\x20-\x7E]/g, '') // เก็บเฉพาะ printable ASCII
+      .replace(/\s+/g, ' ')
       .trim();
   }
-  var cleanPart = cleanStr(partNo);
-  var cleanName = cleanStr(nameEN);
-  var cleanLoc  = cleanStr(location);
+  var cleanPart = cleanForQR(partNo);
+  var cleanName = cleanForQR(nameEN); // กรอง Thai ออก เก็บ English เท่านั้น
+  var cleanLoc  = cleanForQR(location);
 
-  // QR data: PartNo|ชื่ออะไหล่|Location (clean เท่านั้น)
+  // ถ้า cleanName ว่าง (เช่น ชื่อเป็นภาษาไทยล้วน) ใช้ Part No. แทน
+  if(!cleanName) cleanName = cleanPart;
+
+  // QR data: PartNo|NameEN|Location (ASCII เท่านั้น ทุก scanner อ่านได้)
   var qrData = cleanPart + '|' + cleanName + '|' + cleanLoc;
   window._scQRData   = qrData;
   window._scQRPartNo = partNo;
@@ -6834,7 +6921,7 @@ function printQRLabel(partList){
   }
 
   var labels = partList.map(function(p){
-    function clean2(s){ return s?String(s).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g,'').replace(/\s+/g,' ').trim():''; }
+    function clean2(s){ return s?String(s).replace(/[^\x20-\x7E]/g,'').replace(/\s+/g,' ').trim():''; }
     var qrData = clean2(p.partNo)+'|'+clean2(p.nameEN||p.nameTH||'')+'|'+clean2(p.location||'');
     var url    = makeQRDataUrl(qrData);
     var name   = p.nameEN||p.nameTH||'—';
@@ -6933,6 +7020,47 @@ function getSCQRDataURL(cb){
       cb(cv3.toDataURL('image/png'));
     } catch(e3){ cb(''); }
   } else { cb(''); }
+}
+
+// ── ปุ่มแก้ไข/ลบ ในหน้า Detail ─────────────────────────────
+var _detailCurrentReqId = '';
+
+function showDetailButtons(reqId, role){
+  _detailCurrentReqId = reqId;
+  var editBtn = document.getElementById('editReqBtn');
+  var delBtn  = document.getElementById('delReqBtn');
+  // แสดงปุ่มตาม role
+  if(editBtn) editBtn.style.display = (role==='MANAGER'||role==='ADMIN') ? '' : 'none';
+  if(delBtn)  delBtn.style.display  = (role==='MANAGER'||role==='ADMIN') ? '' : 'none';
+}
+
+function editCurrentReq(){
+  if(!_detailCurrentReqId) return;
+  closeModal('detailModal');
+  toast('ฟีเจอร์แก้ไขใบเบิกกำลังพัฒนาค่ะ — ขณะนี้ต้องลบแล้วสร้างใหม่','info');
+}
+
+function deleteCurrentReq(){
+  if(!_detailCurrentReqId) return;
+  deleteReq(_detailCurrentReqId);
+  closeModal('detailModal');
+}
+
+// แก้ deleteStockEntry ให้ใช้ renderSCForPart แทน loadStockCard
+function deleteStockEntry(entryId){
+  if(!CU||CU.role!=='MANAGER') return toast('เฉพาะผู้จัดการเท่านั้นค่ะ','error');
+  if(!confirm('ยืนยันลบรายการ '+entryId+' ?')) return;
+  // ลบออกจาก _scDemoEntries
+  if(window._scDemoEntries){
+    window._scDemoEntries = window._scDemoEntries.filter(function(e){
+      return e.EntryID !== entryId;
+    });
+  }
+  callAPI('deleteStockCardEntry',{id:entryId}).then(function(res){
+    toast(res.success ? 'ลบแล้วค่ะ ✅' : (res.message||'เกิดข้อผิดพลาด'),
+          res.success ? 'success' : 'error');
+    if(res.success){ renderSCForPart(); }
+  });
 }
 </script>
 
