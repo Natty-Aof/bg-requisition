@@ -1787,7 +1787,12 @@ function go(page){
 function loadDashboard(){
   callAPI('getDashboard',{}).then(function(res){
     if(!res.success) return;
-    var s=res.summary||{};
+    // รองรับทั้ง format เก่า (res.summary) และใหม่ (res.data)
+  var s = res.summary || res.data || {};
+  // map field names ให้ตรงกับ Code.gs ใหม่
+  if(!s.pendingSupervisor && s.pending) s.pendingSupervisor = s.pending;
+  if(!s.pendingManager   && s.pending) s.pendingManager   = 0;
+  if(!s.total            && s.total===undefined) s.total = (s.pendingSupervisor||0)+(s.pendingManager||0)+(s.approved||0)+(s.cleared||0);
     var sg=document.getElementById('statGrid');
     if(sg) sg.innerHTML=''
       +'<div class="sc"><div class="lb">ใบเบิกทั้งหมด</div><div class="vl">'+s.total+'</div></div>'
