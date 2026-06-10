@@ -1587,7 +1587,7 @@ function mockAPI(action, data){
             Requester:req4.RequesterName||req4.RequesterEmail||'',
             JobNo:req4.JobNo||'', Customer:req4.CustomerName||'',
             Purpose:req4.Purpose||'',
-            Note:it.shortQty>0?'จ่ายบางส่วน ขาด '+it.shortQty+' '+it.unit:'',
+            Note:it.shortQty>0?'รายการขาดจ่าย ขาด '+it.shortQty+' '+it.unit:'',
           });
         }
       });
@@ -5431,17 +5431,17 @@ function loadFullReport(){
   var total     = reqs.length;
   var waitAppr  = reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR'||r.StatusApproval==='PENDING_MANAGER';}).length;
   var waitStock = reqs.filter(function(r){return r.StatusApproval==='APPROVED'&&r.StatusStock==='PENDING';}).length;
-  // จ่ายบางส่วน: ดูจาก DispatchedItems ของแต่ละ req (บันทึกตอน stockAcknowledge)
-  var partIssued = reqs.filter(function(r){
-    if(r.StatusStock==='CLEARED') return false;
-    if(r.StatusApproval!=='APPROVED') return false;
-    // ถ้ามี DispatchedItems → ตรวจ shortQty
+  // รายการขาดจ่าย: ดูจาก DispatchedItems ของแต่ละ req (บันทึกตอน stockAcknowledge)
+  var partIssued = 0;
+  reqs.forEach(function(r){
+    if(r.StatusStock==='CLEARED') return;
+    if(r.StatusApproval!=='APPROVED') return;
     if(r.DispatchedItems && r.DispatchedItems.length){
-      return r.DispatchedItems.some(function(it){ return (it.shortQty||0) > 0; });
+      r.DispatchedItems.forEach(function(it){
+        if((it.shortQty||0) > 0) partIssued++;
+      });
     }
-    // fallback: ถ้า StatusStock=PENDING หลัง APPROVED → ยังไม่จ่ายเลย (ไม่ใช่บางส่วน)
-    return false;
-  }).length;
+  });
   var inUse     = reqs.filter(function(r){return r.StatusStock==='ACKNOWLEDGED'||r.StatusStock==='PICKED_UP';}).length;
   var waitClear = reqs.filter(function(r){return r.StatusStock==='PICKED_UP';}).length;
   var closed    = reqs.filter(function(r){return r.StatusStock==='CLEARED';}).length;
@@ -5453,7 +5453,7 @@ function loadFullReport(){
       {label:'ใบเบิกทั้งหมด',   val:total,     color:'var(--gd)', icon:'📋'},
       {label:'รออนุมัติ',        val:waitAppr,  color:'#e65100',   icon:'⏳'},
       {label:'รอจ่ายอะไหล่',    val:waitStock, color:'#1565c0',   icon:'📦'},
-      {label:'จ่ายบางส่วน',     val:partIssued,color:'#6a1599',   icon:'⚠️'},
+      {label:'รายการขาดจ่าย',     val:partIssued,color:'#6a1599',   icon:'⚠️'},
       {label:'กำลังใช้งาน',     val:inUse,     color:'#2d6a4f',   icon:'🔧'},
       {label:'รอเคลียร์',       val:waitClear, color:'#c9a84c',   icon:'📝'},
       {label:'ค้างเกิน 7 วัน',  val:overdue7,  color:overdue7>0?'#b71c1c':'#aaa', icon:'🚨'},
@@ -5475,7 +5475,7 @@ function loadFullReport(){
       {label:'รอหัวหน้าช่าง',   count:reqs.filter(function(r){return r.StatusApproval==='PENDING_SUPERVISOR';}).length, color:'#e65100'},
       {label:'รอผู้จัดการ',     count:reqs.filter(function(r){return r.StatusApproval==='PENDING_MANAGER';}).length,    color:'#1565c0'},
       {label:'รอจ่ายของ',       count:waitStock, color:'#6a1599'},
-      {label:'จ่ายบางส่วน',     count:partIssued,color:'#8e24aa'},
+      {label:'รายการขาดจ่าย',     count:partIssued,color:'#8e24aa'},
       {label:'ใช้งาน',          count:inUse,     color:'#2d6a4f'},
       {label:'รอเคลียร์',       count:waitClear, color:'#c9a84c'},
       {label:'ปิดงาน',          count:closed,    color:'#388e3c'},
@@ -5503,7 +5503,7 @@ function loadFullReport(){
       overdueEl.innerHTML='<div class="tc tm" style="padding:24px;color:var(--gm)">✅ ไม่มีงานค้างค่ะ</div>';
     } else {
       var stMap={'PENDING_SUPERVISOR':'⏳ รอหัวหน้าช่าง','PENDING_MANAGER':'⏳ รอผู้จัดการ',
-        'PENDING':'📦 รอจ่ายอะไหล่','ACKNOWLEDGED':'🔧 จัดของแล้ว','PICKED_UP':'✋ รอเคลียร์','PARTIAL':'⚠️ จ่ายบางส่วน'};
+        'PENDING':'📦 รอจ่ายอะไหล่','ACKNOWLEDGED':'🔧 จัดของแล้ว','PICKED_UP':'✋ รอเคลียร์','PARTIAL':'⚠️ รายการขาดจ่าย'};
       var h='<div class="tw"><table class="it" style="font-size:12px"><thead><tr>'
         +'<th>เลขใบเบิก</th><th>วันที่เบิก</th><th>Job No.</th><th>ลูกค้า</th>'
         +'<th>ผู้เบิก</th><th style="text-align:center">อายุใบเบิก</th><th>สถานะ</th><th></th>'
@@ -5660,7 +5660,7 @@ function loadFullReport(){
         var pending=getPending(item); // Requested - Issued
         if(pending<=0) return;
         var issued=getIssued(item);
-        var status=issued===0?'⏳ รอจัดอะไหล่':'⚠️ จ่ายบางส่วน';
+        var status=issued===0?'⏳ รอจัดอะไหล่':'⚠️ รายการขาดจ่าย';
         pendingRows.push({
           reqId:r.ReqID, jobNo:r.JobNo, customer:r.CustomerName,
           requester:r.RequesterName||r.RequesterEmail||'—',
