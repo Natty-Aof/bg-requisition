@@ -1921,7 +1921,7 @@ function submitReq(){
   var items=getItems();
   if(!items.length) return toast('กรุณาเพิ่มรายการอะไหล่','error');
   var reqId=document.getElementById('nId').value.trim();
-  var data={jobNo:job,customerName:cust,requesterName:CU.name,coWorkers:document.getElementById('nCo').value,serialNos:document.getElementById('nSerial').value,vehicleModel:document.getElementById('nModel').value,purpose:pp.join(', '),items:items};
+  var data={jobNo:job,customerName:cust,requesterName:CU.name,coWorkers:(document.getElementById('nCo').value||'').split(',').map(function(s){return s.trim();}).filter(Boolean),serialNos:(document.getElementById('nSerial').value||'').split(',').map(function(s){return s.trim();}).filter(Boolean),vehicleModel:document.getElementById('nModel').value,purpose:pp.join(', '),items:items};
   toast('กำลังส่งใบเบิก...','info');
   callAPI('createRequisition',data).then(function(res){
     toast(res.message,res.success?'success':'error');
